@@ -11,6 +11,7 @@ struct video_mode {
 	uint32_t rmask, gmask, bmask;
 	uint32_t fb_addr;
 	short max_pages;
+	uint32_t bank_size;
 };
 
 #ifdef __cplusplus

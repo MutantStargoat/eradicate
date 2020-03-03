@@ -6,6 +6,9 @@ void *fb_pixels, *vmem;
 
 long time_msec;
 
+void (*swap_buffers)(void*);
+
+
 int game_init(int argc, char **argv)
 {
 	return 0;

@@ -10,6 +10,8 @@ extern void *fb_pixels, *vmem;
 
 extern long time_msec;
 
+extern void (*swap_buffers)(void*);
+
 /* special keys */
 enum {
 	KB_ESC = 27,

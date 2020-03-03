@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include "cdpmi.h"
 #include "gfx.h"
 #include "vbe.h"
 #include "vga.h"
@@ -77,7 +79,14 @@ int init_video(void)
 			vmptr->gmask = calc_mask(minf.gsize, minf.gpos);
 			vmptr->bmask = calc_mask(minf.bsize, minf.bpos);
 		}
-		vmptr->fb_addr = minf.fb_addr;
+		if(minf.attr & VBE_ATTR_LFB) {
+			vmptr->fb_addr = minf.fb_addr;
+		} else {
+			vmptr->bank_size = (uint32_t)minf.bank_size * 1024;
+			if(!vmptr->bank_size) {
+				vmptr->bank_size = 65536;
+			}
+		}
 		vmptr->max_pages = minf.num_img_pages;
 
 		printf("%04x: ", vbe.modes[i]);
@@ -86,12 +95,6 @@ int init_video(void)
 	fflush(stdout);
 
 	vbe_init_ver = VBE_VER_MAJOR(vbe.ver);
-	if(vbe_init_ver < 2) {
-		fprintf(stderr, "VBE 2.0 required. Upgrade your video card or run univbe.\n");
-		free(vmodes);
-		vmodes = 0;
-		return -1;
-	}
 	return 0;
 }
 
@@ -171,25 +174,28 @@ void *set_video_mode(int idx, int nbuf)
 
 	printf("pgcount: %d, pgsize: %d, fbsize: %d\n", pgcount, pgsize, fbsize);
 	printf("phys addr: %p\n", (void*)vm->fb_addr);
-
-	vpgaddr[0] = (void*)dpmi_mmap(vm->fb_addr, fbsize);
-	if(!vpgaddr[0]) {
-		fprintf(stderr, "failed to map framebuffer (phys: %lx, size: %d)\n",
-				(unsigned long)vm->fb_addr, fbsize);
-		set_text_mode();
-		return 0;
-	}
-	//memset(vpgaddr[0], 0xaa, fbsize);
-
-	printf("vaddr: %p\n", vpgaddr[0]);
 	fflush(stdout);
 
-	if(pgcount > 1) {
-		vpgaddr[1] = (char*)vpgaddr[0] + pgsize;
-		fbidx = 1;
-		page_flip(FLIP_NOW);	/* start with the second page visible */
+	if(vm->fb_addr) {
+		vpgaddr[0] = (void*)dpmi_mmap(vm->fb_addr, fbsize);
+		if(!vpgaddr[0]) {
+			fprintf(stderr, "failed to map framebuffer (phys: %lx, size: %d)\n",
+					(unsigned long)vm->fb_addr, fbsize);
+			set_text_mode();
+			return 0;
+		}
+		memset(vpgaddr[0], 0xaa, fbsize);
+
+		if(pgcount > 1) {
+			vpgaddr[1] = (char*)vpgaddr[0] + pgsize;
+			fbidx = 1;
+			page_flip(FLIP_NOW);	/* start with the second page visible */
+		} else {
+			fbidx = 0;
+			vpgaddr[1] = 0;
+		}
 	} else {
-		fbidx = 0;
+		vpgaddr[0] = (void*)0xa0000;
 		vpgaddr[1] = 0;
 	}
 	return vpgaddr[0];

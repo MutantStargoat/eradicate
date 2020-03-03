@@ -12,11 +12,15 @@ static void draw(void);
 
 static struct video_mode *vmode;
 
+static void swap_lfb(void *pixels);
+static void swap_banked(void *pixels);
+
 
 int main(int argc, char **argv)
 {
+	void *fb_buf;
 	struct video_mode *vmodes;
-	int vmidx;
+	int vmidx, status = 0;
 
 	init_logger("game.log");
 
@@ -36,9 +40,22 @@ int main(int argc, char **argv)
 	}
 	vmode = vmodes + vmidx;
 
+	if(vmode->fb_addr) {
+		swap_buffers = swap_lfb;
+	} else {
+		swap_buffers = swap_banked;
+	}
+
 	fb_width = vmode->xsz;
 	fb_height = vmode->ysz;
-	fb_size = (vmode->xsz * vmode->bpp / 8) * vmode->ysz;
+	fb_size = vmode->pitch * vmode->ysz;
+
+	if(!(fb_buf = malloc(fb_size + vmode->pitch * 2))) {
+		fprintf(stderr, "failed to allocate framebuffer\n");
+		status = -1;
+		goto break_evloop;
+	}
+	fb_pixels = (char*)fb_buf + vmode->pitch;
 
 	reset_timer();
 
@@ -53,16 +70,17 @@ int main(int argc, char **argv)
 	}
 
 break_evloop:
+	free(fb_buf);
 	set_text_mode();
 	cleanup_video();
 	kb_shutdown();
-	return 0;
+	return status;
 }
 
 static void draw(void)
 {
 	int i, j;
-	uint16_t *pptr = vmem;
+	uint16_t *pptr = fb_pixels;
 
 	for(i=0; i<fb_height; i++) {
 		for(j=0; j<fb_width; j++) {
@@ -70,10 +88,34 @@ static void draw(void)
 			*pptr++ = chess ? 0xff00 : 0x00ff;
 		}
 	}
+
+	swap_buffers(fb_pixels);
 }
 
-void swap_buffers(void *pixels)
+static void swap_lfb(void *pixels)
 {
 	wait_vsync();
 	memcpy(vmem, pixels, fb_size);
+}
+
+static void swap_banked(void *pixels)
+{
+	int i, sz;
+	unsigned int pending;
+	unsigned char *pptr = pixels;
+	uint32_t offs = 0;
+
+	wait_vsync();
+
+	/* assume window is always at 0 at the beginning */
+	pending = fb_size;
+	while(pending > 0) {
+		sz = pending > vmode->bank_size ? vmode->bank_size : pending;
+		memcpy(vmem, pptr, sz);
+		pptr += sz;
+		pending -= sz;
+		vbe_setwin(0, ++offs);
+	}
+
+	vbe_setwin(0, 0);
 }
