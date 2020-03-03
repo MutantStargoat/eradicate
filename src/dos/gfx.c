@@ -10,6 +10,10 @@
 	((a) == (b) || ((a) == 16 && (b) == 15) || ((a) == 15 && (b) == 16) || \
 	 ((a) == 32 && (b) == 24) || ((a) == 24 && (b) == 32))
 
+void (*blit_frame)(void*, int);
+
+static void blit_frame_lfb(void *pixels, int vsync);
+static void blit_frame_banked(void *pixels, int vsync);
 static uint32_t calc_mask(int sz, int pos);
 
 static struct video_mode *vmodes;
@@ -21,8 +25,9 @@ static struct vbe_info vbe;
 /* current mode */
 static struct video_mode *curmode;
 static void *vpgaddr[2];
-static int fbidx;
+static int frontidx, backidx;
 static int pgcount, pgsize, fbsize;
+
 
 int init_video(void)
 {
@@ -36,7 +41,7 @@ int init_video(void)
 	vbe_print_info(stdout, &vbe);
 
 	num_vmodes = 0;
-	max_modes = 4;	/* TODO change */
+	max_modes = 64;
 	if(!(vmodes = malloc(max_modes * sizeof *vmodes))) {
 		fprintf(stderr, "failed to allocate video modes list\n");
 		return -1;
@@ -169,7 +174,7 @@ void *set_video_mode(int idx, int nbuf)
 	if(nbuf < 1) nbuf = 1;
 	if(nbuf > 2) nbuf = 2;
 	pgcount = nbuf > vm->max_pages ? vm->max_pages : nbuf;
-	pgsize = (vm->xsz * vm->bpp / 8) * vm->ysz;
+	pgsize = vm->xsz * vm->ysz * vm->pitch;
 	fbsize = pgcount * pgsize;
 
 	printf("pgcount: %d, pgsize: %d, fbsize: %d\n", pgcount, pgsize, fbsize);
@@ -184,19 +189,24 @@ void *set_video_mode(int idx, int nbuf)
 			set_text_mode();
 			return 0;
 		}
-		memset(vpgaddr[0], 0xaa, fbsize);
+		//memset(vpgaddr[0], 0xaa, pgsize);
 
 		if(pgcount > 1) {
 			vpgaddr[1] = (char*)vpgaddr[0] + pgsize;
-			fbidx = 1;
+			backidx = 1;
 			page_flip(FLIP_NOW);	/* start with the second page visible */
 		} else {
-			fbidx = 0;
+			frontidx = backidx = 0;
 			vpgaddr[1] = 0;
 		}
+
+		blit_frame = blit_frame_lfb;
+
 	} else {
 		vpgaddr[0] = (void*)0xa0000;
 		vpgaddr[1] = 0;
+
+		blit_frame = blit_frame_banked;
 	}
 	return vpgaddr[0];
 }
@@ -215,10 +225,40 @@ void *page_flip(int vsync)
 		return vpgaddr[0];
 	}
 
-	vbe_swap(fbidx ? pgsize : 0, vsync ? VBE_SWAP_VBLANK : VBE_SWAP_NOW);
-	fbidx = (fbidx + 1) & 1;
+	vbe_swap(backidx ? pgsize : 0, vsync ? VBE_SWAP_VBLANK : VBE_SWAP_NOW);
+	frontidx = backidx;
+	backidx = (backidx + 1) & 1;
 
-	return vpgaddr[fbidx];
+	return vpgaddr[backidx];
+}
+
+
+static void blit_frame_lfb(void *pixels, int vsync)
+{
+	if(vsync) wait_vsync();
+	memcpy(vpgaddr[frontidx], pixels, pgsize);
+}
+
+static void blit_frame_banked(void *pixels, int vsync)
+{
+	int i, sz, offs;
+	unsigned int pending;
+	unsigned char *pptr = pixels;
+
+	if(vsync) wait_vsync();
+
+	/* assume initial window offset at 0 */
+	offs = 0;
+	pending = pgsize;
+	while(pending > 0) {
+		sz = pending > curmode->bank_size ? curmode->bank_size : pending;
+		memcpy((void*)0xa0000, pptr, sz);
+		pptr += sz;
+		pending -= sz;
+		vbe_setwin(0, ++offs);
+	}
+
+	vbe_setwin(0, 0);
 }
 
 static uint32_t calc_mask(int sz, int pos)

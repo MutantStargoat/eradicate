@@ -12,9 +12,6 @@ static void draw(void);
 
 static struct video_mode *vmode;
 
-static void swap_lfb(void *pixels);
-static void swap_banked(void *pixels);
-
 
 int main(int argc, char **argv)
 {
@@ -39,12 +36,6 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	vmode = vmodes + vmidx;
-
-	if(vmode->fb_addr) {
-		swap_buffers = swap_lfb;
-	} else {
-		swap_buffers = swap_banked;
-	}
 
 	fb_width = vmode->xsz;
 	fb_height = vmode->ysz;
@@ -89,33 +80,5 @@ static void draw(void)
 		}
 	}
 
-	swap_buffers(fb_pixels);
-}
-
-static void swap_lfb(void *pixels)
-{
-	wait_vsync();
-	memcpy(vmem, pixels, fb_size);
-}
-
-static void swap_banked(void *pixels)
-{
-	int i, sz;
-	unsigned int pending;
-	unsigned char *pptr = pixels;
-	uint32_t offs = 0;
-
-	wait_vsync();
-
-	/* assume window is always at 0 at the beginning */
-	pending = fb_size;
-	while(pending > 0) {
-		sz = pending > vmode->bank_size ? vmode->bank_size : pending;
-		memcpy(vmem, pptr, sz);
-		pptr += sz;
-		pending -= sz;
-		vbe_setwin(0, ++offs);
-	}
-
-	vbe_setwin(0, 0);
+	blit_frame(fb_pixels, 1);
 }

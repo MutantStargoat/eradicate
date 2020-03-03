@@ -39,6 +39,7 @@ enum {
 };
 /* page flip and return pointer to the start of the display area (front buffer) */
 void *page_flip(int vsync);
+extern void (*blit_frame)(void *pixels, int vsync);
 
 #ifdef __WATCOMC__
 void wait_vsync(void);
