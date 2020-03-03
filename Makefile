@@ -5,7 +5,6 @@ dosobj = src/dos/main.obj src/dos/gfx.obj src/dos/timer.obj src/dos/watdpmi.obj 
 gameobj = src/game.obj src/util.obj
 incpath = -Isrc -Isrc/dos -Ilibs/imago/src
 libpath = libpath libs/imago
-RM = rm -f
 !else
 dosobj = src\dos\main.obj src\dos\gfx.obj src\dos\timer.obj src\dos\watdpmi.obj &
 		 src\dos\vbe.obj src\dos\vga.obj src\dos\keyb.obj src\dos\mouse.obj &
@@ -13,7 +12,6 @@ dosobj = src\dos\main.obj src\dos\gfx.obj src\dos\timer.obj src\dos\watdpmi.obj 
 gameobj = src\game.obj src\util.obj
 incpath = -Isrc -Isrc\dos -Ilibs\imago\src
 libpath = libpath libs\imago
-RM = del
 !endif
 
 obj = $(dosobj) $(gameobj)
@@ -38,8 +36,14 @@ $(bin): $(obj)
 .asm.obj:
 	nasm -f obj -o $@ $[*.asm
 
+!ifdef __UNIX__
 clean: .symbolic
-	$(RM) src\*.obj
-	$(RM) src\dos\*.obj
-	$(RM) objects.lnk
-	$(RM) $(bin)
+	rm -f $(obj)
+	rm -f $(bin)
+!else
+clean: .symbolic
+	del src\*.obj
+	del src\dos\*.obj
+	del objects.lnk
+	del $(bin)
+!endif

@@ -5,10 +5,12 @@
 
 struct video_mode {
 	uint16_t mode;
-	short xsz, ysz, bpp;
+	short xsz, ysz, bpp, pitch;
 	short rbits, gbits, bbits;
 	short rshift, gshift, bshift;
 	uint32_t rmask, gmask, bmask;
+	uint32_t fb_addr;
+	short max_pages;
 };
 
 #ifdef __cplusplus

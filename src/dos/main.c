@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "game.h"
 #include "keyb.h"
 #include "timer.h"
@@ -10,7 +11,7 @@
 static void draw(void);
 
 static struct video_mode *vmode;
-static void *vmem;
+
 
 int main(int argc, char **argv)
 {
@@ -53,6 +54,7 @@ int main(int argc, char **argv)
 
 break_evloop:
 	set_text_mode();
+	cleanup_video();
 	kb_shutdown();
 	return 0;
 }
@@ -64,7 +66,7 @@ static void draw(void)
 
 	for(i=0; i<fb_height; i++) {
 		for(j=0; j<fb_width; j++) {
-			int chess = (i >> 2) == (j >> 2);
+			int chess = ((i >> 4) & 1) == ((j >> 4) & 1);
 			*pptr++ = chess ? 0xff00 : 0x00ff;
 		}
 	}

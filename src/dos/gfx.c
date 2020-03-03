@@ -65,6 +65,7 @@ int init_video(void)
 		vmptr->xsz = minf.xres;
 		vmptr->ysz = minf.yres;
 		vmptr->bpp = minf.bpp;
+		vmptr->pitch = minf.scanline_bytes;
 		if(minf.mem_model == VBE_TYPE_DIRECT) {
 			vmptr->rbits = minf.rsize;
 			vmptr->gbits = minf.gsize;
@@ -76,6 +77,8 @@ int init_video(void)
 			vmptr->gmask = calc_mask(minf.gsize, minf.gpos);
 			vmptr->bmask = calc_mask(minf.bsize, minf.bpos);
 		}
+		vmptr->fb_addr = minf.fb_addr;
+		vmptr->max_pages = minf.num_img_pages;
 
 		printf("%04x: ", vbe.modes[i]);
 		vbe_print_mode_info(stdout, &minf);
@@ -83,6 +86,12 @@ int init_video(void)
 	fflush(stdout);
 
 	vbe_init_ver = VBE_VER_MAJOR(vbe.ver);
+	if(vbe_init_ver < 2) {
+		fprintf(stderr, "VBE 2.0 required. Upgrade your video card or run univbe.\n");
+		free(vmodes);
+		vmodes = 0;
+		return -1;
+	}
 	return 0;
 }
 
@@ -137,11 +146,11 @@ int find_video_mode(int mode)
 void *set_video_mode(int idx, int nbuf)
 {
 	unsigned int mode;
-	struct vbe_mode_info minf;
 	struct video_mode *vm = vmodes + idx;
 
 	printf("setting video mode %x (%dx%d %d bpp)\n", (unsigned int)vm->mode,
 			vm->xsz, vm->ysz, vm->bpp);
+	fflush(stdout);
 
 	mode = vm->mode | VBE_MODE_LFB;
 	if(vbe_setmode(mode) == -1) {
@@ -153,17 +162,27 @@ void *set_video_mode(int idx, int nbuf)
 		printf("Warning: failed to get a linear framebuffer. falling back to banked mode\n");
 	}
 
-	vbe_mode_info(mode, &minf);
-
 	curmode = vm;
 	if(nbuf < 1) nbuf = 1;
 	if(nbuf > 2) nbuf = 2;
-	pgcount = nbuf > minf.num_img_pages ? minf.num_img_pages : nbuf;
+	pgcount = nbuf > vm->max_pages ? vm->max_pages : nbuf;
 	pgsize = (vm->xsz * vm->bpp / 8) * vm->ysz;
 	fbsize = pgcount * pgsize;
 
-	vpgaddr[0] = (void*)dpmi_mmap(minf.fb_addr, fbsize);
-	memset(vpgaddr[0], 0xaa, fbsize);
+	printf("pgcount: %d, pgsize: %d, fbsize: %d\n", pgcount, pgsize, fbsize);
+	printf("phys addr: %p\n", (void*)vm->fb_addr);
+
+	vpgaddr[0] = (void*)dpmi_mmap(vm->fb_addr, fbsize);
+	if(!vpgaddr[0]) {
+		fprintf(stderr, "failed to map framebuffer (phys: %lx, size: %d)\n",
+				(unsigned long)vm->fb_addr, fbsize);
+		set_text_mode();
+		return 0;
+	}
+	//memset(vpgaddr[0], 0xaa, fbsize);
+
+	printf("vaddr: %p\n", vpgaddr[0]);
+	fflush(stdout);
 
 	if(pgcount > 1) {
 		vpgaddr[1] = (char*)vpgaddr[0] + pgsize;
