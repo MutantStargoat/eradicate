@@ -174,7 +174,7 @@ void *set_video_mode(int idx, int nbuf)
 	if(nbuf < 1) nbuf = 1;
 	if(nbuf > 2) nbuf = 2;
 	pgcount = nbuf > vm->max_pages ? vm->max_pages : nbuf;
-	pgsize = vm->xsz * vm->ysz * vm->pitch;
+	pgsize = vm->ysz * vm->pitch;
 	fbsize = pgcount * pgsize;
 
 	printf("pgcount: %d, pgsize: %d, fbsize: %d\n", pgcount, pgsize, fbsize);
@@ -189,7 +189,7 @@ void *set_video_mode(int idx, int nbuf)
 			set_text_mode();
 			return 0;
 		}
-		//memset(vpgaddr[0], 0xaa, pgsize);
+		memset(vpgaddr[0], 0xaa, pgsize);
 
 		if(pgcount > 1) {
 			vpgaddr[1] = (char*)vpgaddr[0] + pgsize;
