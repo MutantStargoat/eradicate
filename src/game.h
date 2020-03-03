@@ -1,0 +1,40 @@
+#ifndef GAME_H_
+#define GAME_H_
+
+#define FB_BPP	8
+
+extern int fb_width;
+extern int fb_height;
+extern long fb_size;
+extern void *fb_pixels, *vmem;
+
+extern long time_msec;
+
+/* special keys */
+enum {
+	KB_ESC = 27,
+	KB_BACKSP = 127,
+
+	KB_NUM_0, KB_NUM_1, KB_NUM_2, KB_NUM_3, KB_NUM_4,
+	KB_NUM_5, KB_NUM_6, KB_NUM_7, KB_NUM_8, KB_NUM_9,
+	KB_NUM_DOT, KB_NUM_DIV, KB_NUM_MUL, KB_NUM_MINUS, KB_NUM_PLUS, KB_NUM_ENTER, KB_NUM_EQUALS,
+	KB_UP, KB_DOWN, KB_RIGHT, KB_LEFT,
+	KB_INSERT, KB_HOME, KB_END, KB_PGUP, KB_PGDN,
+	KB_F1, KB_F2, KB_F3, KB_F4, KB_F5, KB_F6,
+	KB_F7, KB_F8, KB_F9, KB_F10, KB_F11, KB_F12,
+	KB_F13, KB_F14, KB_F15,
+	KB_NUMLK, KB_CAPSLK, KB_SCRLK,
+	KB_RSHIFT, KB_LSHIFT, KB_RCTRL, KB_LCTRL, KB_RALT, KB_LALT,
+	KB_RMETA, KB_LMETA, KB_LSUPER, KB_RSUPER, KB_MODE, KB_COMPOSE,
+	KB_HELP, KB_PRINT, KB_SYSRQ, KB_BREAK
+};
+
+int game_init(int argc, char **argv);
+void game_cleanup(void);
+
+void game_draw(void);
+
+void game_keyboard(int key, int press);
+
+
+#endif	/* GAME_H_ */
