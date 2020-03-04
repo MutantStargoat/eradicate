@@ -1,10 +1,10 @@
-csrc = $(wildcard src/*.c) $(wildcard src/sdl/*.c)
+csrc = $(wildcard src/*.c) $(wildcard src/sdl/*.c) $(wildcard src/3dgfx/*.c)
 
 obj = $(csrc:.c=.o)
 dep = $(obj:.o=.d)
 bin = game
 
-inc = -Isrc -Isrc/sdl
+inc = -Isrc -Isrc/sdl -Isrc/3dgfx
 
 CFLAGS = $(arch) -pedantic -Wall -g -MMD $(inc) `sdl-config --cflags`
 LDFLAGS = $(arch) -Llibs/imago -limago `sdl-config --libs` -lm
