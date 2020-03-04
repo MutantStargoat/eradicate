@@ -103,7 +103,7 @@ void blit_frame(void *pixels, int vsync)
 		SDL_LockSurface(fbsurf);
 	}
 
-	sptr = fb_pixels;
+	sptr = pixels;
 	dptr = (unsigned short*)fbsurf->pixels + (fbsurf->w - xsz) / 2;
 	for(i=0; i<FB_HEIGHT; i++) {
 		for(j=0; j<FB_WIDTH; j++) {

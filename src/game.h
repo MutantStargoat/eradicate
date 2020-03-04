@@ -1,7 +1,7 @@
 #ifndef GAME_H_
 #define GAME_H_
 
-#define FB_BPP	8
+#define FB_BPP	16
 
 extern int fb_width;
 extern int fb_height;
