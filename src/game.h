@@ -31,8 +31,8 @@ enum {
 	KB_HELP, KB_PRINT, KB_SYSRQ, KB_BREAK
 };
 
-int game_init(int argc, char **argv);
-void game_cleanup(void);
+int init(int argc, char **argv);
+void cleanup(void);
 
 extern void (*draw)(void);
 extern void (*key_event)(int key, int pressed);

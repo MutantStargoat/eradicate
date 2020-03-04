@@ -10,7 +10,7 @@ static int bgwidth, bgheight;
 
 int menu_init(void)
 {
-	if(!(bgpix = img_load_pixels("data/menpg640.png", &bgwidth, &bgheight, IMG_FMT_RGB24))) {
+	if(!(bgpix = img_load_pixels("data/menbg640.png", &bgwidth, &bgheight, IMG_FMT_RGB24))) {
 		fprintf(stderr, "failed to load menu bg image\n");
 		return -1;
 	}

@@ -26,7 +26,8 @@ LDFLAGS = option map $(libpath) library { $(libs) }
 
 $(bin): $(obj)
 	%write objects.lnk $(obj)
-	$(LD) debug all name $@ system dos4g file { @objects } $(LDFLAGS)
+	%write ldflags.lnk $(LDFLAGS)
+	$(LD) debug all name $@ system dos4g file { @objects } @ldflags
 
 .c: src;src/dos
 .asm: src;src/dos
@@ -45,6 +46,6 @@ clean: .symbolic
 clean: .symbolic
 	del src\*.obj
 	del src\dos\*.obj
-	del objects.lnk
+	del *.lnk
 	del $(bin)
 !endif

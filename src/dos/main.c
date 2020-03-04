@@ -46,6 +46,11 @@ int main(int argc, char **argv)
 	}
 	fb_pixels = (char*)fb_buf + vmode->pitch;
 
+	if(init(argc, argv) == -1) {
+		status = -1;
+		goto break_evloop;
+	}
+
 	reset_timer();
 
 	for(;;) {
@@ -62,6 +67,7 @@ int main(int argc, char **argv)
 
 break_evloop:
 	free(fb_buf);
+	cleanup();
 	set_text_mode();
 	cleanup_video();
 	kb_shutdown();
