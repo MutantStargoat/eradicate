@@ -2,14 +2,14 @@
 dosobj = src/dos/main.obj src/dos/gfx.obj src/dos/timer.obj src/dos/watdpmi.obj &
 		 src/dos/vbe.obj src/dos/vga.obj src/dos/keyb.obj src/dos/mouse.obj &
 		 src/dos/logger.obj
-gameobj = src/game.obj src/util.obj
+gameobj = src/game.obj src/util.obj src/gfxutil.obj src/menuscr.obj
 incpath = -Isrc -Isrc/dos -Ilibs/imago/src
 libpath = libpath libs/imago
 !else
 dosobj = src\dos\main.obj src\dos\gfx.obj src\dos\timer.obj src\dos\watdpmi.obj &
 		 src\dos\vbe.obj src\dos\vga.obj src\dos\keyb.obj src\dos\mouse.obj &
 		 src\dos\logger.obj
-gameobj = src\game.obj src\util.obj
+gameobj = src\game.obj src\util.obj src\gfxutil.obj src\menuscr.obj
 incpath = -Isrc -Isrc\dos -Ilibs\imago\src
 libpath = libpath libs\imago
 !endif
@@ -17,11 +17,12 @@ libpath = libpath libs\imago
 obj = $(dosobj) $(gameobj)
 bin = game.exe
 
+libs = imago.lib
+
 CC = wcc386
 LD = wlink
 CFLAGS = -d3 -5 -fp5 -otebmileran -s -zq -bt=dos $(incpath)
-LDFLAGS = option map $(libpath)
-# library { $(libs) }
+LDFLAGS = option map $(libpath) library { $(libs) }
 
 $(bin): $(obj)
 	%write objects.lnk $(obj)

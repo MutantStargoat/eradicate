@@ -34,9 +34,10 @@ enum {
 int game_init(int argc, char **argv);
 void game_cleanup(void);
 
-void game_draw(void);
+extern void (*draw)(void);
+extern void (*key_event)(int key, int pressed);
 
-void game_keyboard(int key, int press);
+void game_quit(void);
 
 
 #endif	/* GAME_H_ */

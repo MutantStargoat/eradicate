@@ -8,10 +8,8 @@
 #include "logger.h"
 #include "cdpmi.h"
 
-static void draw(void);
-
 static struct video_mode *vmode;
-
+static int quit;
 
 int main(int argc, char **argv)
 {
@@ -56,6 +54,8 @@ int main(int argc, char **argv)
 			if(key == 27) goto break_evloop;
 		}
 
+		if(quit) goto break_evloop;
+
 		time_msec = get_msec();
 		draw();
 	}
@@ -68,17 +68,7 @@ break_evloop:
 	return status;
 }
 
-static void draw(void)
+void game_quit(void)
 {
-	int i, j;
-	uint16_t *pptr = fb_pixels;
-
-	for(i=0; i<fb_height; i++) {
-		for(j=0; j<fb_width; j++) {
-			int chess = ((i >> 4) & 1) == ((j >> 4) & 1);
-			*pptr++ = chess ? 0xff00 : 0x00ff;
-		}
-	}
-
-	blit_frame(fb_pixels, 1);
+	quit = 1;
 }
