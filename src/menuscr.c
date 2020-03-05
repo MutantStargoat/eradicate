@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "menuscr.h"
+#include "screens.h"
 #include "imago2.h"
 #include "gfx.h"
 #include "gfxutil.h"

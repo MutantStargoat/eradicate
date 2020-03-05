@@ -35,6 +35,7 @@ enum img_fmt {
 	IMG_FMT_GREYF,
 	IMG_FMT_RGBF,
 	IMG_FMT_RGBAF,
+	IMG_FMT_RGB565,
 
 	NUM_IMG_FMT
 };

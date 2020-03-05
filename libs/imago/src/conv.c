@@ -1,6 +1,6 @@
 /*
 libimago - a multi-format image file input/output library.
-Copyright (C) 2010 John Tsiombikas <nuclear@member.fsf.org>
+Copyright (C) 2010-2020 John Tsiombikas <nuclear@member.fsf.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published
@@ -17,6 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include <string.h>
 #include "imago2.h"
+#include "inttypes.h"
 
 /* pixel-format conversions are sub-optimal at the moment to avoid
  * writing a lot of code. optimize at some point ?
@@ -34,6 +35,7 @@ static void unpack_rgba32(struct pixel *unp, void *pptr, int count);
 static void unpack_greyf(struct pixel *unp, void *pptr, int count);
 static void unpack_rgbf(struct pixel *unp, void *pptr, int count);
 static void unpack_rgbaf(struct pixel *unp, void *pptr, int count);
+static void unpack_rgb565(struct pixel *unp, void *pptr, int count);
 
 static void pack_grey8(void *pptr, struct pixel *unp, int count);
 static void pack_rgb24(void *pptr, struct pixel *unp, int count);
@@ -41,6 +43,7 @@ static void pack_rgba32(void *pptr, struct pixel *unp, int count);
 static void pack_greyf(void *pptr, struct pixel *unp, int count);
 static void pack_rgbf(void *pptr, struct pixel *unp, int count);
 static void pack_rgbaf(void *pptr, struct pixel *unp, int count);
+static void pack_rgb565(void *pptr, struct pixel *unp, int count);
 
 /* XXX keep in sync with enum img_fmt at imago2.h */
 static void (*unpack[])(struct pixel*, void*, int) = {
@@ -49,7 +52,8 @@ static void (*unpack[])(struct pixel*, void*, int) = {
 	unpack_rgba32,
 	unpack_greyf,
 	unpack_rgbf,
-	unpack_rgbaf
+	unpack_rgbaf,
+	unpack_rgb565
 };
 
 /* XXX keep in sync with enum img_fmt at imago2.h */
@@ -59,7 +63,8 @@ static void (*pack[])(void*, struct pixel*, int) = {
 	pack_rgba32,
 	pack_greyf,
 	pack_rgbf,
-	pack_rgbaf
+	pack_rgbaf,
+	pack_rgb565
 };
 
 
@@ -180,6 +185,28 @@ static void unpack_rgbaf(struct pixel *unp, void *pptr, int count)
 	}
 }
 
+static void unpack_rgb565(struct pixel *unp, void *pptr, int count)
+{
+	int i;
+	uint16_t *pix = pptr;
+
+	for(i=0; i<count; i++) {
+		uint16_t r, g, b, p = *pix++;
+		r = (p & 0x1f) << 3;
+		if(r & 8) r |= 7;	/* fill LSbits with whatever bit 0 was */
+		g = (p >> 2) & 0xfc;
+		if(g & 4) g |= 3;	/* ditto */
+		b = (p >> 8) & 0xf8;
+		if(b & 8) r |= 7;	/* same */
+
+		unp->r = (float)r / 255.0f;
+		unp->g = (float)g / 255.0f;
+		unp->b = (float)b / 255.0f;
+		unp->a = 1.0f;
+		unp++;
+	}
+}
+
 
 static void pack_grey8(void *pptr, struct pixel *unp, int count)
 {
@@ -258,3 +285,20 @@ static void pack_rgbaf(void *pptr, struct pixel *unp, int count)
 	memcpy(pptr, unp, count * sizeof *unp);
 }
 
+
+static void pack_rgb565(void *pptr, struct pixel *unp, int count)
+{
+	int i;
+	uint16_t *pix = pptr;
+
+	for(i=0; i<count; i++) {
+		uint16_t r = (uint16_t)(unp->r * 255.0f);
+		uint16_t g = (uint16_t)(unp->g * 255.0f);
+		uint16_t b = (uint16_t)(unp->b * 255.0f);
+		if(r > 255) r = 255;
+		if(g > 255) g = 255;
+		if(b > 255) b = 255;
+		*pix++ = (r >> 3) | ((g & 0x3f) << 2) | ((b & 0x1f) << 8);
+		unp++;
+	}
+}
