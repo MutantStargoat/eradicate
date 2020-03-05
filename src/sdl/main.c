@@ -18,7 +18,7 @@ static int sdlkey_to_gamekey(int sdlkey, unsigned int mod);
 static int quit;
 static SDL_Surface *fbsurf;
 
-static int fbscale = 2;
+static int fbscale = 1;
 static int xsz, ysz;
 static unsigned int sdl_flags = SDL_SWSURFACE;
 
@@ -35,6 +35,8 @@ int main(int argc, char **argv)
 
 	xsz = FB_WIDTH * fbscale;
 	ysz = FB_HEIGHT * fbscale;
+	fb_width = xsz;
+	fb_height = ysz;
 
 	/* allocate 1 extra row as a guard band, until we fucking fix the rasterizer */
 	if(!(fb_pixels = malloc(FB_WIDTH * (FB_HEIGHT + 1) * FB_BPP / CHAR_BIT))) {
@@ -159,8 +161,14 @@ static void handle_event(SDL_Event *ev)
 			toggle_fullscreen();
 			break;
 		}
-		key = sdlkey_to_gamekey(ev->key.keysym.sym, ev->key.keysym.mod);
-		key_event(key, ev->key.state == SDL_PRESSED ? 1 : 0);
+		if(key_event) {
+			key = sdlkey_to_gamekey(ev->key.keysym.sym, ev->key.keysym.mod);
+			key_event(key, ev->key.state == SDL_PRESSED ? 1 : 0);
+		} else {
+			if(ev->key.keysym.sym == SDLK_ESCAPE) {
+				quit = 1;
+			}
+		}
 		break;
 
 		/*

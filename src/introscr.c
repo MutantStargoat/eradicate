@@ -53,8 +53,8 @@ void intro_draw(void)
 	} else if(tm < FADE_DUR * 3) {
 		fade = 256 - (tm - 2 * FADE_DUR) * 256 / FADE_DUR;
 	} else {
+		fade = 0;
 		menu_start();
-		return;
 	}
 
 	for(i=0; i<fb_height; i++) {
