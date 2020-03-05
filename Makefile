@@ -2,8 +2,8 @@
 dosobj = src/dos/main.obj src/dos/gfx.obj src/dos/timer.obj src/dos/watdpmi.obj &
 		 src/dos/vbe.obj src/dos/vga.obj src/dos/keyb.obj src/dos/mouse.obj &
 		 src/dos/logger.obj
-gameobj = src/game.obj src/util.obj src/gfxutil.obj src/dynarr.obj src/rbtree.obj &
-		src/menuscr.obj
+scrobj = src/introscr.obj src/menuscr.obj
+gameobj = src/game.obj src/util.obj src/gfxutil.obj src/dynarr.obj src/rbtree.obj
 gfxobj = src/3dgfx/3dgfx.obj src/3dgfx/mesh.obj src/3dgfx/meshload.obj &
 		src/3dgfx/polyfill.obj src/3dgfx/polyclip.obj
 incpath = -Isrc -Isrc/dos -Ilibs/imago/src
@@ -12,15 +12,15 @@ libpath = libpath libs/imago
 dosobj = src\dos\main.obj src\dos\gfx.obj src\dos\timer.obj src\dos\watdpmi.obj &
 		 src\dos\vbe.obj src\dos\vga.obj src\dos\keyb.obj src\dos\mouse.obj &
 		 src\dos\logger.obj
-gameobj = src\game.obj src\util.obj src\gfxutil.obj src\dynarr.obj src\rbtree.obj &
-		src\menuscr.obj
+scrobj = src\introscr.obj src\menuscr.obj
+gameobj = src\game.obj src\util.obj src\gfxutil.obj src\dynarr.obj src\rbtree.obj
 gfxobj = src\3dgfx\3dgfx.obj src\3dgfx\mesh.obj src\3dgfx\meshload.obj &
 		src\3dgfx\polyfill.obj src\3dgfx\polyclip.obj
 incpath = -Isrc -Isrc\dos -Ilibs\imago\src
 libpath = libpath libs\imago
 !endif
 
-obj = $(dosobj) $(gameobj) $(gfxobj)
+obj = $(dosobj) $(gameobj) $(gfxobj) $(scrobj)
 bin = game.exe
 
 def = -dM_PI=3.141592653589793

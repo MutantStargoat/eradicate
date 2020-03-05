@@ -25,6 +25,8 @@ void menu_cleanup(void)
 
 void menu_start(void)
 {
+	draw = menu_draw;
+	key_event = menu_keyb;
 }
 
 void menu_stop(void)

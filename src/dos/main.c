@@ -55,10 +55,15 @@ int main(int argc, char **argv)
 
 	for(;;) {
 		int key;
-		while((key = kb_getkey()) != -1) {
-			if(key == 27) goto break_evloop;
+		if(key_event) {
+			while((key = kb_getkey()) != -1) {
+				key_event(key, 1);
+			}
+		} else {
+			while((key = kb_getkey()) != -1) {
+				if(key == 27) goto break_evloop;
+			}
 		}
-
 		if(quit) goto break_evloop;
 
 		time_msec = get_msec();
