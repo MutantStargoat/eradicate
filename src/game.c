@@ -3,7 +3,7 @@
 
 int fb_width, fb_height;
 long fb_size;
-void *fb_pixels, *vmem;
+uint16_t *fb_pixels;
 
 long time_msec;
 
@@ -20,8 +20,7 @@ int init(int argc, char **argv)
 		return -1;
 	}
 
-	draw = intro_draw;
-	key_event = intro_keyb;
+	intro_start();
 	return 0;
 }
 

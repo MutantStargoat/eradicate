@@ -426,6 +426,8 @@ static int pixel_size(enum img_fmt fmt)
 		return 3 * sizeof(float);
 	case IMG_FMT_RGBAF:
 		return 4 * sizeof(float);
+	case IMG_FMT_RGB565:
+		return 2;
 	default:
 		break;
 	}

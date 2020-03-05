@@ -4,7 +4,7 @@ obj = $(csrc:.c=.o)
 dep = $(obj:.o=.d)
 bin = game
 
-inc = -Isrc -Isrc/sdl -Isrc/3dgfx
+inc = -Isrc -Isrc/sdl -Isrc/3dgfx -Ilibs/imago/src
 
 CFLAGS = $(arch) -pedantic -Wall -g -MMD $(inc) `sdl-config --cflags`
 LDFLAGS = $(arch) -Llibs/imago -limago `sdl-config --libs` -lm

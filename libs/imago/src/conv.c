@@ -192,12 +192,12 @@ static void unpack_rgb565(struct pixel *unp, void *pptr, int count)
 
 	for(i=0; i<count; i++) {
 		uint16_t r, g, b, p = *pix++;
-		r = (p & 0x1f) << 3;
-		if(r & 8) r |= 7;	/* fill LSbits with whatever bit 0 was */
+		b = (p & 0x1f) << 3;
+		if(b & 8) b |= 7;	/* fill LSbits with whatever bit 0 was */
 		g = (p >> 2) & 0xfc;
 		if(g & 4) g |= 3;	/* ditto */
-		b = (p >> 8) & 0xf8;
-		if(b & 8) r |= 7;	/* same */
+		r = (p >> 8) & 0xf8;
+		if(r & 8) r |= 7;	/* same */
 
 		unp->r = (float)r / 255.0f;
 		unp->g = (float)g / 255.0f;
@@ -292,13 +292,13 @@ static void pack_rgb565(void *pptr, struct pixel *unp, int count)
 	uint16_t *pix = pptr;
 
 	for(i=0; i<count; i++) {
-		uint16_t r = (uint16_t)(unp->r * 255.0f);
-		uint16_t g = (uint16_t)(unp->g * 255.0f);
-		uint16_t b = (uint16_t)(unp->b * 255.0f);
-		if(r > 255) r = 255;
-		if(g > 255) g = 255;
-		if(b > 255) b = 255;
-		*pix++ = (r >> 3) | ((g & 0x3f) << 2) | ((b & 0x1f) << 8);
+		uint16_t r = (uint16_t)(unp->r * 31.0f);
+		uint16_t g = (uint16_t)(unp->g * 63.0f);
+		uint16_t b = (uint16_t)(unp->b * 31.0f);
+		if(r > 31) r = 31;
+		if(g > 63) g = 63;
+		if(b > 31) b = 31;
+		*pix++ = (r << 11) | (g << 5) | b;
 		unp++;
 	}
 }

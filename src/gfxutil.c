@@ -217,19 +217,19 @@ void convimg_rgb24_rgb16(uint16_t *dest, unsigned char *src, int xsz, int ysz)
 	}
 }
 
-void blitfb(uint16_t *dest, uint16_t *src, int width, int height, int pitch_pix)
+void blit(uint16_t *dest, int destwidth, uint16_t *src, int width, int height, int pitch_pix)
 {
 	int i;
 	for(i=0; i<height; i++) {
 		memcpy(dest, src, width * 2);
-		dest += 320;
+		dest += destwidth;
 		src += pitch_pix;
 	}
 }
 
-void blitfb_key(uint16_t *dest, uint16_t *src, int width, int height, int pitch_pix, uint16_t key)
+void blit_key(uint16_t *dest, int destwidth, uint16_t *src, int width, int height, int pitch_pix, uint16_t key)
 {
-	int i, j, dadv = 320 - width;
+	int i, j, dadv = destwidth - width;
 
 	for(i=0; i<height; i++) {
 		for(j=0; j<width; j++) {

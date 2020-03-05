@@ -1,12 +1,14 @@
 #ifndef GAME_H_
 #define GAME_H_
 
+#include "inttypes.h"
+
 #define FB_BPP	16
 
 extern int fb_width;
 extern int fb_height;
 extern long fb_size;
-extern void *fb_pixels, *vmem;
+extern uint16_t *fb_pixels;
 
 extern long time_msec;
 
