@@ -214,12 +214,18 @@ static void INTERRUPT kbintr()
 {
 	unsigned char code;
 	int key, c, press;
+	static int ext;
 
 	code = inp(KB_PORT);
 
-	if(code >= 128) {
+	if(code == 0xe0) {
+		ext = 1;
+		goto eoi;
+	}
+
+	if(code & 0x80) {
 		press = 0;
-		code -= 128;
+		code &= 0x7f;
 
 		if(num_pressed > 0) {
 			num_pressed--;
@@ -230,8 +236,14 @@ static void INTERRUPT kbintr()
 		num_pressed++;
 	}
 
-	key = scantbl[code];
-	c = (keystate[KB_LSHIFT] | keystate[KB_RSHIFT]) ? scantbl_shift[code] : key;
+	if(ext) {
+		key = scantbl_ext[code];
+		c = key;
+		ext = 0;
+	} else {
+		key = scantbl[code];
+		c = (keystate[KB_LSHIFT] | keystate[KB_RSHIFT]) ? scantbl_shift[code] : key;
+	}
 
 	if(press) {
 		/* append to buffer */
@@ -251,5 +263,6 @@ static void INTERRUPT kbintr()
 	/* and update keystate table */
 	keystate[key] = press;
 
+eoi:
 	outp(PIC1_CMD_PORT, OCW2_EOI);	/* send end-of-interrupt */
 }
