@@ -27,6 +27,7 @@ int main(int argc, char **argv)
 {
 	int s;
 	char *env;
+	void *fb_buf;
 
 	if((env = getenv("FBSCALE")) && (s = atoi(env))) {
 		fbscale = s;
@@ -38,11 +39,12 @@ int main(int argc, char **argv)
 	fb_width = xsz;
 	fb_height = ysz;
 
-	/* allocate 1 extra row as a guard band, until we fucking fix the rasterizer */
-	if(!(fb_pixels = malloc(FB_WIDTH * (FB_HEIGHT + 1) * FB_BPP / CHAR_BIT))) {
+	fb_size = FB_WIDTH * FB_HEIGHT * FB_BPP / 8;
+	if(!(fb_buf = malloc(fb_size + FB_WIDTH * 4))) {
 		fprintf(stderr, "failed to allocate virtual framebuffer\n");
 		return 1;
 	}
+	fb_pixels = (char*)fb_buf + FB_WIDTH * 2;
 
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_NOPARACHUTE);
 	if(!(fbsurf = SDL_SetVideoMode(xsz, ysz, FB_BPP, sdl_flags))) {

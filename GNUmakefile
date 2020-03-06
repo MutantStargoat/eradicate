@@ -7,7 +7,7 @@ bin = game
 inc = -Isrc -Isrc/sdl -Isrc/3dgfx -Ilibs/imago/src
 
 CFLAGS = $(arch) -pedantic -Wall -g -MMD $(inc) `sdl-config --cflags`
-LDFLAGS = $(arch) -Llibs/imago -limago `sdl-config --libs` -lm
+LDFLAGS = $(arch) -Llibs/imago -limago $(sdl_ldflags) -lm
 
 ifneq ($(shell uname -m), i386)
 	arch = -m32

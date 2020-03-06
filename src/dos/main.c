@@ -10,6 +10,7 @@
 
 static struct video_mode *vmode;
 static int quit;
+static void *vmem;
 
 int main(int argc, char **argv)
 {
@@ -44,7 +45,7 @@ int main(int argc, char **argv)
 		status = -1;
 		goto break_evloop;
 	}
-	fb_pixels = (char*)fb_buf + vmode->pitch;
+	fb_pixels = (uint16_t*)((char*)fb_buf + vmode->pitch);
 
 	if(init(argc, argv) == -1) {
 		status = -1;
