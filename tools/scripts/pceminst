@@ -1,0 +1,20 @@
+#!/bin/sh
+
+# NOTES:
+# assumes a PCem setup with a fat16 image mounted at /pcem_dos. fstab entry:
+#  /home/nuclear/.pcem/pentium_dos.img /pcem_dos msdos user,noauto,loop,fmask=0113,dmask=0002,gid=6,offset=32256 0 0
+
+mntpt=/pcem_dos
+do_umount=false
+
+if ! ( mount | grep pcem ); then
+	mount $mntpt || exit 1
+	do_umount=true
+fi
+
+tools/scripts/instdfs $mntpt/tmp
+
+if $do_umount; then
+	umount $mntpt
+fi
+sync

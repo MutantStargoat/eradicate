@@ -23,8 +23,8 @@ int clip_line(int *x0, int *y0, int *x1, int *y1, int xmin, int ymin, int xmax, 
 void draw_line(int x0, int y0, int x1, int y1, unsigned short color);
 
 /* scale in 24.8 fixed point */
-void blur_grey_horiz(uint16_t *dest, uint16_t *src, int xsz, int ysz, int radius, int scale);
-void blur_grey_vert(uint16_t *dest, uint16_t *src, int xsz, int ysz, int radius, int scale);
+void blur_horiz(uint16_t *dest, uint16_t *src, int xsz, int ysz, int radius, int scale);
+void blur_vert(uint16_t *dest, uint16_t *src, int xsz, int ysz, int radius, int scale);
 
 void convimg_rgb24_rgb16(uint16_t *dest, unsigned char *src, int xsz, int ysz);
 

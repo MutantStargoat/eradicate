@@ -1,0 +1,58 @@
+#!/bin/sh
+
+# NOTES:
+# source: svn co https://svn.code.sf.net/p/etherdfs/code
+#
+# on DOS: etherdfs <server MAC addr> C-Z
+# on GNU/Linux: sudo ethersrv-linux eth0 /etherdfs
+#
+# /etherdfs is a mount point for a FAT16 image, fstab entry:
+#   /home/nuclear/code/dos/etherdfs.img /etherdfs msdos loop,fmask=0113,dmask=0002,gid=6 0 0
+
+destdir=/etherdfs/eradicat
+rev=false
+have_dest_arg=false
+
+for arg in "$@"; do
+	case "$arg" in
+	-r)
+		rev=true
+		;;
+
+	-*)
+		echo "invalid option: $arg"
+		exit 1
+		;;
+
+	*)
+		if $have_dest_arg; then
+			echo "unexpected argument: $arg"
+			exit 1
+		fi
+		destdir=$arg
+		have_dest_arg=true
+		;;
+	esac
+done
+
+if $rev; then
+	cwd=`pwd`
+	cd $destdir
+	destdir=$cwd
+else
+	mkdir -p $destdir/data
+	cp game.exe $destdir
+	rm -f $destdir/data/*
+	cp data/* $destdir/data/
+fi
+
+findsrc()
+{
+	find . -name '*.c' -o -name '*.h' -o -name '*.asm' -o -name '*.inc' \
+		-o -name '*.inl' -o -name Makefile | sed 's/\.\///'
+}
+for i in `findsrc`; do
+	dir=`dirname $i`
+	mkdir -p $destdir/$dir
+	cp $i $destdir/$i
+done

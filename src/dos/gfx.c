@@ -83,6 +83,7 @@ int init_video(void)
 			vmptr->rmask = calc_mask(minf.rsize, minf.rpos);
 			vmptr->gmask = calc_mask(minf.gsize, minf.gpos);
 			vmptr->bmask = calc_mask(minf.bsize, minf.bpos);
+			vmptr->bpp = vmptr->rbits + vmptr->gbits + vmptr->bbits;
 		}
 		if(minf.attr & VBE_ATTR_LFB) {
 			vmptr->fb_addr = minf.fb_addr;

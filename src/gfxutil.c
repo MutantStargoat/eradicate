@@ -147,34 +147,58 @@ void draw_line(int x0, int y0, int x1, int y1, unsigned short color)
 
 #define BLUR(w, h, pstep, sstep) \
 	for(i=0; i<h; i++) { \
-		int sum = sptr[0] * (rad + 1); \
+		int r, g, b; \
+		int rsum = UNPACK_R16(sptr[0]) * (rad + 1); \
+		int gsum = UNPACK_G16(sptr[0]) * (rad + 1); \
+		int bsum = UNPACK_B16(sptr[0]) * (rad + 1); \
 		int count = (rad * 2 + 1) << 8; \
 		int midsize = w - rad * 2; \
-		int firstpix = sptr[0]; \
-		int lastpix = sptr[pstep * (w - 1)]; \
+		int rfirstpix = UNPACK_R16(sptr[0]); \
+		int rlastpix = UNPACK_R16(sptr[pstep * (w - 1)]); \
+		int gfirstpix = UNPACK_G16(sptr[0]); \
+		int glastpix = UNPACK_G16(sptr[pstep * (w - 1)]); \
+		int bfirstpix = UNPACK_B16(sptr[0]); \
+		int blastpix = UNPACK_B16(sptr[pstep * (w - 1)]); \
 		/* add up the contributions for the -1 pixel */ \
 		for(j=0; j<rad; j++) { \
-			sum += sptr[pstep * j]; \
+			rsum += UNPACK_R16(sptr[pstep * j]); \
+			gsum += UNPACK_G16(sptr[pstep * j]); \
+			bsum += UNPACK_B16(sptr[pstep * j]); \
 		} \
 		/* first part adding sptr[rad] and subtracting sptr[0] */ \
 		for(j=0; j<=rad; j++) { \
-			sum += (int)sptr[pstep * rad] - firstpix; \
+			rsum += UNPACK_R16((int)sptr[pstep * rad]) - rfirstpix; \
+			gsum += UNPACK_G16((int)sptr[pstep * rad]) - gfirstpix; \
+			bsum += UNPACK_B16((int)sptr[pstep * rad]) - bfirstpix; \
 			sptr += pstep; \
-			*dptr = scale * sum / count; \
+			r = scale * rsum / count; \
+			g = scale * gsum / count; \
+			b = scale * bsum / count; \
+			*dptr = PACK_RGB16(r, g, b); \
 			dptr += pstep; \
 		} \
 		/* middle part adding sptr[rad] and subtracting sptr[-(rad+1)] */ \
 		for(j=1; j<midsize; j++) { \
-			sum += (int)sptr[pstep * rad] - (int)sptr[-(rad + 1) * pstep]; \
+			rsum += UNPACK_R16((int)sptr[pstep * rad]) - UNPACK_R16((int)sptr[-(rad + 1) * pstep]); \
+			gsum += UNPACK_G16((int)sptr[pstep * rad]) - UNPACK_G16((int)sptr[-(rad + 1) * pstep]); \
+			bsum += UNPACK_B16((int)sptr[pstep * rad]) - UNPACK_B16((int)sptr[-(rad + 1) * pstep]); \
 			sptr += pstep; \
-			*dptr = scale * sum / count; \
+			r = scale * rsum / count; \
+			g = scale * gsum / count; \
+			b = scale * bsum / count; \
+			*dptr = PACK_RGB16(r, g, b); \
 			dptr += pstep; \
 		} \
 		/* last part adding lastpix and subtracting sptr[-(rad+1)] */ \
 		for(j=0; j<rad; j++) { \
-			sum += lastpix - (int)sptr[-(rad + 1) * pstep]; \
+			rsum += rlastpix - UNPACK_R16((int)sptr[-(rad + 1) * pstep]); \
+			gsum += glastpix - UNPACK_G16((int)sptr[-(rad + 1) * pstep]); \
+			bsum += blastpix - UNPACK_B16((int)sptr[-(rad + 1) * pstep]); \
 			sptr += pstep; \
-			*dptr = scale * sum / count; \
+			r = scale * rsum / count; \
+			g = scale * gsum / count; \
+			b = scale * bsum / count; \
+			*dptr = PACK_RGB16(r, g, b); \
 			dptr += pstep; \
 		} \
 		sptr += sstep; \
@@ -183,23 +207,23 @@ void draw_line(int x0, int y0, int x1, int y1, unsigned short color)
 
 /* TODO bound blur rad to image size to avoid inner loop conditionals */
 /* TODO make version with pow2 (rad*2+1) to avoid div with count everywhere */
-void blur_grey_horiz(uint16_t *dest, uint16_t *src, int xsz, int ysz, int rad, int scale)
+void blur_horiz(uint16_t *dest, uint16_t *src, int xsz, int ysz, int rad, int scale)
 {
 	int i, j;
-	unsigned char *dptr = (unsigned char*)dest;
-	unsigned char *sptr = (unsigned char*)src;
+	uint16_t *dptr = dest;
+	uint16_t *sptr = src;
 
-	BLUR(xsz, ysz, 2, 0);
+	BLUR(xsz, ysz, 1, 0);
 }
 
 
-void blur_grey_vert(uint16_t *dest, uint16_t *src, int xsz, int ysz, int rad, int scale)
+void blur_vert(uint16_t *dest, uint16_t *src, int xsz, int ysz, int rad, int scale)
 {
 	int i, j;
-	unsigned char *dptr = (unsigned char*)dest;
-	unsigned char *sptr = (unsigned char*)src;
-	int pixel_step = xsz * 2;
-	int scanline_step = 2 - ysz * pixel_step;
+	uint16_t *dptr = dest;
+	uint16_t *sptr = src;
+	int pixel_step = xsz;
+	int scanline_step = 1 - ysz * pixel_step;
 
 	BLUR(ysz, xsz, pixel_step, scanline_step);
 }
@@ -229,7 +253,9 @@ void blit(uint16_t *dest, int destwidth, uint16_t *src, int width, int height, i
 
 void blit_key(uint16_t *dest, int destwidth, uint16_t *src, int width, int height, int pitch_pix, uint16_t key)
 {
-	int i, j, dadv = destwidth - width;
+	int i, j;
+	int dadv = destwidth - width;
+	int sadv = pitch_pix - width;
 
 	for(i=0; i<height; i++) {
 		for(j=0; j<width; j++) {
@@ -238,6 +264,7 @@ void blit_key(uint16_t *dest, int destwidth, uint16_t *src, int width, int heigh
 			dest++;
 		}
 		dest += dadv;
+		src += sadv;
 	}
 
 }

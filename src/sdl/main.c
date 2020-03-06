@@ -44,7 +44,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "failed to allocate virtual framebuffer\n");
 		return 1;
 	}
-	fb_pixels = (char*)fb_buf + FB_WIDTH * 2;
+	fb_pixels = (uint16_t*)((char*)fb_buf + FB_WIDTH * 2);
 
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_NOPARACHUTE);
 	if(!(fbsurf = SDL_SetVideoMode(xsz, ysz, FB_BPP, sdl_flags))) {

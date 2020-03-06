@@ -31,7 +31,7 @@ LD = wlink
 CFLAGS = -d3 -5 -fp5 -otebmileran $(def) -s -zq -bt=dos $(incpath)
 LDFLAGS = option map $(libpath) library { $(libs) }
 
-$(bin): $(obj)
+$(bin): cflags.occ $(obj) libs/imago/imago.lib
 	%write objects.lnk $(obj)
 	%write ldflags.lnk $(LDFLAGS)
 	$(LD) debug all name $@ system dos4g file { @objects } @ldflags
@@ -39,8 +39,11 @@ $(bin): $(obj)
 .c: src;src/dos;src/3dgfx
 .asm: src;src/dos;src/3dgfx
 
+cflags.occ: Makefile
+	%write $@ $(CFLAGS)
+
 .c.obj: .autodepend
-	$(CC) -fo=$@ $(CFLAGS) $[*
+	$(CC) -fo=$@ @cflags.occ $[*
 
 .asm.obj:
 	nasm -f obj -o $@ $[*.asm
@@ -49,10 +52,12 @@ $(bin): $(obj)
 clean: .symbolic
 	rm -f $(obj)
 	rm -f $(bin)
+	rm -f cflags.occ *.lnk
 !else
 clean: .symbolic
 	del src\*.obj
 	del src\dos\*.obj
 	del *.lnk
+	del cflags.occ
 	del $(bin)
 !endif

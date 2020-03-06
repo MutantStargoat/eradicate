@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #include "screens.h"
 #include "imago2.h"
 #include "gfx.h"
@@ -9,9 +10,9 @@
 static const struct menuent {
 	int x, y, len, height;
 } menuent[] = {
-	{240, 300, 170, 40},
-	{230, 360, 184, 40},
-	{260, 424, 130, 40}
+	{240, 300, 170, 48},
+	{230, 360, 184, 48},
+	{260, 424, 130, 48}
 };
 
 static int cur;
@@ -44,24 +45,36 @@ void menu_stop(void)
 }
 
 
+#define BBW		512
+#define BBH		128
 
 void menu_draw(void)
 {
-	static uint16_t blurbuf[2][16384];
-	int y, offs;
-	int i, j;
+	static uint16_t blurbuf[2][BBW * BBH];
+	int fboffs, bboffs, tmp;
 	const struct menuent *ent = menuent + cur;
 
-	y = ent->y - ent->height / 2;
-	offs = y * fb_width + ent->x;
-	blit(blurbuf[0], ent->len, bgpix + offs, ent->len, ent->height, bgwidth);
+	int blur_rad_x = (int)((sin(time_msec / 1000.0f) * 0.5f + 0.5f) * 50.0f);
+	int blur_rad_y = (int)((cos(time_msec / 1000.0f) * 0.5f + 0.5f) * 50.0f);
 
-	blur_grey_horiz(blurbuf[1], blurbuf[0], ent->len, ent->height, 7, 0x100);
+	fboffs = (ent->y - ent->height / 2) * fb_width + ent->x;
+	bboffs = (BBH - ent->height) / 2 * BBW + BBW / 2;
+
+	memset(blurbuf[0], 0, sizeof blurbuf[0]);
+	blit(blurbuf[0] + bboffs, BBW, bgpix + fboffs, ent->len, ent->height, bgwidth);
+
+	blur_horiz(blurbuf[1], blurbuf[0], BBW, BBH, blur_rad_x + 3, 0x140);
+	blur_vert(blurbuf[0], blurbuf[1], BBW, BBH, blur_rad_y / 4 + 3, 0x140);
 
 	wait_vsync();
 
 	memcpy(fb_pixels, bgpix, fb_size);
-	blit(fb_pixels + offs, fb_width, blurbuf[1], ent->len, ent->height, ent->len);
+	tmp = fboffs;
+	fboffs -= 16 * fb_width + 128;
+	bboffs -= 16 * BBW + 128;
+	blit_key(fb_pixels + fboffs, fb_width, blurbuf[0] + bboffs, ent->len + 256, ent->height + 32, BBW, 0);
+	fboffs = tmp;
+	//blit_key(fb_pixels + fboffs, fb_width, bgpix + fboffs, ent->len, ent->height, bgwidth, 0);
 
 	blit_frame(fb_pixels, 0);
 }
@@ -84,5 +97,21 @@ void menu_keyb(int key, int pressed)
 			cur++;
 		}
 		break;
+
+	case '\n':
+	case '\r':
+		switch(cur) {
+		case 0:
+			/* enter game */
+			break;
+
+		case 1:
+			//options_start();
+			break;
+
+		case 2:
+			game_quit();
+			break;
+		}
 	}
 }
