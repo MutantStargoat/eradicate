@@ -41,5 +41,13 @@ extern void (*key_event)(int key, int pressed);
 
 void game_quit(void);
 
+/* compiled sprites available */
+typedef void (*cs_font_func)(void *, int, int, int);
+void cs_dbgfont(void *fb, int x, int y, int idx);
+
+/* helper to print text with cs_font */
+void cs_puts_font(cs_font_func csfont, int sz, void *fb, int x, int y, const char *str);
+
+#define cs_dputs(fb, x, y, str)	cs_puts_font(cs_dbgfont, 9, fb, x, y, str)
 
 #endif	/* GAME_H_ */

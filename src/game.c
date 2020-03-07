@@ -29,3 +29,16 @@ void cleanup(void)
 	intro_cleanup();
 	menu_cleanup();
 }
+
+void cs_puts_font(cs_font_func csfont, int sz, void *fb, int x, int y, const char *str)
+{
+	while(*str) {
+		int c = *str++;
+
+		if(c > ' ' && c < 128) {
+			csfont(fb, x, y, c - ' ');
+		}
+		x += sz;
+	}
+}
+

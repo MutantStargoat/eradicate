@@ -1,0 +1,12 @@
+#!/bin/sh
+
+mkwrong=$(find . -name makefile)
+
+for i in $mkwrong; do
+	mv $i `dirname $i`/Makefile
+done
+
+files=$(git ls-files -m)
+for i in $files; do
+	dropcr $i
+done

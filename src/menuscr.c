@@ -45,8 +45,8 @@ void menu_stop(void)
 }
 
 
-#define BBW		512
-#define BBH		128
+#define BBW		256
+#define BBH		64
 
 void menu_draw(void)
 {
@@ -70,11 +70,11 @@ void menu_draw(void)
 
 	memcpy(fb_pixels, bgpix, fb_size);
 	tmp = fboffs;
-	fboffs -= 16 * fb_width + 128;
-	bboffs -= 16 * BBW + 128;
-	blit_key(fb_pixels + fboffs, fb_width, blurbuf[0] + bboffs, ent->len + 256, ent->height + 32, BBW, 0);
+	fboffs -= 8 * fb_width + 32;
+	bboffs -= 8 * BBW + 32;
+	blit(fb_pixels + fboffs, fb_width, blurbuf[0] + bboffs, ent->len + 64, ent->height + 16, BBW);
 	fboffs = tmp;
-	//blit_key(fb_pixels + fboffs, fb_width, bgpix + fboffs, ent->len, ent->height, bgwidth, 0);
+	blit_key(fb_pixels + fboffs, fb_width, bgpix + fboffs, ent->len, ent->height, bgwidth, 0);
 
 	blit_frame(fb_pixels, 0);
 }

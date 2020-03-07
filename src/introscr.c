@@ -66,6 +66,8 @@ void intro_draw(void)
 		}
 	}
 
+	cs_dputs(fb_pixels, 10, 10, "foo");
+
 	blit_frame(fb_pixels, 1);
 }
 
