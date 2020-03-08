@@ -19,7 +19,7 @@ else
 endif
 
 .PHONY: all
-all: data $(bin)
+all: $(bin)
 
 $(bin): $(obj) imago
 	$(CC) -o $@ $(obj) $(LDFLAGS)

@@ -36,8 +36,8 @@ int main(int argc, char **argv)
 
 	xsz = FB_WIDTH * fbscale;
 	ysz = FB_HEIGHT * fbscale;
-	fb_width = xsz;
-	fb_height = ysz;
+	fb_width = FB_WIDTH;
+	fb_height = FB_HEIGHT;
 
 	fb_size = FB_WIDTH * FB_HEIGHT * FB_BPP / 8;
 	if(!(fb_buf = malloc(fb_size + FB_WIDTH * 4))) {

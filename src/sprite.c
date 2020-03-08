@@ -2,9 +2,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <assert.h>
 #include "inttypes.h"
 #include "sprite.h"
 #include "util.h"
+
+
+#define SOP_OP(op)	((op) & 0xff)
+#define SOP_LEN(op)	((op) >> 16)
 
 #pragma pack (push, 1)
 struct file_header {
@@ -133,4 +138,33 @@ err:
 	}
 	free(spr->ops);
 	return -1;
+}
+
+void draw_sprite(void *dest, int fbpitch, struct sprites *ss, int idx)
+{
+	struct sprite_op *sop = ss->sprites[idx].ops;
+	unsigned char *fbptr = dest;
+	int xoffs = 0;
+
+	for(;;) {
+		assert((xoffs & 1) == 0);
+		switch(sop->op) {
+		case SOP_END:
+			return;
+		case SOP_ENDL:
+			fbptr += fbpitch;
+			xoffs = 0;
+			break;
+		case SOP_SKIP:
+			xoffs += sop->size;
+			break;
+		case SOP_COPY:
+			memcpy(fbptr + xoffs, sop->data, sop->size);
+			xoffs += sop->size;
+			break;
+		default:
+			break;
+		}
+		sop++;
+	}
 }

@@ -211,8 +211,10 @@ int proc_sheet(const char *fname)
 int rlesprite(struct image *img, int x, int y, int xsz, int ysz)
 {
 	int i, j, numops, mode, new_mode, start, skip_acc, pixsz = img->bpp / 8;
-	unsigned char *pptr = img->pixels + y * img->scansz + x * pixsz;
+	unsigned char *scanptr, *pptr;
 	struct csop *ops, *optr, endop = {0};
+
+	pptr = img->pixels + y * img->scansz + x * pixsz;
 
 	ops = optr = alloca((xsz + 1) * ysz * sizeof *ops);
 
@@ -254,7 +256,7 @@ int rlesprite(struct image *img, int x, int y, int xsz, int ysz)
 	}
 	numops = optr - ops;
 
-	pptr = img->pixels + y * img->scansz + x * img->bpp / 8;
+	scanptr = pptr = img->pixels + y * img->scansz + x * img->bpp / 8;
 	optr = ops;
 	skip_acc = 0;
 
@@ -269,7 +271,8 @@ int rlesprite(struct image *img, int x, int y, int xsz, int ysz)
 			/* maybe at some point combine multiple endl into yskips? meh */
 			fwrite(optr, sizeof *optr, 1, outfp);
 			skip_acc = 0;
-			pptr += img->scansz - xsz * pixsz;
+			scanptr += img->scansz;
+			pptr = scanptr;
 			break;
 
 		case CSOP_COPY:
@@ -284,7 +287,7 @@ int rlesprite(struct image *img, int x, int y, int xsz, int ysz)
 			fwrite(optr, sizeof *optr, 1, outfp);
 			fwrite(pptr, pixsz, optr->len, outfp);
 
-			pptr += optr->len;
+			pptr += optr->len * pixsz;
 			break;
 
 		default:

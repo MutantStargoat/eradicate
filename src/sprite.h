@@ -9,9 +9,6 @@ enum {
 	SOP_COPY
 };
 
-#define SOP_OP(op)	((op) & 0xff)
-#define SOP_LEN(op)	((op) >> 16)
-
 struct sprite_op {
 	unsigned char op;
 	unsigned short size;
@@ -33,5 +30,7 @@ struct sprites {
 void destroy_sprites(struct sprites *ss);
 
 int load_sprites(struct sprites *ss, const char *fname);
+
+void draw_sprite(void *dest, int fbpitch, struct sprites *ss, int idx);
 
 #endif	/* SPRITE_H_ */
