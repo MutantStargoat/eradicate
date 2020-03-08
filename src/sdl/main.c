@@ -103,6 +103,8 @@ void blit_frame(void *pixels, int vsync)
 		wait_vsync();
 	}
 
+	dbg_fps(pixels);
+
 	if(SDL_MUSTLOCK(fbsurf)) {
 		SDL_LockSurface(fbsurf);
 	}

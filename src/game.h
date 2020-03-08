@@ -42,5 +42,7 @@ extern void (*key_event)(int key, int pressed);
 void game_quit(void);
 
 void dbg_print(void *fb, int x, int y, const char *str);
+void dbg_printf(void *fb, int x, int y, const char *fmt, ...);
+void dbg_fps(void *fb);
 
 #endif	/* GAME_H_ */

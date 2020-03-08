@@ -236,6 +236,7 @@ void *page_flip(int vsync)
 
 static void blit_frame_lfb(void *pixels, int vsync)
 {
+	dbg_fps(pixels);
 	if(vsync) wait_vsync();
 	memcpy(vpgaddr[frontidx], pixels, pgsize);
 }
@@ -245,6 +246,8 @@ static void blit_frame_banked(void *pixels, int vsync)
 	int i, sz, offs;
 	unsigned int pending;
 	unsigned char *pptr = pixels;
+
+	dbg_fps(pixels);
 
 	if(vsync) wait_vsync();
 

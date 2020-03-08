@@ -1,3 +1,5 @@
+#include <stdio.h>
+#include <stdarg.h>
 #include "game.h"
 #include "screens.h"
 #include "sprite.h"
@@ -50,3 +52,34 @@ void dbg_print(void *fb, int x, int y, const char *str)
 	}
 }
 
+void dbg_printf(void *fb, int x, int y, const char *fmt, ...)
+{
+	static char buf[2048];
+	va_list ap;
+
+	va_start(ap, fmt);
+	vsprintf(buf, fmt, ap);
+	va_end(ap);
+
+	dbg_print(fb, x, y, buf);
+}
+
+void dbg_fps(void *fb)
+{
+	static char fpsbuf[8];
+	static long frame, prev_upd;
+	long msec = time_msec;
+	long delta;
+
+	frame++;
+
+	delta = msec - prev_upd;
+	if(delta >= 1024) {
+		frame *= 1000;
+		sprintf(fpsbuf, "%2ld.%1ld", frame >> 10, 10 * (frame & 0x3ff) >> 10);
+		frame = 0;
+		prev_upd = msec;
+	}
+
+	dbg_print(fb, 2, 2, fpsbuf);
+}
