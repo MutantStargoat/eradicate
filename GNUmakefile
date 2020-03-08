@@ -1,12 +1,14 @@
 csrc = $(wildcard src/*.c) $(wildcard src/sdl/*.c) $(wildcard src/3dgfx/*.c)
+asmsrc = $(wildcard src/*.asm)
 
-obj = $(csrc:.c=.o)
+obj = $(csrc:.c=.o) $(asmsrc:.asm=.o)
 dep = $(obj:.o=.d)
 bin = game
 
 inc = -Isrc -Isrc/sdl -Isrc/3dgfx -Ilibs/imago/src
+warn = -pedantic -Wall
 
-CFLAGS = $(arch) -pedantic -Wall -g -MMD $(inc) `sdl-config --cflags`
+CFLAGS = $(arch) $(warn) -g -MMD $(inc) `sdl-config --cflags`
 LDFLAGS = $(arch) -Llibs/imago -limago $(sdl_ldflags) -lm
 
 ifneq ($(shell uname -m), i386)
@@ -16,9 +18,14 @@ else
 	sdl_ldflags = `sdl-config --libs`
 endif
 
+.PHONY: all
+all: data $(bin)
 
 $(bin): $(obj) imago
 	$(CC) -o $@ $(obj) $(LDFLAGS)
+
+%.o: %.asm
+	nasm -f elf -o $@ $<
 
 -include $(dep)
 
@@ -33,3 +40,7 @@ clean:
 .PHONY: cleandep
 cleandep:
 	rm -f $(dep)
+
+.PHONY: data
+data:
+	@tools/procdata

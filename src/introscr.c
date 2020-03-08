@@ -54,7 +54,7 @@ void intro_draw(void)
 		fade = 256 - (tm - 2 * FADE_DUR) * 256 / FADE_DUR;
 	} else {
 		fade = 0;
-		menu_start();
+		//menu_start();
 	}
 
 	for(i=0; i<fb_height; i++) {
@@ -66,7 +66,7 @@ void intro_draw(void)
 		}
 	}
 
-	cs_dputs(fb_pixels, 10, 10, "foo");
+	//cs_dputs(fb_pixels, 10, 10, "foo");
 
 	blit_frame(fb_pixels, 1);
 }

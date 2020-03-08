@@ -1,0 +1,30 @@
+#!/bin/sh
+
+[ -f ./procdata ] && cd ..
+if [ ! -f tools/procdata ]; then
+	echo 'run from the demo root directory' >&2
+	exit 1
+fi
+
+# process embedded images
+#if [ ! -f tools/img2bin/img2bin ]; then
+#	make -C tools/img2bin || exit 1
+#fi
+#alias img2bin=tools/img2bin/img2bin
+#
+#mkdir -p data
+#if [ ! -f data/loading.img -o data/loading.png -nt data/loading.img ]; then
+#	echo 'img2bin: loading'
+#	img2bin data/loading.png || exit 1
+#fi
+
+# process RLE sprites
+if [ ! -f tools/rlesprite/rlesprite ]; then
+	make -C tools/rlesprite || exit 1
+fi
+alias rlesprite=tools/rlesprite/rlesprite
+
+if [ ! -f data/dbgfont.spr -o data/legible.fnt -nt data/dbgfont.spr ]; then
+	echo 'rlesprite: dbgfont'
+	rlesprite -o data/dbgfont.spr -s 8x16 -conv565 data/legible.fnt
+fi
