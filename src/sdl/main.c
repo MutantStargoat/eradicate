@@ -99,11 +99,11 @@ void blit_frame(void *pixels, int vsync)
 	int i, j;
 	unsigned short *sptr, *dptr;
 
+	dbg_fps(pixels);
+
 	if(vsync) {
 		wait_vsync();
 	}
-
-	dbg_fps(pixels);
 
 	if(SDL_MUSTLOCK(fbsurf)) {
 		SDL_LockSurface(fbsurf);

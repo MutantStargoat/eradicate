@@ -45,7 +45,7 @@ int load_sprites(struct sprites *ss, const char *fname)
 		fprintf(stderr, "failed to load sprites from %s: %s\n", fname, strerror(errno));
 		return -1;
 	}
-	if(fread(&hdr, sizeof hdr, 1, fp) <= 0) {
+	if(fread(&hdr, sizeof hdr, 1, fp) == 0) {
 		fprintf(stderr, "unexpected EOF while reading from %s\n", fname);
 		goto err;
 	}
@@ -90,7 +90,7 @@ static int read_sprite(struct sprite *spr, int pixsz, FILE *fp)
 
 	do {
 		/* read the op */
-		if(fread(&op, sizeof op, 1, fp) <= 0) {
+		if(fread(&op, sizeof op, 1, fp) == 0) {
 			free(spr->ops);
 			return -1;
 		}
