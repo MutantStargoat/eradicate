@@ -8,7 +8,7 @@
 extern int fb_width;
 extern int fb_height;
 extern long fb_size;
-extern uint16_t *fb_pixels;
+extern uint16_t *fb_pixels, *vmem;
 
 extern long time_msec;
 

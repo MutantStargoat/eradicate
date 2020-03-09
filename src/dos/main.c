@@ -10,7 +10,6 @@
 
 static struct video_mode *vmode;
 static int quit;
-static void *vmem;
 
 int main(int argc, char **argv)
 {

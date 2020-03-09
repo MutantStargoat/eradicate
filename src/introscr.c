@@ -5,6 +5,8 @@
 #include "gfxutil.h"
 #include "game.h"
 
+#define USE_MMX
+
 #define FADE_DUR	800
 
 static void *logo;
@@ -13,7 +15,7 @@ static long start_time;
 
 int intro_init(void)
 {
-	if(!(logo = img_load_pixels("data/msglogo.jpg", &logo_width, &logo_height, IMG_FMT_RGB24))) {
+	if(!(logo = img_load_pixels("data/msglogo.jpg", &logo_width, &logo_height, IMG_FMT_BGRA32))) {
 		fprintf(stderr, "failed to load logo image\n");
 		return -1;
 	}
@@ -37,13 +39,12 @@ void intro_stop(void)
 {
 }
 
+void fade_image(void *dest, void *src, uint16_t fade);
+
 void intro_draw(void)
 {
-	int i, j;
 	long tm;
 	uint16_t fade;
-	unsigned char *src = logo;
-	uint16_t *dest = fb_pixels;
 
 	tm = time_msec - start_time;
 	if(tm < FADE_DUR) {
@@ -57,16 +58,24 @@ void intro_draw(void)
 		//menu_start();
 	}
 
-	for(i=0; i<fb_height; i++) {
-		for(j=0; j<fb_width; j++) {
-			uint16_t r = (uint16_t)*src++ * fade / 256;
-			uint16_t g = (uint16_t)*src++ * fade / 256;
-			uint16_t b = (uint16_t)*src++ * fade / 256;
+#ifdef USE_MMX
+	fade_image(fb_pixels, logo, fade);
+#else
+	{
+		int i, j;
+		uint32_t *src = logo;
+		uint16_t *dest = fb_pixels;
+		for(i=0; i<640*480; i++) {
+			uint32_t pix = *src++;
+			uint16_t r = (uint16_t)UNPACK_R32(pix) * fade / 256;
+			uint16_t g = (uint16_t)UNPACK_G32(pix) * fade / 256;
+			uint16_t b = (uint16_t)UNPACK_B32(pix) * fade / 256;
 			*dest++ = PACK_RGB16(r, g, b);
 		}
 	}
+#endif
 
-	blit_frame(fb_pixels, 1);
+	blit_frame(fb_pixels, 0);
 }
 
 void intro_keyb(int key, int pressed)

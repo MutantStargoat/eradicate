@@ -1,22 +1,27 @@
 !ifdef __UNIX__
 dosobj = src/dos/main.obj src/dos/gfx.obj src/dos/timer.obj src/dos/watdpmi.obj &
-		 src/dos/vbe.obj src/dos/vga.obj src/dos/keyb.obj src/dos/mouse.obj &
-		 src/dos/logger.obj
-scrobj = src/introscr.obj src/menuscr.obj
-gameobj = src/game.obj src/util.obj src/gfxutil.obj src/dynarr.obj src/rbtree.obj
+	src/dos/vbe.obj src/dos/vga.obj src/dos/keyb.obj src/dos/mouse.obj &
+	src/dos/logger.obj
+scrobj = src/introscr.obj src/intro_s.obj src/menuscr.obj
+gameobj = src/game.obj src/util.obj src/gfxutil.obj src/dynarr.obj &
+	src/rbtree.obj
 gfxobj = src/3dgfx/3dgfx.obj src/3dgfx/mesh.obj src/3dgfx/meshload.obj &
-		src/3dgfx/polyfill.obj src/3dgfx/polyclip.obj src/sprite.obj
+	src/3dgfx/polyfill.obj src/3dgfx/polyclip.obj src/sprite.obj
+
 incpath = -Isrc -Isrc/dos -Ilibs/imago/src
 libpath = libpath libs/imago
+
 !else
-dosobj = src\dos\main.obj src\dos\gfx.obj src\dos\timer.obj &
-	src\dos\watdpmi.obj src\dos\vbe.obj src\dos\vga.obj src\dos\keyb.obj &
-	src\dos\mouse.obj src\dos\logger.obj
-scrobj = src\introscr.obj src\menuscr.obj
+
+dosobj = src\dos\main.obj src\dos\gfx.obj src\dos\timer.obj src\dos\watdpmi.obj &
+	src\dos\vbe.obj src\dos\vga.obj src\dos\keyb.obj src\dos\mouse.obj &
+	src\dos\logger.obj
+scrobj = src\introscr.obj src\intro_s.obj src\menuscr.obj
 gameobj = src\game.obj src\util.obj src\gfxutil.obj src\dynarr.obj &
 	src\rbtree.obj
 gfxobj = src\3dgfx\3dgfx.obj src\3dgfx\mesh.obj src\3dgfx\meshload.obj &
 	src\3dgfx\polyfill.obj src\3dgfx\polyclip.obj src\sprite.obj
+
 incpath = -Isrc -Isrc\dos -Ilibs\imago\src
 libpath = libpath libs\imago
 !endif

@@ -419,6 +419,7 @@ static int pixel_size(enum img_fmt fmt)
 	case IMG_FMT_RGB24:
 		return 3;
 	case IMG_FMT_RGBA32:
+	case IMG_FMT_BGRA32:
 		return 4;
 	case IMG_FMT_GREYF:
 		return sizeof(float);

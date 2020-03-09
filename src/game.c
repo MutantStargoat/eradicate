@@ -6,7 +6,7 @@
 
 int fb_width, fb_height;
 long fb_size;
-uint16_t *fb_pixels;
+uint16_t *fb_pixels, *vmem;
 
 long time_msec;
 

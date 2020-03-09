@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "game.h"
 #include "cdpmi.h"
 #include "gfx.h"
 #include "vbe.h"
 #include "vga.h"
+#include "util.h"
 
 #define SAME_BPP(a, b)	\
 	((a) == (b) || ((a) == 16 && (b) == 15) || ((a) == 15 && (b) == 16) || \
@@ -238,7 +240,7 @@ static void blit_frame_lfb(void *pixels, int vsync)
 {
 	dbg_fps(pixels);
 	if(vsync) wait_vsync();
-	memcpy(vpgaddr[frontidx], pixels, pgsize);
+	memcpy64(vpgaddr[frontidx], pixels, pgsize >> 3);
 }
 
 static void blit_frame_banked(void *pixels, int vsync)
@@ -256,7 +258,7 @@ static void blit_frame_banked(void *pixels, int vsync)
 	pending = pgsize;
 	while(pending > 0) {
 		sz = pending > curmode->bank_size ? curmode->bank_size : pending;
-		memcpy((void*)0xa0000, pptr, sz);
+		memcpy64((void*)0xa0000, pptr, sz >> 3);
 		pptr += sz;
 		pending -= sz;
 		vbe_setwin(0, ++offs);
