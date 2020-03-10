@@ -24,7 +24,7 @@ if [ ! -f tools/rlesprite/rlesprite ]; then
 fi
 alias rlesprite=tools/rlesprite/rlesprite
 
-if [ ! -f data/dbgfont.spr -o data/legible.fnt -nt data/dbgfont.spr ]; then
+if [ ! -f data/dbgfont.spr -o data/src/legible.fnt -nt data/dbgfont.spr ]; then
 	echo 'rlesprite: dbgfont'
-	rlesprite -o data/dbgfont.spr -s 8x16 -conv565 data/legible.fnt
+	rlesprite -o data/dbgfont.spr -s 8x16 -conv565 data/src/legible.fnt
 fi
