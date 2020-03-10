@@ -114,9 +114,11 @@ void POLYFILL(struct pvertex *pv, int nverts)
 		winding += ((pv[next].x - pv[i].x) >> 4) * ((pv[next].y + pv[i].y) >> 4);
 	}
 
-	/* +1 to avoid crashing due to off-by-one rounding errors in the rasterization */
-	left = alloca((pfill_fb.height + 1) * sizeof *left);
-	right = alloca((pfill_fb.height + 1) * sizeof *right);
+	/* +padding to avoid crashing due to off-by-one rounding errors in the rasterization */
+	left = alloca((pfill_fb.height + 8) * sizeof *left);
+	right = alloca((pfill_fb.height + 8) * sizeof *right);
+	left += 4;
+	right += 4;
 
 	for(i=0; i<nverts; i++) {
 		int next = NEXTIDX(i);

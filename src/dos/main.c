@@ -35,16 +35,11 @@ int main(int argc, char **argv)
 	}
 	vmode = vmodes + vmidx;
 
-	fb_width = vmode->xsz;
-	fb_height = vmode->ysz;
-	fb_size = vmode->pitch * vmode->ysz;
-
-	if(!(fb_buf = malloc(fb_size + vmode->pitch * 2))) {
+	if(resizefb(vmode->xsz, vmode->ysz, vmode->bpp) == -1) {
 		fprintf(stderr, "failed to allocate framebuffer\n");
 		status = -1;
 		goto break_evloop;
 	}
-	fb_pixels = (uint16_t*)((char*)fb_buf + vmode->pitch);
 
 	if(init(argc, argv) == -1) {
 		status = -1;

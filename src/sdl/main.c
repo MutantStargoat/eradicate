@@ -27,7 +27,6 @@ int main(int argc, char **argv)
 {
 	int s;
 	char *env;
-	void *fb_buf;
 
 	if((env = getenv("FBSCALE")) && (s = atoi(env))) {
 		fbscale = s;
@@ -36,15 +35,6 @@ int main(int argc, char **argv)
 
 	xsz = FB_WIDTH * fbscale;
 	ysz = FB_HEIGHT * fbscale;
-	fb_width = FB_WIDTH;
-	fb_height = FB_HEIGHT;
-
-	fb_size = FB_WIDTH * FB_HEIGHT * FB_BPP / 8;
-	if(!(fb_buf = malloc(fb_size + FB_WIDTH * 4))) {
-		fprintf(stderr, "failed to allocate virtual framebuffer\n");
-		return 1;
-	}
-	vmem = fb_pixels = (uint16_t*)((char*)fb_buf + FB_WIDTH * 2);
 
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_NOPARACHUTE);
 	if(!(fbsurf = SDL_SetVideoMode(xsz, ysz, FB_BPP, sdl_flags))) {
@@ -53,12 +43,19 @@ int main(int argc, char **argv)
 		SDL_Quit();
 		return 1;
 	}
+
+	if(resizefb(FB_WIDTH, FB_HEIGHT, FB_BPP) == -1) {
+		fprintf(stderr, "failed to allocate virtual framebuffer\n");
+		return 1;
+	}
+	vmem = fb_pixels;
+
 	SDL_WM_SetCaption("eradicate/SDL", 0);
 	SDL_ShowCursor(0);
 
 	time_msec = 0;
 	if(init(argc, argv) == -1) {
-		free(fb_pixels);
+		resizefb(0, 0, 0);
 		SDL_Quit();
 		return 1;
 	}
@@ -78,6 +75,7 @@ int main(int argc, char **argv)
 
 break_evloop:
 	cleanup();
+	resizefb(0, 0, 0);
 	SDL_Quit();
 	return 0;
 }

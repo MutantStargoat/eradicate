@@ -8,7 +8,8 @@
 extern int fb_width;
 extern int fb_height;
 extern long fb_size;
-extern uint16_t *fb_pixels, *vmem;
+extern int fb_bpp;
+extern void *fb_pixels, *vmem;
 
 extern long time_msec;
 extern int show_fps;
@@ -36,6 +37,8 @@ enum {
 
 int init(int argc, char **argv);
 void cleanup(void);
+
+int resizefb(int width, int height, int bpp);
 
 extern void (*draw)(void);
 extern void (*key_event)(int key, int pressed);

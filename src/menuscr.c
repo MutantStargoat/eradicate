@@ -59,7 +59,8 @@ void menu_stop(void)
 void menu_draw(void)
 {
 	static uint16_t blurbuf[2][BBW * BBH];
-	int fboffs, tmp, cleartop;
+	uint16_t *fb = fb_pixels;
+	int fboffs, cleartop;
 	const struct menuent *ent = menuent + cur;
 
 	int blur_rad_x = (int)((sin(time_msec / 1000.0f) * 0.5f + 0.5f) * 50.0f);
@@ -76,13 +77,13 @@ void menu_draw(void)
 	//wait_vsync();
 
 	cleartop = 280 * fb_width;
-	memcpy(fb_pixels + cleartop, bgpix + cleartop, (fb_height - 280) * fb_width << 1);
+	memcpy(fb + cleartop, bgpix + cleartop, (fb_height - 280) * fb_width << 1);
 
-	blit(fb_pixels + fboffs, fb_width, blurbuf[0], ent->len, ent->height, BBW);
-	blit_key(fb_pixels + fboffs, fb_width, bgpix + fboffs, ent->len, ent->height, bgwidth, 0);
+	blit(fb + fboffs, fb_width, blurbuf[0], ent->len, ent->height, BBW);
+	blit_key(fb + fboffs, fb_width, bgpix + fboffs, ent->len, ent->height, bgwidth, 0);
 
 	if(show_fps) {
-		blit(fb_pixels, fb_width, bgpix, 64, 16, bgwidth);
+		blit(fb, fb_width, bgpix, 64, 16, bgwidth);
 	}
 
 	blit_frame(fb_pixels, 0);
