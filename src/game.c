@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include "game.h"
+#include "3dgfx/3dgfx.h"
 #include "screens.h"
 #include "sprite.h"
 
@@ -22,10 +23,18 @@ int init(int argc, char **argv)
 	if(load_sprites(&dbgfont, "data/dbgfont.spr") == -1) {
 		return -1;
 	}
+
+	if(g3d_init() == -1) {
+		return -1;
+	}
+
 	if(intro_init() == -1) {
 		return -1;
 	}
 	if(menu_init() == -1) {
+		return -1;
+	}
+	if(race_init() == -1) {
 		return -1;
 	}
 
@@ -35,6 +44,8 @@ int init(int argc, char **argv)
 
 void cleanup(void)
 {
+	g3d_destroy();
+	race_cleanup();
 	intro_cleanup();
 	menu_cleanup();
 }

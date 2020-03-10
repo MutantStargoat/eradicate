@@ -2,7 +2,7 @@
 dosobj = src/dos/main.obj src/dos/gfx.obj src/dos/timer.obj src/dos/watdpmi.obj &
 	src/dos/vbe.obj src/dos/vga.obj src/dos/keyb.obj src/dos/mouse.obj &
 	src/dos/logger.obj
-scrobj = src/introscr.obj src/intro_s.obj src/menuscr.obj
+scrobj = src/introscr.obj src/intro_s.obj src/menuscr.obj src/racescr.obj
 gameobj = src/game.obj src/util.obj src/gfxutil.obj src/dynarr.obj &
 	src/rbtree.obj
 gfxobj = src/3dgfx/3dgfx.obj src/3dgfx/mesh.obj src/3dgfx/meshload.obj &
@@ -16,7 +16,7 @@ libpath = libpath libs/imago
 dosobj = src\dos\main.obj src\dos\gfx.obj src\dos\timer.obj src\dos\watdpmi.obj &
 	src\dos\vbe.obj src\dos\vga.obj src\dos\keyb.obj src\dos\mouse.obj &
 	src\dos\logger.obj
-scrobj = src\introscr.obj src\intro_s.obj src\menuscr.obj
+scrobj = src\introscr.obj src\intro_s.obj src\menuscr.obj src\racescr.obj
 gameobj = src\game.obj src\util.obj src\gfxutil.obj src\dynarr.obj &
 	src\rbtree.obj
 gfxobj = src\3dgfx\3dgfx.obj src\3dgfx\mesh.obj src\3dgfx\meshload.obj &

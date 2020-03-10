@@ -15,4 +15,11 @@ void menu_stop(void);
 void menu_draw(void);
 void menu_keyb(int key, int pressed);
 
+int race_init(void);
+void race_cleanup(void);
+void race_start(void);
+void race_stop(void);
+void race_draw(void);
+void race_keyb(int key, int pressed);
+
 #endif	/* SCREENS_H_ */

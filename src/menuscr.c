@@ -111,7 +111,7 @@ void menu_keyb(int key, int pressed)
 	case '\r':
 		switch(cur) {
 		case 0:
-			/* enter game */
+			race_start();
 			break;
 
 		case 1:
