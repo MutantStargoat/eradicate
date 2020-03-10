@@ -8,12 +8,17 @@
 #include "game.h"
 #include "util.h"
 
+#define PADX	42
+#define PADX2	(PADX * 2)
+#define PADY	16
+#define PADY2	(PADY * 2)
+
 static const struct menuent {
 	int x, y, len, height;
 } menuent[] = {
-	{240, 300, 170, 48},
-	{230, 360, 184, 48},
-	{260, 424, 130, 48}
+	{252 - PADX, 281 - PADY, 147 + PADX2, 37 + PADY2},
+	{244 - PADX, 344 - PADY, 161 + PADX2, 37 + PADY2},
+	{276 - PADX, 407 - PADY, 102 + PADX2, 38 + PADY2}
 };
 
 static int cur;
@@ -54,32 +59,26 @@ void menu_stop(void)
 void menu_draw(void)
 {
 	static uint16_t blurbuf[2][BBW * BBH];
-	int fboffs, bboffs, tmp, cleartop;
+	int fboffs, tmp, cleartop;
 	const struct menuent *ent = menuent + cur;
 
 	int blur_rad_x = (int)((sin(time_msec / 1000.0f) * 0.5f + 0.5f) * 50.0f);
 	int blur_rad_y = (int)((cos(time_msec / 1000.0f) * 0.5f + 0.5f) * 50.0f);
 
-	fboffs = (ent->y - ent->height / 2) * fb_width + ent->x;
-	bboffs = (BBH - ent->height) / 2 * BBW + BBW / 2;
+	fboffs = ent->y * fb_width + ent->x;
 
 	memset(blurbuf[0], 0, sizeof blurbuf[0]);
-	blit(blurbuf[0] + bboffs, BBW, bgpix + fboffs, ent->len, ent->height, bgwidth);
+	blit(blurbuf[0], BBW, bgpix + fboffs, ent->len, ent->height, bgwidth);
 
 	blur_horiz(blurbuf[1], blurbuf[0], BBW, BBH, blur_rad_x + 3, 0x140);
 	blur_vert(blurbuf[0], blurbuf[1], BBW, BBH, blur_rad_y / 4 + 3, 0x140);
 
 	//wait_vsync();
 
-	tmp = fboffs;
-	fboffs -= 8 * fb_width + 32;
-	bboffs -= 8 * BBW + 32;
-
 	cleartop = 280 * fb_width;
 	memcpy(fb_pixels + cleartop, bgpix + cleartop, (fb_height - 280) * fb_width << 1);
 
-	blit(fb_pixels + fboffs, fb_width, blurbuf[0] + bboffs, ent->len + 64, ent->height + 16, BBW);
-	fboffs = tmp;
+	blit(fb_pixels + fboffs, fb_width, blurbuf[0], ent->len, ent->height, BBW);
 	blit_key(fb_pixels + fboffs, fb_width, bgpix + fboffs, ent->len, ent->height, bgwidth, 0);
 
 	if(show_fps) {
