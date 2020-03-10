@@ -6,21 +6,31 @@
 #include "gfx.h"
 #include "3dgfx/3dgfx.h"
 #include "3dgfx/mesh.h"
+#include "imago2.h"
 
-static struct g3d_mesh mesh_ship;
+static struct g3d_mesh ship_mesh;
+static uint16_t *ship_tex;
+static int ship_tex_width, ship_tex_height;
 
 int race_init(void)
 {
-	if(load_mesh(&mesh_ship, "data/ship.obj") == -1) {
+	if(load_mesh(&ship_mesh, "data/ship.obj") == -1) {
 		fprintf(stderr, "failed to load ship mesh\n");
 		return -1;
 	}
+	if(!(ship_tex = img_load_pixels("data/shiptex.png", &ship_tex_width,
+				&ship_tex_height, IMG_FMT_RGB565))) {
+		fprintf(stderr, "failed to load ship texture\n");
+		return -1;
+	}
+
 	return 0;
 }
 
 void race_cleanup(void)
 {
-	destroy_mesh(&mesh_ship);
+	img_free_pixels(ship_tex);
+	destroy_mesh(&ship_mesh);
 }
 
 void race_start(void)
@@ -56,8 +66,10 @@ void race_draw(void)
 	g3d_rotate(15, 1, 0, 0);
 	g3d_translate(0, -2, 0);
 
-	zsort_mesh(&mesh_ship);
-	draw_mesh(&mesh_ship);
+	g3d_set_texture(ship_tex_width, ship_tex_height, ship_tex);
+	g3d_enable(G3D_TEXTURE_2D);
+	zsort_mesh(&ship_mesh);
+	draw_mesh(&ship_mesh);
 
 	blit_frame(fb_pixels, 0);
 }
