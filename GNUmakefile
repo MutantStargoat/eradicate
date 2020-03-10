@@ -5,10 +5,11 @@ obj = $(csrc:.c=.o) $(asmsrc:.asm=.o)
 dep = $(obj:.o=.d)
 bin = game
 
+def = -DUSE_MMX
 inc = -Isrc -Isrc/sdl -Isrc/3dgfx -Ilibs/imago/src
 warn = -pedantic -Wall
 
-CFLAGS = $(arch) $(warn) -g -MMD $(inc) `sdl-config --cflags`
+CFLAGS = $(arch) $(warn) -g -MMD $(def) $(inc) `sdl-config --cflags`
 LDFLAGS = $(arch) -Llibs/imago -limago $(sdl_ldflags) -lm
 
 ifneq ($(shell uname -m), i386)

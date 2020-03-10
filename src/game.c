@@ -9,6 +9,7 @@ long fb_size;
 uint16_t *fb_pixels, *vmem;
 
 long time_msec;
+int show_fps = 1;
 
 void (*draw)(void);
 void (*key_event)(int key, int pressed);

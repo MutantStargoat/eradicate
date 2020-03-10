@@ -30,6 +30,7 @@ static INLINE int32_t cround64(double val)
 extern uint32_t perf_start_count, perf_interval_count;
 
 #ifdef __WATCOMC__
+#ifdef USE_MMX
 void memcpy64(void *dest, void *src, int count);
 #pragma aux memcpy64 = \
 	"cploop:" \
@@ -40,7 +41,11 @@ void memcpy64(void *dest, void *src, int count);
 	"dec ecx" \
 	"jnz cploop" \
 	"emms" \
-	parm[ebx][edx][ecx];
+	parm[ebx][edx][ecx] \
+	modify[8087];
+#else
+#define memcpy64(dest, src, count)	memcpy(dest, src, (count) << 3)
+#endif
 
 void perf_start(void);
 #pragma aux perf_start = \
@@ -64,6 +69,7 @@ void debug_break(void);
 #endif
 
 #ifdef __GNUC__
+#ifdef USE_MMX
 #define memcpy64(dest, src, count) asm volatile ( \
 	"0:\n\t" \
 	"movq (%1), %%mm0\n\t" \
@@ -73,7 +79,11 @@ void debug_break(void);
 	"dec %2\n\t" \
 	"jnz 0b\n\t" \
 	"emms\n\t" \
-	:: "r"(dest), "r"(src), "r"(count))
+	:: "r"(dest), "r"(src), "r"(count) \
+	: "%mm0")
+#else
+#define memcpy64(dest, src, count)	memcpy(dest, src, (count) << 3)
+#endif
 
 #define perf_start()  asm volatile ( \
 	"xor %%eax, %%eax\n" \

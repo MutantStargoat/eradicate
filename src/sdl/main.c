@@ -99,7 +99,7 @@ void blit_frame(void *pixels, int vsync)
 	int i, j;
 	unsigned short *sptr, *dptr;
 
-	dbg_fps(pixels);
+	if(show_fps) dbg_fps(pixels);
 
 	if(vsync) {
 		wait_vsync();

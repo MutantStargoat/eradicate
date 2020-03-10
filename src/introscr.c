@@ -5,8 +5,6 @@
 #include "gfxutil.h"
 #include "game.h"
 
-#define USE_MMX
-
 #define FADE_DUR	800
 
 static void *logo;
@@ -55,7 +53,8 @@ void intro_draw(void)
 		fade = 256 - (tm - 2 * FADE_DUR) * 256 / FADE_DUR;
 	} else {
 		fade = 0;
-		//menu_start();
+		menu_start();
+		return;
 	}
 
 #ifdef USE_MMX

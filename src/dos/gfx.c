@@ -238,7 +238,7 @@ void *page_flip(int vsync)
 
 static void blit_frame_lfb(void *pixels, int vsync)
 {
-	dbg_fps(pixels);
+	if(show_fps) dbg_fps(pixels);
 	if(vsync) wait_vsync();
 	memcpy64(vpgaddr[frontidx], pixels, pgsize >> 3);
 }
@@ -249,7 +249,7 @@ static void blit_frame_banked(void *pixels, int vsync)
 	unsigned int pending;
 	unsigned char *pptr = pixels;
 
-	dbg_fps(pixels);
+	if(show_fps) dbg_fps(pixels);
 
 	if(vsync) wait_vsync();
 
@@ -258,7 +258,8 @@ static void blit_frame_banked(void *pixels, int vsync)
 	pending = pgsize;
 	while(pending > 0) {
 		sz = pending > curmode->bank_size ? curmode->bank_size : pending;
-		memcpy64((void*)0xa0000, pptr, sz >> 3);
+		//memcpy64((void*)0xa0000, pptr, sz >> 3);
+		memcpy((void*)0xa0000, pptr, sz);
 		pptr += sz;
 		pending -= sz;
 		vbe_setwin(0, ++offs);

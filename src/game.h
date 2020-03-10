@@ -11,6 +11,7 @@ extern long fb_size;
 extern uint16_t *fb_pixels, *vmem;
 
 extern long time_msec;
+extern int show_fps;
 
 extern void (*swap_buffers)(void*);
 

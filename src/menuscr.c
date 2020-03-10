@@ -6,6 +6,7 @@
 #include "gfx.h"
 #include "gfxutil.h"
 #include "game.h"
+#include "util.h"
 
 static const struct menuent {
 	int x, y, len, height;
@@ -38,6 +39,8 @@ void menu_start(void)
 {
 	draw = menu_draw;
 	key_event = menu_keyb;
+
+	memcpy(fb_pixels, bgpix, fb_size);
 }
 
 void menu_stop(void)
@@ -51,7 +54,7 @@ void menu_stop(void)
 void menu_draw(void)
 {
 	static uint16_t blurbuf[2][BBW * BBH];
-	int fboffs, bboffs, tmp;
+	int fboffs, bboffs, tmp, cleartop;
 	const struct menuent *ent = menuent + cur;
 
 	int blur_rad_x = (int)((sin(time_msec / 1000.0f) * 0.5f + 0.5f) * 50.0f);
@@ -66,15 +69,22 @@ void menu_draw(void)
 	blur_horiz(blurbuf[1], blurbuf[0], BBW, BBH, blur_rad_x + 3, 0x140);
 	blur_vert(blurbuf[0], blurbuf[1], BBW, BBH, blur_rad_y / 4 + 3, 0x140);
 
-	wait_vsync();
+	//wait_vsync();
 
-	memcpy(fb_pixels, bgpix, fb_size);
 	tmp = fboffs;
 	fboffs -= 8 * fb_width + 32;
 	bboffs -= 8 * BBW + 32;
+
+	cleartop = 280 * fb_width;
+	memcpy(fb_pixels + cleartop, bgpix + cleartop, (fb_height - 280) * fb_width << 1);
+
 	blit(fb_pixels + fboffs, fb_width, blurbuf[0] + bboffs, ent->len + 64, ent->height + 16, BBW);
 	fboffs = tmp;
 	blit_key(fb_pixels + fboffs, fb_width, bgpix + fboffs, ent->len, ent->height, bgwidth, 0);
+
+	if(show_fps) {
+		blit(fb_pixels, fb_width, bgpix, 64, 16, bgwidth);
+	}
 
 	blit_frame(fb_pixels, 0);
 }
