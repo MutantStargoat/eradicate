@@ -53,10 +53,12 @@ static uint32_t SCANEDGE(struct pvertex *v0, struct pvertex *v1, struct pvertex 
 	end_idx = v1->y >> 8;
 
 	for(i=start_idx; i<end_idx; i++) {
+		CHECKEDGE(i);
 		edge[i].x = x;
 		x += slope;
 #ifdef GOURAUD
 		/* we'll store the color in the edge tables with COLOR_SHIFT extra bits of precision */
+		CHECKEDGE(i);
 		edge[i].r = r;
 		edge[i].g = g;
 		edge[i].b = b;
@@ -64,11 +66,13 @@ static uint32_t SCANEDGE(struct pvertex *v0, struct pvertex *v1, struct pvertex 
 		g += gslope;
 		b += bslope;
 #ifdef BLEND
+		CHECKEDGE(i);
 		edge[i].a = a;
 		a += aslope;
 #endif
 #endif	/* GOURAUD */
 #ifdef TEXMAP
+		CHECKEDGE(i);
 		edge[i].u = u;
 		edge[i].v = v;
 		u += uslope;
@@ -83,7 +87,6 @@ void POLYFILL(struct pvertex *pv, int nverts)
 {
 	int i, winding;
 	int topidx = 0, botidx = 0, sltop = pfill_fb.height, slbot = 0;
-	struct pvertex *left, *right;
 	g3d_pixel color;
 	/* the following variables are used for interpolating horizontally accros scanlines */
 #if defined(GOURAUD) || defined(TEXMAP)
@@ -114,12 +117,6 @@ void POLYFILL(struct pvertex *pv, int nverts)
 		winding += ((pv[next].x - pv[i].x) >> 4) * ((pv[next].y + pv[i].y) >> 4);
 	}
 
-	/* +padding to avoid crashing due to off-by-one rounding errors in the rasterization */
-	left = alloca((pfill_fb.height + 8) * sizeof *left);
-	right = alloca((pfill_fb.height + 8) * sizeof *right);
-	left += 4;
-	right += 4;
-
 	for(i=0; i<nverts; i++) {
 		int next = NEXTIDX(i);
 		int32_t y0 = pv[i].y;
@@ -136,6 +133,7 @@ void POLYFILL(struct pvertex *pv, int nverts)
 					i0 = next;
 					i1 = i;
 				}
+				CHECKEDGE(idx);
 				left[idx].x = pv[i0].x;
 				right[idx].x = pv[i1].x;
 #ifdef GOURAUD
@@ -156,6 +154,7 @@ void POLYFILL(struct pvertex *pv, int nverts)
 				right[idx].u = pv[i1].u;
 				right[idx].v = pv[i1].v;
 #endif
+				CHECKEDGE(idx);
 				if(idx > slbot) slbot = idx;
 				if(idx < sltop) sltop = idx;
 			/*}*/
@@ -185,6 +184,9 @@ void POLYFILL(struct pvertex *pv, int nverts)
 #ifndef HIGH_QUALITY
 #if defined(GOURAUD) || defined(TEXMAP)
 	mid = (sltop + slbot) >> 1;
+	CHECKEDGE(sltop);
+	CHECKEDGE(slbot);
+	CHECKEDGE(mid);
 	dx = right[mid].x - left[mid].x;
 	if((tmp = right[sltop].x - left[sltop].x) > dx) {
 		dx = tmp;
@@ -196,6 +198,7 @@ void POLYFILL(struct pvertex *pv, int nverts)
 	}
 	if(!dx) dx = 256;	/* avoid division by zero */
 #endif
+	CHECKEDGE(idx);
 #ifdef GOURAUD
 	dr = right[mid].r - left[mid].r;
 	dg = right[mid].g - left[mid].g;
@@ -221,6 +224,7 @@ void POLYFILL(struct pvertex *pv, int nverts)
 		g3d_pixel *pixptr;
 		int32_t x;
 
+		CHECKEDGE(i);
 		x = left[i].x;
 		pixptr = pfill_fb.pixels + i * pfill_fb.width + (x >> 8);
 
@@ -236,10 +240,12 @@ void POLYFILL(struct pvertex *pv, int nverts)
 		u = left[i].u;
 		v = left[i].v;
 #endif
+		CHECKEDGE(i);
 
 #if defined(HIGH_QUALITY) && (defined(GOURAUD) || defined(TEXMAP))
 		if(!(dx = right[i].x - left[i].x)) dx = 256;
 
+		CHECKEDGE(i);
 #ifdef GOURAUD
 		dr = right[i].r - left[i].r;
 		dg = right[i].g - left[i].g;
@@ -259,6 +265,7 @@ void POLYFILL(struct pvertex *pv, int nverts)
 		vslope = (dv << 8) / dx;
 #endif
 #endif	/* HIGH_QUALITY */
+		CHECKEDGE(i);
 
 		/* go across the scanline interpolating if necessary */
 		while(x <= right[i].x) {

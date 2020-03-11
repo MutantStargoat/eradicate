@@ -43,7 +43,7 @@ else
 	mkdir -p $destdir/data
 	cp game.exe $destdir
 	rm -f $destdir/data/*
-	cp data/* $destdir/data/
+	cp data/*.* $destdir/data/
 fi
 
 findsrc()

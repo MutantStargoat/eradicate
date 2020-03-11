@@ -37,6 +37,47 @@ void (*fillfunc[])(struct pvertex*, int) = {
 
 struct pimage pfill_fb, pfill_tex;
 
+#define EDGEPAD	8
+static struct pvertex *edgebuf, *left, *right;
+static int edgebuf_size;
+static int fbheight;
+
+/*
+#define CHECKEDGE(x) \
+	do { \
+		assert(x >= 0); \
+		assert(x < fbheight); \
+	} while(0)
+*/
+#define CHECKEDGE(x)
+
+
+void polyfill_fbheight(int height)
+{
+	void *tmp;
+	int newsz = (height * 2 + EDGEPAD * 3) * sizeof *edgebuf;
+
+	if(newsz > edgebuf_size) {
+		free(edgebuf);
+		if(!(edgebuf = malloc(newsz))) {
+			fprintf(stderr, "failed to allocate edge table buffer (%d bytes)\n", newsz);
+			abort();
+		}
+		edgebuf_size = newsz;
+
+		left = edgebuf + EDGEPAD;
+		right = edgebuf + height + EDGEPAD * 2;
+
+#ifndef NDEBUG
+		memset(edgebuf, 0xaa, EDGEPAD * sizeof *edgebuf);
+		memset(edgebuf + height + EDGEPAD, 0xaa, EDGEPAD * sizeof *edgebuf);
+		memset(edgebuf + height * 2 + EDGEPAD * 2, 0xaa, EDGEPAD * sizeof *edgebuf);
+#endif
+	}
+
+	fbheight = height;
+}
+
 void polyfill(int mode, struct pvertex *verts, int nverts)
 {
 #ifndef NDEBUG

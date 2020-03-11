@@ -44,6 +44,8 @@ struct pimage {
 extern struct pimage pfill_fb;
 extern struct pimage pfill_tex;
 
+void polyfill_fbheight(int height);
+
 void polyfill(int mode, struct pvertex *verts, int nverts);
 
 void polyfill_wire(struct pvertex *verts, int nverts);

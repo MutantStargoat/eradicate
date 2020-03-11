@@ -119,6 +119,12 @@ void g3d_destroy(void)
 
 void g3d_framebuffer(int width, int height, void *pixels)
 {
+	static int prev_height;
+
+	if(height > prev_height) {
+		polyfill_fbheight(height);
+	}
+
 	st->width = width;
 	st->height = height;
 	st->pixels = pixels;

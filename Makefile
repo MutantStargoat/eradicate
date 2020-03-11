@@ -34,7 +34,7 @@ libs = imago.lib
 
 CC = wcc386
 LD = wlink
-CFLAGS = -d3 -5 -fp5 -otebmileran $(def) -s -zq -bt=dos $(incpath)
+CFLAGS = -d3 -5 -fp5 -otexan $(def) -s -zq -bt=dos $(incpath)
 LDFLAGS = option map $(libpath) library { $(libs) }
 
 $(bin): cflags.occ $(obj) libs/imago/imago.lib
@@ -63,6 +63,7 @@ clean: .symbolic
 clean: .symbolic
 	del src\*.obj
 	del src\dos\*.obj
+	del src\3dgfx\*.obj
 	del *.lnk
 	del cflags.occ
 	del $(bin)
