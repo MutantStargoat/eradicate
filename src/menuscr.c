@@ -116,7 +116,7 @@ void menu_keyb(int key, int pressed)
 			break;
 
 		case 1:
-			//options_start();
+			options_start();
 			break;
 
 		case 2:

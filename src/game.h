@@ -2,7 +2,9 @@
 #define GAME_H_
 
 #include "inttypes.h"
+#include "options.h"
 
+#define GAME_CFG_FILE	"game.cfg"
 #define FB_BPP	16
 
 extern int fb_width;

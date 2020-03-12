@@ -4,7 +4,7 @@
 #include "game.h"
 #include "3dgfx/3dgfx.h"
 #include "screens.h"
-#include "sprite.h"
+#include "fonts.h"
 
 #define GUARD_XPAD	0
 #define GUARD_YPAD	1
@@ -20,12 +20,12 @@ int show_fps = 1;
 void (*draw)(void);
 void (*key_event)(int key, int pressed);
 
-static struct sprites dbgfont;
-
 
 int init(int argc, char **argv)
 {
-	if(load_sprites(&dbgfont, "data/dbgfont.spr") == -1) {
+	load_options(GAME_CFG_FILE);
+
+	if(init_fonts() == -1) {
 		return -1;
 	}
 
@@ -37,6 +37,9 @@ int init(int argc, char **argv)
 		return -1;
 	}
 	if(menu_init() == -1) {
+		return -1;
+	}
+	if(options_init() == -1) {
 		return -1;
 	}
 	if(race_init() == -1) {
@@ -52,6 +55,7 @@ void cleanup(void)
 	g3d_destroy();
 	race_cleanup();
 	intro_cleanup();
+	options_cleanup();
 	menu_cleanup();
 }
 
@@ -90,28 +94,18 @@ int resizefb(int width, int height, int bpp)
 
 void dbg_print(void *fb, int x, int y, const char *str)
 {
-	uint16_t *dest = (uint16_t*)fb + y * fb_width + x;
-
-	while(*str) {
-		int c = *str++;
-
-		if(c > ' ' && c < 128) {
-			draw_sprite(dest, fb_width * 2, &dbgfont, c - ' ');
-		}
-		dest += 8;
-	}
+	select_font(FONT_VGA);
+	fnt_print(fb, x, y, str);
 }
 
 void dbg_printf(void *fb, int x, int y, const char *fmt, ...)
 {
-	static char buf[2048];
 	va_list ap;
 
+	select_font(FONT_VGA);
 	va_start(ap, fmt);
-	vsprintf(buf, fmt, ap);
+	fnt_vprintf(fb, x, y, fmt, ap);
 	va_end(ap);
-
-	dbg_print(fb, x, y, buf);
 }
 
 void dbg_fps(void *fb)

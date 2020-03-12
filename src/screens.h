@@ -22,4 +22,11 @@ void race_stop(void);
 void race_draw(void);
 void race_keyb(int key, int pressed);
 
+int options_init(void);
+void options_cleanup(void);
+void options_start(void);
+void options_stop(void);
+void options_draw(void);
+void options_keyb(int key, int pressed);
+
 #endif	/* SCREENS_H_ */
