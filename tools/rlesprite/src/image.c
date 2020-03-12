@@ -225,6 +225,9 @@ int conv_image_rgb565(struct image *img16, struct image *img)
 				r = (*sptr++ >> 3) & 0x1f;
 				g = (*sptr++ >> 2) & 0x3f;
 				b = (*sptr++ >> 3) & 0x1f;
+				if(img->nchan > 3) {
+					sptr++;
+				}
 			}
 			*dptr++ = (r << 11) | (g << 5) | b;
 		}
