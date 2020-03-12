@@ -95,6 +95,7 @@ int resizefb(int width, int height, int bpp)
 void dbg_print(void *fb, int x, int y, const char *str)
 {
 	select_font(FONT_VGA);
+	fnt_align(FONT_LEFT);
 	fnt_print(fb, x, y, str);
 }
 
@@ -103,6 +104,7 @@ void dbg_printf(void *fb, int x, int y, const char *fmt, ...)
 	va_list ap;
 
 	select_font(FONT_VGA);
+	fnt_align(FONT_LEFT);
 	va_start(ap, fmt);
 	fnt_vprintf(fb, x, y, fmt, ap);
 	va_end(ap);

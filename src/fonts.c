@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <stdarg.h>
 #include "game.h"
 #include "fonts.h"
@@ -17,6 +18,8 @@ static const char *fontfiles[] = {
 
 static struct sprites *actfnt;
 static int actsz;
+
+static int align;
 
 int init_fonts(void)
 {
@@ -38,7 +41,20 @@ void select_font(int idx)
 
 void fnt_print(void *fb, int x, int y, const char *str)
 {
-	uint16_t *dest = (uint16_t*)fb + y * fb_width + x;
+	uint16_t *dest;
+
+	switch(align) {
+	case FONT_CENTER:
+		x -= fnt_strwidth(str) / 2;
+		break;
+	case FONT_RIGHT:
+		x -= fnt_strwidth(str);
+		break;
+	default:
+		break;
+	}
+
+	dest = (uint16_t*)fb + y * fb_width + x;
 
 	while(*str) {
 		int c = *str++;
@@ -65,4 +81,14 @@ void fnt_vprintf(void *fb, int x, int y, const char *fmt, va_list ap)
 	vsprintf(buf, fmt, ap);
 
 	fnt_print(fb, x, y, buf);
+}
+
+void fnt_align(int a)
+{
+	align = a;
+}
+
+int fnt_strwidth(const char *str)
+{
+	return strlen(str) * actsz;
 }

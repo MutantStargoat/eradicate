@@ -29,13 +29,16 @@ void options_draw(void)
 	memset(fb_pixels, 0, fb_size);
 
 	select_font(FONT_MENU_SHADED_BIG);
-	fnt_print(fb_pixels, 200, 20, "Options");
+	fnt_align(FONT_CENTER);
+	fnt_print(fb_pixels, 320, 20, "Options");
 
 	select_font(FONT_MENU_SHADED);
-	fnt_print(fb_pixels, 160, 100, "Resolution");
+	fnt_align(FONT_RIGHT);
+	fnt_print(fb_pixels, 320, 100, "Resolution");
 
 	select_font(FONT_MENU);
-	fnt_print(fb_pixels, 350, 100, "640x480");
+	fnt_align(FONT_LEFT);
+	fnt_print(fb_pixels, 360, 100, "640x480");
 
 	blit_frame(fb_pixels, 0);
 }
