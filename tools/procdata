@@ -44,3 +44,8 @@ if [ ! -f data/nebcobig.spr -o data/src/nebucol.fnt -nt data/nebcobig.spr ]; the
 	convert data/src/nebucol.fnt -filter point -resize '200%' data/src/nebcobig.fnt
 	rlesprite -o data/nebcobig.spr -s 32x32 -conv565 data/src/nebcobig.fnt
 fi
+
+if [ ! -f data/icons.spr -o data/src/icons.png -nt data/icons.spr ]; then
+	echo 'rlesprite: icons'
+	rlesprite -o data/icons.spr -s 16x16 -conv565 data/src/icons.png
+fi

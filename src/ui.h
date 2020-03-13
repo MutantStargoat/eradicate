@@ -31,11 +31,15 @@ struct ui_ckbox {
 	int val;
 };
 
+struct ui_list_item {
+	char *name;
+	void *data;
+};
+
 struct ui_list {
 	struct ui_base w;
-	char **item;
-	void **data;
-	int num_items, sel;
+	struct ui_list_item *items;
+	int num_items, max_items, sel;
 };
 
 struct ui_bnbox *ui_bnbox(const char *tx1, const char *tx2);

@@ -5,21 +5,44 @@
 #include "fonts.h"
 #include "ui.h"
 
-static struct ui_bnbox *wtest;
+#define NUM_WIDGETS	2
+static struct ui_base *widgets[NUM_WIDGETS];
 
 int options_init(void)
 {
-	if(!(wtest = ui_bnbox("foo", "bar"))) {
+	struct ui_bnbox *bnbox;
+	struct ui_list *list;
+
+	if(!(list = ui_list("Resolution"))) {
 		return -1;
 	}
-	ui_move(wtest, 320, 250);
-	ui_set_focus(wtest, 1);
+	ui_move(list, 320, 100);
+	ui_list_append(list, "320x240", 0);
+	ui_list_append(list, "400x300", 0);
+	ui_list_append(list, "512x384", 0);
+	ui_list_append(list, "640x480", 0);
+	ui_list_append(list, "800x600", 0);
+	ui_list_append(list, "1024x768", 0);
+	ui_list_append(list, "1280x1024", 0);
+	ui_set_focus(list, 1);
+	widgets[0] = list;
+
+	if(!(bnbox = ui_bnbox("Done", "Cancel"))) {
+		return -1;
+	}
+	ui_move(bnbox, 320, 250);
+	widgets[1] = bnbox;
+
+
 	return 0;
 }
 
 void options_cleanup(void)
 {
-	ui_free(wtest);
+	int i;
+	for(i=0; i<NUM_WIDGETS; i++) {
+		ui_free(widgets[i]);
+	}
 }
 
 void options_start(void)
@@ -34,21 +57,17 @@ void options_stop(void)
 
 void options_draw(void)
 {
+	int i;
+
 	memset(fb_pixels, 0, fb_size);
 
 	select_font(FONT_MENU_SHADED_BIG);
 	fnt_align(FONT_CENTER);
 	fnt_print(fb_pixels, 320, 20, "Options");
 
-	select_font(FONT_MENU_SHADED);
-	fnt_align(FONT_RIGHT);
-	fnt_print(fb_pixels, 320, 100, "Resolution");
-
-	select_font(FONT_MENU);
-	fnt_align(FONT_LEFT);
-	fnt_print(fb_pixels, 360, 100, "640x480");
-
-	ui_draw(wtest);
+	for(i=0; i<NUM_WIDGETS; i++) {
+		ui_draw(widgets[i]);
+	}
 
 	blit_frame(fb_pixels, 0);
 }
@@ -65,7 +84,7 @@ void options_keyb(int key, int pressed)
 
 	case KB_LEFT:
 	case KB_RIGHT:
-		ui_keypress(wtest, key);
+		ui_keypress(widgets[0], key);
 		break;
 
 	case '\n':
