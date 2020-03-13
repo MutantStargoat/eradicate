@@ -6,7 +6,8 @@
 #include "ui.h"
 
 #define NUM_WIDGETS	2
-static struct ui_base *widgets[NUM_WIDGETS];
+static void *widgets[NUM_WIDGETS];
+static int ui_focus;
 
 int options_init(void)
 {
@@ -24,7 +25,6 @@ int options_init(void)
 	ui_list_append(list, "800x600", 0);
 	ui_list_append(list, "1024x768", 0);
 	ui_list_append(list, "1280x1024", 0);
-	ui_set_focus(list, 1);
 	widgets[0] = list;
 
 	if(!(bnbox = ui_bnbox("Done", "Cancel"))) {
@@ -33,6 +33,7 @@ int options_init(void)
 	ui_move(bnbox, 320, 250);
 	widgets[1] = bnbox;
 
+	ui_set_focus(widgets[ui_focus], 1);
 
 	return 0;
 }
@@ -82,9 +83,23 @@ void options_keyb(int key, int pressed)
 		menu_start();
 		break;
 
+	case KB_UP:
+		if(ui_focus > 0) {
+			ui_set_focus(widgets[ui_focus], 0);
+			ui_set_focus(widgets[--ui_focus], 1);
+		}
+		break;
+
+	case KB_DOWN:
+		if(ui_focus < NUM_WIDGETS - 1) {
+			ui_set_focus(widgets[ui_focus], 0);
+			ui_set_focus(widgets[++ui_focus], 1);
+		}
+		break;
+
 	case KB_LEFT:
 	case KB_RIGHT:
-		ui_keypress(widgets[0], key);
+		ui_keypress(widgets[ui_focus], key);
 		break;
 
 	case '\n':

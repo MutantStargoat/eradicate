@@ -274,7 +274,7 @@ static void draw_bnbox(struct ui_bnbox *w)
 	int x, y;
 	int width1, width2;
 
-	select_font(FONT_MENU);
+	select_font(FONT_MENU_SHADED);
 	fnt_align(FONT_LEFT);
 
 	width1 = fnt_strwidth(w->w.text);
@@ -305,14 +305,18 @@ static void key_bnbox(struct ui_bnbox *w, int key)
 
 static void draw_list(struct ui_list *w)
 {
-	int i, x, y, seldist;
+	int i, x, y, seldist, label_width;
 	uint16_t *fbptr;
 
 	select_font(FONT_MENU_SHADED);
 	fnt_align(FONT_RIGHT);
 
+	label_width = fnt_strwidth(w->w.text);
+
 	x = w->w.x - 16;
 	y = w->w.y;
+
+	if(w->w.focus) draw_selbox(x - label_width - 3, y, 0, 16);
 
 	fnt_print(fb_pixels, x, y, w->w.text);
 	x += 32;
