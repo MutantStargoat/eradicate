@@ -3,15 +3,23 @@
 #include "gfx.h"
 #include "screens.h"
 #include "fonts.h"
+#include "ui.h"
 
+static struct ui_bnbox *wtest;
 
 int options_init(void)
 {
+	if(!(wtest = ui_bnbox("foo", "bar"))) {
+		return -1;
+	}
+	ui_move(wtest, 320, 250);
+	ui_set_focus(wtest, 1);
 	return 0;
 }
 
 void options_cleanup(void)
 {
+	ui_free(wtest);
 }
 
 void options_start(void)
@@ -40,6 +48,8 @@ void options_draw(void)
 	fnt_align(FONT_LEFT);
 	fnt_print(fb_pixels, 360, 100, "640x480");
 
+	ui_draw(wtest);
+
 	blit_frame(fb_pixels, 0);
 }
 
@@ -51,6 +61,11 @@ void options_keyb(int key, int pressed)
 	case 27:
 		options_stop();
 		menu_start();
+		break;
+
+	case KB_LEFT:
+	case KB_RIGHT:
+		ui_keypress(wtest, key);
 		break;
 
 	case '\n':

@@ -9,8 +9,9 @@
 
 extern int fb_width;
 extern int fb_height;
-extern long fb_size;
 extern int fb_bpp;
+extern int fb_scan_size;
+extern long fb_size;
 extern void *fb_pixels, *vmem;
 
 extern long time_msec;

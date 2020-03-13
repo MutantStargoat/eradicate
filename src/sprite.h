@@ -5,7 +5,7 @@ enum {
 	SOP_END,
 	SOP_ENDL,
 	SOP_SKIP,
-	SOP_RESVD,
+	SOP_FILL,
 	SOP_COPY
 };
 

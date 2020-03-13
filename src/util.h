@@ -30,6 +30,22 @@ static INLINE int32_t cround64(double val)
 extern uint32_t perf_start_count, perf_interval_count;
 
 #ifdef __WATCOMC__
+void memset16(void *dest, uint16_t val, int count);
+#pragma aux memset16 = \
+	"cld" \
+	"test ecx, 1" \
+	"jz memset16_dwords" \
+	"rep stosw" \
+	"jmp memset16_done" \
+	"memset16_dwords:" \
+	"shr ecx, 1" \
+	"push ax" \
+	"shl eax, 16" \
+	"pop ax" \
+	"rep stosd" \
+	"memset16_done:" \
+	parm[edi][ax][ecx];
+
 #ifdef USE_MMX
 void memcpy64(void *dest, void *src, int count);
 #pragma aux memcpy64 = \
@@ -69,6 +85,22 @@ void debug_break(void);
 #endif
 
 #ifdef __GNUC__
+#define memset16(dest, val, count) asm volatile ( \
+	"cld\n\t" \
+	"test $1, %2\n\t" \
+	"jz 0f\n\t" \
+	"rep stosw\n\t" \
+	"jmp 1f\n\t" \
+	"0:\n\t" \
+	"shr $1, %2\n\t" \
+	"pushw %1\n\t" \
+	"shl $16, %1\n\t" \
+	"popw %1\n\t" \
+	"rep stosl\n\t" \
+	"1:\n\t"\
+	:: "D"(dest), "a"((uint16_t)val), "c"(count) \
+	: "memory")
+
 #ifdef USE_MMX
 #define memcpy64(dest, src, count) asm volatile ( \
 	"0:\n\t" \
