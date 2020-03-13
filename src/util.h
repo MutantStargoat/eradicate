@@ -93,12 +93,12 @@ void debug_break(void);
 	"jmp 1f\n\t" \
 	"0:\n\t" \
 	"shr $1, %2\n\t" \
-	"pushw %1\n\t" \
-	"shl $16, %1\n\t" \
-	"popw %1\n\t" \
+	"push %%ax\n\t" \
+	"shl $16, %%eax\n\t" \
+	"pop %%ax\n\t" \
 	"rep stosl\n\t" \
 	"1:\n\t"\
-	:: "D"(dest), "a"((uint16_t)val), "c"(count) \
+	:: "D"(dest), "a"((uint16_t)(val)), "c"(count) \
 	: "memory")
 
 #ifdef USE_MMX

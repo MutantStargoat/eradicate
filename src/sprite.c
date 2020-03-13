@@ -163,7 +163,7 @@ void draw_sprite(void *dest, int fbpitch, struct sprites *ss, int idx)
 			xoffs += sop->size;
 			break;
 		case SOP_FILL:
-			memset16(fbptr + xoffs, (uint16_t)sop->data, sop->size);
+			memset16(fbptr + xoffs, (uint16_t)sop->data, sop->size >> 1);
 			xoffs += sop->size;
 			break;
 		default:
