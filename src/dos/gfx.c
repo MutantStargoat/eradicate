@@ -121,6 +121,14 @@ int num_video_modes(void)
 	return num_vmodes;
 }
 
+struct video_mode *get_video_mode(int idx)
+{
+	if(idx == VMODE_CURRENT) {
+		return curmode;
+	}
+	return vmodes + idx;
+}
+
 int match_video_mode(int xsz, int ysz, int bpp)
 {
 	int i, best = -1;
@@ -159,6 +167,8 @@ void *set_video_mode(int idx, int nbuf)
 	unsigned int mode;
 	struct video_mode *vm = vmodes + idx;
 
+	if(curmode == vm) return vpgaddr[0];
+
 	printf("setting video mode %x (%dx%d %d bpp)\n", (unsigned int)vm->mode,
 			vm->xsz, vm->ysz, vm->bpp);
 	fflush(stdout);
@@ -171,6 +181,12 @@ void *set_video_mode(int idx, int nbuf)
 			return 0;
 		}
 		printf("Warning: failed to get a linear framebuffer. falling back to banked mode\n");
+	}
+
+	/* unmap previous video memory mapping, if there was one (switching modes) */
+	if(vpgaddr[0] && vpgaddr[0] != (void*)0xa0000) {
+		dpmi_munmap(vpgaddr[0]);
+		vpgaddr[0] = vpgaddr[1] = 0;
 	}
 
 	curmode = vm;
@@ -211,11 +227,26 @@ void *set_video_mode(int idx, int nbuf)
 
 		blit_frame = blit_frame_banked;
 	}
+
+	/* allocate main memory framebuffer */
+	if(resizefb(vm->xsz, vm->ysz, vm->bpp) == -1) {
+		fprintf(stderr, "failed to allocate %dx%d (%d bpp) framebuffer\n", vm->xsz,
+				vm->ysz, vm->bpp);
+		set_text_mode();
+		return 0;
+	}
+
 	return vpgaddr[0];
 }
 
 int set_text_mode(void)
 {
+	/* unmap previous video memory mapping, if there was one (switching modes) */
+	if(vpgaddr[0] && vpgaddr[0] != (void*)0xa0000) {
+		dpmi_munmap(vpgaddr[0]);
+		vpgaddr[0] = vpgaddr[1] = 0;
+	}
+
 	vga_setmode(3);
 	curmode = 0;
 	return 0;

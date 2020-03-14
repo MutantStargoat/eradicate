@@ -89,6 +89,7 @@ int resizefb(int width, int height, int bpp)
 	fb_height = height;
 	fb_bpp = bpp;
 	fb_size = fb_scan_size * fb_height;
+
 	return 0;
 }
 

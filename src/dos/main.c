@@ -8,7 +8,6 @@
 #include "logger.h"
 #include "cdpmi.h"
 
-static struct video_mode *vmode;
 static int quit;
 
 int main(int argc, char **argv)
@@ -32,13 +31,6 @@ int main(int argc, char **argv)
 	}
 	if(!(vmem = set_video_mode(vmidx, 1))) {
 		return 1;
-	}
-	vmode = vmodes + vmidx;
-
-	if(resizefb(vmode->xsz, vmode->ysz, vmode->bpp) == -1) {
-		fprintf(stderr, "failed to allocate framebuffer\n");
-		status = -1;
-		goto break_evloop;
 	}
 
 	if(init(argc, argv) == -1) {

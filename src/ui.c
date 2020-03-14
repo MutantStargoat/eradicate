@@ -193,14 +193,19 @@ void ui_bnbox_select(struct ui_bnbox *w, int sel)
 	w->sel = sel ? 1 : 0;
 }
 
-void ui_bnbox_next(struct ui_list *w)
+void ui_bnbox_next(struct ui_bnbox *w)
 {
 	if(w->sel < 1) w->sel++;
 }
 
-void ui_bnbox_prev(struct ui_list *w)
+void ui_bnbox_prev(struct ui_bnbox *w)
 {
 	if(w->sel > 0) w->sel--;
+}
+
+int ui_bnbox_getsel(struct ui_bnbox *w)
+{
+	return w->sel;
 }
 
 
@@ -256,6 +261,23 @@ void ui_list_prev(struct ui_list *w)
 	}
 }
 
+const char *ui_list_sel_text(struct ui_list *w)
+{
+	if(w->sel < 0 || w->sel >= w->num_items) {
+		return 0;
+	}
+	return w->items[w->sel].name;
+}
+
+void *ui_list_sel_data(struct ui_list *w)
+{
+	if(w->sel < 0 || w->sel >= w->num_items) {
+		return 0;
+	}
+	return w->items[w->sel].data;
+}
+
+
 static void draw_selbox(int x, int y, int w, int h)
 {
 	float t = (float)time_msec / 100.0f;
@@ -305,7 +327,8 @@ static void key_bnbox(struct ui_bnbox *w, int key)
 
 static void draw_list(struct ui_list *w)
 {
-	int i, x, y, seldist, label_width;
+	static int dotadv[] = {0, 8, 7, 5};
+	int i, x, y, seldist, prevdist, label_width;
 	uint16_t *fbptr;
 
 	select_font(FONT_MENU_SHADED);
@@ -313,29 +336,33 @@ static void draw_list(struct ui_list *w)
 
 	label_width = fnt_strwidth(w->w.text);
 
-	x = w->w.x - 16;
+	x = w->w.x - 6;
 	y = w->w.y;
 
 	if(w->w.focus) draw_selbox(x - label_width - 3, y, 0, 16);
 
 	fnt_print(fb_pixels, x, y, w->w.text);
-	x += 32;
+	x += 12;
 
 	select_font(FONT_MENU);
 	fnt_align(FONT_LEFT);
 
 	fbptr = (uint16_t*)((unsigned char*)fb_pixels + y * fb_scan_size + x * fb_bpp / 8);
 
+	seldist = 0;
 	for(i=0; i<w->num_items; i++) {
+		prevdist = seldist;
 		seldist = w->sel >= 0 ? abs(i - w->sel) : 100;
 		if(seldist > 3) seldist = 3;
 
 		if(seldist) {
+			fbptr += dotadv[prevdist];
 			draw_sprite(fbptr, fb_scan_size, &spr_icons, seldist + 1);
-			fbptr += 16;
+			fbptr += dotadv[seldist];
 		} else {
+			fbptr += 4 + 8;
 			fnt_print(fbptr, 0, 0, w->items[i].name);
-			fbptr += fnt_strwidth(w->items[i].name);
+			fbptr += 4 + fnt_strwidth(w->items[i].name);
 		}
 	}
 }

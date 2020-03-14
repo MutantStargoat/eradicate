@@ -56,16 +56,20 @@ void ui_set_focus(void *w, int focus);
 void ui_draw(void *w);
 void ui_keypress(void *w, int key);
 
+void ui_bnbox_select(struct ui_bnbox *w, int sel);
+void ui_bnbox_next(struct ui_bnbox *w);
+void ui_bnbox_prev(struct ui_bnbox *w);
+int ui_bnbox_getsel(struct ui_bnbox *w);
+
 int ui_ckbox_state(struct ui_ckbox *w);
 void ui_ckbox_set(struct ui_ckbox *w, int val);
-
-void ui_bnbox_select(struct ui_bnbox *w, int sel);
-void ui_bnbox_next(struct ui_list *w);
-void ui_bnbox_prev(struct ui_list *w);
 
 int ui_list_append(struct ui_list *w, const char *name, void *udata);
 void ui_list_select(struct ui_list *w, int sel);
 void ui_list_next(struct ui_list *w);
 void ui_list_prev(struct ui_list *w);
+
+const char *ui_list_sel_text(struct ui_list *w);
+void *ui_list_sel_data(struct ui_list *w);
 
 #endif	/* UI_H_ */

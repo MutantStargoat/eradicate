@@ -12,6 +12,8 @@ static struct g3d_mesh ship_mesh;
 static uint16_t *ship_tex;
 static int ship_tex_width, ship_tex_height;
 
+static int menu_mode_idx = -1;
+
 int race_init(void)
 {
 	if(load_mesh(&ship_mesh, "data/ship.obj") == -1) {
@@ -35,10 +37,16 @@ void race_cleanup(void)
 
 void race_start(void)
 {
+	int vmidx;
+
 	draw = race_draw;
 	key_event = race_keyb;
 
-	/* TODO save menu video mode, and switch to game video mode */
+	/* save menu video mode, and switch to game video mode */
+	menu_mode_idx = get_video_mode(VMODE_CURRENT) - video_modes();
+	if((vmidx = match_video_mode(opt.xres, opt.yres, opt.bpp)) != -1) {
+		vmem = set_video_mode(vmidx, 1);
+	}
 
 	g3d_framebuffer(fb_width, fb_height, fb_pixels);
 
@@ -53,7 +61,9 @@ void race_start(void)
 
 void race_stop(void)
 {
-	/* TODO switch back to menu video mode */
+	if(menu_mode_idx >= 0) {
+		vmem = set_video_mode(menu_mode_idx, 1);
+	}
 }
 
 void race_draw(void)

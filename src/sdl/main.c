@@ -4,6 +4,7 @@
 #include <limits.h>
 #include <SDL/SDL.h>
 #include "game.h"
+#include "gfx.h"
 #include "timer.h"
 
 #define FB_WIDTH	640
@@ -22,6 +23,15 @@ static int fbscale = 1;
 static int xsz, ysz;
 static unsigned int sdl_flags = SDL_SWSURFACE;
 
+#define MODE(w, h)	\
+	{0, w, h, 16, w * 2, 5, 6, 5, 11, 5, 0, 0xf800, 0x7e0, 0x1f, 0xbadf00d, 2, 0}
+static struct video_mode vmodes[] = {
+	MODE(320, 240), MODE(400, 300), MODE(512, 384), MODE(640, 480),
+	MODE(800, 600), MODE(1024, 768), MODE(1280, 960), MODE(1280, 1024),
+	MODE(1920, 1080), MODE(1600, 1200), MODE(1920, 1200)
+};
+static struct video_mode *cur_vmode;
+
 
 int main(int argc, char **argv)
 {
@@ -33,22 +43,10 @@ int main(int argc, char **argv)
 		printf("Framebuffer scaling x%d\n", fbscale);
 	}
 
-	xsz = FB_WIDTH * fbscale;
-	ysz = FB_HEIGHT * fbscale;
-
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_NOPARACHUTE);
-	if(!(fbsurf = SDL_SetVideoMode(xsz, ysz, FB_BPP, sdl_flags))) {
-		fprintf(stderr, "failed to set video mode %dx%d %dbpp\n", FB_WIDTH, FB_HEIGHT, FB_BPP);
-		free(fb_pixels);
-		SDL_Quit();
+	if(!set_video_mode(match_video_mode(FB_WIDTH, FB_HEIGHT, FB_BPP), 1)) {
 		return 1;
 	}
-
-	if(resizefb(FB_WIDTH, FB_HEIGHT, FB_BPP) == -1) {
-		fprintf(stderr, "failed to allocate virtual framebuffer\n");
-		return 1;
-	}
-	vmem = fb_pixels;
 
 	SDL_WM_SetCaption("eradicate/SDL", 0);
 	SDL_ShowCursor(0);
@@ -85,6 +83,64 @@ void game_quit(void)
 	quit = 1;
 }
 
+struct video_mode *video_modes(void)
+{
+	return vmodes;
+}
+
+int num_video_modes(void)
+{
+	return sizeof vmodes / sizeof *vmodes;
+}
+
+struct video_mode *get_video_mode(int idx)
+{
+	if(idx == VMODE_CURRENT) {
+		return cur_vmode;
+	}
+	return vmodes + idx;
+}
+
+int match_video_mode(int xsz, int ysz, int bpp)
+{
+	struct video_mode *vm = vmodes;
+	int i, count = num_video_modes();
+
+	for(i=0; i<count; i++) {
+		if(vm->xsz == xsz && vm->ysz == ysz && vm->bpp == bpp) {
+			return i;
+		}
+		vm++;
+	}
+	return -1;
+}
+
+void *set_video_mode(int idx, int nbuf)
+{
+	struct video_mode *vm = vmodes + idx;
+
+	if(cur_vmode == vm) {
+		return vmem;
+	}
+
+	if(!(fbsurf = SDL_SetVideoMode(vm->xsz * fbscale, vm->ysz * fbscale, vm->bpp, sdl_flags))) {
+		fprintf(stderr, "failed to set video mode %dx%d %dbpp\n", vm->xsz, vm->ysz, vm->bpp);
+		return 0;
+	}
+
+	xsz = vm->xsz * fbscale;
+	ysz = vm->ysz * fbscale;
+
+	if(resizefb(vm->xsz, vm->ysz, vm->bpp) == -1) {
+		fprintf(stderr, "failed to allocate virtual framebuffer\n");
+		return 0;
+	}
+	vmem = fb_pixels;
+
+	cur_vmode = vm;
+	return vmem;
+}
+
 void wait_vsync(void)
 {
 	unsigned long start = SDL_GetTicks();
@@ -109,8 +165,8 @@ void blit_frame(void *pixels, int vsync)
 
 	sptr = pixels;
 	dptr = (unsigned short*)fbsurf->pixels + (fbsurf->w - xsz) / 2;
-	for(i=0; i<FB_HEIGHT; i++) {
-		for(j=0; j<FB_WIDTH; j++) {
+	for(i=0; i<fb_height; i++) {
+		for(j=0; j<fb_width; j++) {
 			int x, y;
 			unsigned short pixel = *sptr++;
 
@@ -121,7 +177,7 @@ void blit_frame(void *pixels, int vsync)
 			}
 			dptr += fbscale;
 		}
-		dptr += (fbsurf->w - FB_WIDTH) * fbscale;
+		dptr += (fbsurf->w - fb_width) * fbscale;
 	}
 
 	if(SDL_MUSTLOCK(fbsurf)) {

@@ -24,6 +24,9 @@ void cleanup_video(void);
 struct video_mode *video_modes(void);
 int num_video_modes(void);
 
+#define VMODE_CURRENT	(-1)
+struct video_mode *get_video_mode(int idx);
+
 int match_video_mode(int xsz, int ysz, int bpp);
 int find_video_mode(int mode);
 
