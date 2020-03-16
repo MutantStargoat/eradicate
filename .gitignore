@@ -35,3 +35,4 @@ data
 *.dja
 *.DJA
 tools/rlesprite/rlesprite
+tools/tracktool/tracktool
