@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <math.h>
 #include <assert.h>
 #include <GL/glut.h>
@@ -9,17 +10,24 @@
 static int init(void);
 static void cleanup(void);
 static void display(void);
+static void draw_track(struct track *trk);
 static void draw_curve(struct curve *c);
 static void draw_grid(void);
+static void scr_printf(int x, int y, const char *s, ...);
 static void reshape(int x, int y);
 static void keyb(unsigned char key, int x, int y);
 static void keyb_up(unsigned char key, int x, int y);
 static void mouse(int bn, int st, int x, int y);
 static void motion(int x, int y);
 
+static void generate(void);
+static void follow(void);
+
 static int parse_args(int argc, char **argv);
 
 
+static int win_width, win_height;
+static float win_aspect;
 static float cam_theta, cam_phi = 10, cam_dist = 10;
 static cgm_vec3 cam_pos;
 static int mouse_x, mouse_y;
@@ -29,16 +37,19 @@ static unsigned int modkeys;
 
 static struct curve *curve;
 static float cpos_t;
-static cgm_vec3 cpos;
+static cgm_vec3 cpos, cdir;
 
-static int seg_subdiv = 4;
+static int wireframe;
+static int follow_cam;
+
+static int seg_subdiv = 8;
 static struct track *trk;
 
 
 int main(int argc, char **argv)
 {
 	glutInit(&argc, argv);
-	glutInitWindowSize(800, 600);
+	glutInitWindowSize(1280, 800);
 	glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE);
 	glutCreateWindow("tracktool");
 
@@ -66,6 +77,11 @@ static int init(void)
 {
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
+
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+
+	follow();	/* run the camera follow routine once to initialize all variables */
 	return 0;
 }
 
@@ -75,6 +91,11 @@ static void cleanup(void)
 
 static void display(void)
 {
+	if(follow_cam) {
+		cam_pos = cpos;
+		cam_theta = cgm_rad_to_deg(atan2(cdir.x, -cdir.z));
+	}
+
 	glClearColor(0.05, 0.05, 0.05, 1);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -85,11 +106,51 @@ static void display(void)
 	glRotatef(cam_theta, 0, 1, 0);
 	glTranslatef(-cam_pos.x, -cam_pos.y, -cam_pos.z);
 
+	glDisable(GL_LIGHTING);
 	draw_grid();
 	draw_curve(curve);
 
+	if(trk) {
+		if(!wireframe) glEnable(GL_LIGHTING);
+		draw_track(trk);
+	}
+
+	glColor3f(0.6, 1.0, 0.6);
+	scr_printf(10, 20, "camera: %s", follow_cam ? "follow" : "orbit");
+	scr_printf(10, 40, "segment subdiv: %d", seg_subdiv);
+
 	glutSwapBuffers();
 	assert(glGetError() == GL_NO_ERROR);
+}
+
+static void draw_track(struct track *trk)
+{
+	int i;
+	struct track_segment *tseg = trk->tseg;
+
+	glShadeModel(GL_FLAT);
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_NORMAL_ARRAY);
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	glEnableClientState(GL_COLOR_ARRAY);
+
+	for(i=0; i<trk->num_tseg; i++) {
+		glVertexPointer(3, GL_FLOAT, sizeof(struct g3d_vertex), &tseg->mesh.varr->x);
+		glNormalPointer(GL_FLOAT, sizeof(struct g3d_vertex), &tseg->mesh.varr->nx);
+		glTexCoordPointer(2, GL_FLOAT, sizeof(struct g3d_vertex), &tseg->mesh.varr->u);
+		glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(struct g3d_vertex), &tseg->mesh.varr->r);
+
+		glDrawElements(GL_QUADS, tseg->mesh.icount, GL_UNSIGNED_SHORT, tseg->mesh.iarr);
+		tseg++;
+	}
+
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_NORMAL_ARRAY);
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+	glDisableClientState(GL_COLOR_ARRAY);
+
+	glShadeModel(GL_SMOOTH);
 }
 
 static void draw_curve(struct curve *c)
@@ -108,16 +169,15 @@ static void draw_curve(struct curve *c)
 	}
 	glEnd();
 
-/*
 	glPushAttrib(GL_ENABLE_BIT | GL_POINT_BIT);
 	glEnable(GL_POINT_SMOOTH);
+	glDisable(GL_LIGHTING);
 	glPointSize(5.0);
 	glBegin(GL_POINTS);
 	glColor3f(1, 0, 0);
 	glVertex3f(cpos.x, cpos.y, cpos.z);
 	glEnd();
 	glPopAttrib();
-*/
 }
 
 static void draw_grid()
@@ -135,14 +195,51 @@ static void draw_grid()
 	glVertex4f(0, 0, 0, 1);
 	glVertex4f(0, 0, 1, 0);
 	glEnd();
+	glLineWidth(1);
+}
+
+static void scr_printf(int x, int y, const char *s, ...)
+{
+	char buf[1024];
+	va_list ap;
+
+	va_start(ap, s);
+	vsprintf(buf, s, ap);
+	va_end(ap);
+	s = buf;
+
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+	glOrtho(0, win_width, win_height, 0, -1, 1);
+
+	glPushAttrib(GL_ENABLE_BIT);
+	glDisable(GL_LIGHTING);
+	glDisable(GL_DEPTH_TEST);
+
+	glRasterPos2i(x, y);
+	while(*s) {
+		glutBitmapCharacter(GLUT_BITMAP_9_BY_15, *s++);
+	}
+
+	glPopAttrib();
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
 }
 
 static void reshape(int x, int y)
 {
+	win_width = x;
+	win_height = y;
+	win_aspect = (float)x / (float)y;
 	glViewport(0, 0, x, y);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluPerspective(50.0, (float)x / (float)y, 0.5, 10000.0);
+	gluPerspective(50.0, win_aspect, 0.5, 10000.0);
 }
 
 static void keyb(unsigned char key, int x, int y)
@@ -151,20 +248,32 @@ static void keyb(unsigned char key, int x, int y)
 	case 27:
 		exit(0);
 
+	case '\t':
+		follow_cam = !follow_cam;
+		glutPostRedisplay();
+		break;
+
 	case 'g':
-		if(!trk) {
-			if(!(trk = malloc(sizeof *trk))) {
-				perror("failed to allocate track");
-				break;
-			}
-			if(create_track(trk, curve) == -1) {
-				free(trk);
-				trk = 0;
-				break;
-			}
-		}
-		printf("generating track mesh with %d subdivisions per segment\n", seg_subdiv);
-		gen_track_mesh(trk, seg_subdiv);
+		generate();
+		glutPostRedisplay();
+		break;
+
+	case '=':
+		seg_subdiv++;
+		generate();
+		glutPostRedisplay();
+		break;
+
+	case '-':
+		seg_subdiv--;
+		generate();
+		glutPostRedisplay();
+		break;
+
+	case 'w':
+		wireframe = !wireframe;
+		glPolygonMode(GL_FRONT_AND_BACK, wireframe ? GL_LINE : GL_FILL);
+		glutPostRedisplay();
 		break;
 	}
 
@@ -197,17 +306,15 @@ static void motion(int x, int y)
 
 	if((dx | dy) == 0) return;
 
-	/*
-	if(keystate['t']) {
+	if(keystate['f']) {
 		cpos_t += dx * 0.001;
-		if(cpos_t < 0) cpos_t = 0;
-		if(cpos_t > 1) cpos_t = 1;
-		eval_curve(curve, cpos_t, &cpos);
-		printf("t: %f -> (%g %g %g)\n", cpos_t, cpos.x, cpos.y, cpos.z);
+		cpos_t = fmod(cpos_t, 1.0);
+		if(cpos_t < 0.0f) cpos_t += 1.0f;
+
+		follow();
 		glutPostRedisplay();
 		return;
 	}
-	*/
 
 	if(bnstate[0]) {
 		cam_theta += dx * 0.5;
@@ -237,6 +344,31 @@ static void motion(int x, int y)
 		if(cam_dist > 10000) cam_dist = 10000;
 		glutPostRedisplay();
 	}
+}
+
+static void generate(void)
+{
+	if(!trk) {
+		if(!(trk = malloc(sizeof *trk))) {
+			perror("failed to allocate track");
+			return;
+		}
+		if(create_track(trk, curve) == -1) {
+			free(trk);
+			trk = 0;
+			return;
+		}
+	}
+	printf("generating track mesh with %d subdivisions per segment\n", seg_subdiv);
+	gen_track_mesh(trk, seg_subdiv);
+}
+
+static void follow(void)
+{
+	eval_curve(curve, cpos_t, &cpos);
+	eval_curve(curve, fmod(cpos_t + 1e-4, 1.0f), &cdir);
+	cgm_vsub(&cdir, &cpos);
+	cgm_vnormalize(&cdir);
 }
 
 static int parse_args(int argc, char **argv)
@@ -283,5 +415,6 @@ static int parse_args(int argc, char **argv)
 		return -1;
 	}
 
+	generate();
 	return 0;
 }

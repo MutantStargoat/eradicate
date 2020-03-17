@@ -76,7 +76,7 @@ int gen_track_mesh(struct track *trk, int subdiv)
 			vptr->ny *= s; \
 			vptr->nz *= s; \
 		} \
-		vptr->r = vptr->g = vptr->b = vptr->a = 1.0f; \
+		vptr->r = vptr->g = vptr->b = vptr->a = 255; \
 		vptr++; \
 	} while(0)
 
@@ -126,10 +126,10 @@ int gen_track_seg_mesh(struct track *trk, int segidx, int subdiv)
 		*iptr++ = nverts + 5;
 		*iptr++ = nverts + 4;
 		/* right wing */
-		*iptr++ = nverts + 3;
 		*iptr++ = nverts + 7;
 		*iptr++ = nverts + 6;
 		*iptr++ = nverts + 2;
+		*iptr++ = nverts + 3;
 		/* road */
 		*iptr++ = nverts + 1;
 		*iptr++ = nverts + 2;
