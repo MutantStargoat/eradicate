@@ -42,7 +42,8 @@ static cgm_vec3 cpos, cdir;
 static int wireframe;
 static int follow_cam;
 
-static int seg_subdiv = 8;
+static int seg_subdiv = 18;
+static float twist = 30.0f;
 static struct track *trk;
 
 
@@ -116,8 +117,9 @@ static void display(void)
 	}
 
 	glColor3f(0.6, 1.0, 0.6);
-	scr_printf(10, 20, "camera: %s", follow_cam ? "follow" : "orbit");
-	scr_printf(10, 40, "segment subdiv: %d", seg_subdiv);
+	scr_printf(10, 20, "camera: %s  (tab)", follow_cam ? "follow" : "orbit");
+	scr_printf(10, 40, "segment subdiv: %d  (+/-)", seg_subdiv);
+	scr_printf(10, 60, "twist factor: %g  ([/])", twist);
 
 	glutSwapBuffers();
 	assert(glGetError() == GL_NO_ERROR);
@@ -270,6 +272,18 @@ static void keyb(unsigned char key, int x, int y)
 		glutPostRedisplay();
 		break;
 
+	case ']':
+		twist += 5.0f;
+		generate();
+		glutPostRedisplay();
+		break;
+
+	case '[':
+		twist -= 5.0f;
+		generate();
+		glutPostRedisplay();
+		break;
+
 	case 'w':
 		wireframe = !wireframe;
 		glPolygonMode(GL_FRONT_AND_BACK, wireframe ? GL_LINE : GL_FILL);
@@ -360,7 +374,7 @@ static void generate(void)
 		}
 	}
 	printf("generating track mesh with %d subdivisions per segment\n", seg_subdiv);
-	gen_track_mesh(trk, seg_subdiv);
+	gen_track_mesh(trk, seg_subdiv, twist);
 }
 
 static void follow(void)

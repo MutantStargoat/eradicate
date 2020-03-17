@@ -80,6 +80,7 @@ struct curve *load_curve(const char *fname)
 				cpptr->t1 = cpptr->pos;
 			}
 		}
+
 cont:
 		node = node->next;
 	}

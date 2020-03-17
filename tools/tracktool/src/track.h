@@ -11,8 +11,6 @@ struct track_segment {
 	float path_t[2];
 	int path_seg;
 
-	float twist[2];
-
 	struct g3d_mesh mesh;
 };
 
@@ -27,8 +25,9 @@ struct track {
 int create_track(struct track *trk, struct curve *curve);
 void destroy_track(struct track *trk);
 
-int gen_track_mesh(struct track *trk, int subdiv);
-int gen_track_seg_mesh(struct track *trk, int segidx, int subdiv);
+int gen_track_mesh(struct track *trk, int subdiv, float twist);
+int gen_track_seg_mesh(struct track *trk, int segidx, int subdiv, float twist);
 
+float eval_track_roll(struct track *trk, float t);
 
 #endif	/* TRACK_H_ */

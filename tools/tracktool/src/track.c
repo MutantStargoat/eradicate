@@ -40,11 +40,11 @@ void destroy_track(struct track *trk)
 	free(trk->tseg);
 }
 
-int gen_track_mesh(struct track *trk, int subdiv)
+int gen_track_mesh(struct track *trk, int subdiv, float twist)
 {
 	int i;
 	for(i=0; i<trk->num_tseg; i++) {
-		if(gen_track_seg_mesh(trk, i, subdiv) == -1) {
+		if(gen_track_seg_mesh(trk, i, subdiv, twist) == -1) {
 			while(--i) {
 			}
 			return -1;
@@ -80,10 +80,10 @@ int gen_track_mesh(struct track *trk, int subdiv)
 		vptr++; \
 	} while(0)
 
-int gen_track_seg_mesh(struct track *trk, int segidx, int subdiv)
+int gen_track_seg_mesh(struct track *trk, int segidx, int subdiv, float twist)
 {
 	int i, j, nverts, nidx;
-	float t, vend[2];
+	float t, roll, vend[2];
 	struct track_segment *tseg = trk->tseg + segidx;
 	struct g3d_mesh *m = &tseg->mesh;
 	cgm_vec3 pos, cent, fwd, right, up;
@@ -152,10 +152,12 @@ int gen_track_seg_mesh(struct track *trk, int segidx, int subdiv)
 				cgm_vcons(&up, 0, 0, 1);
 			}
 
+			roll = eval_track_roll(trk, t) * twist;
+			cgm_vrotate(&up, roll, fwd.x, fwd.y, fwd.z);
+
 			cgm_vcross(&right, &fwd, &up);
 			cgm_vnormalize(&right);
 			cgm_vcross(&up, &right, &fwd);
-			/* TODO take twist into account */
 
 			/* add row of vertices */
 			pos = cent;
@@ -178,4 +180,23 @@ int gen_track_seg_mesh(struct track *trk, int segidx, int subdiv)
 	}
 
 	return 0;
+}
+
+
+/* evaluate the how much the road should twist based on x-z plane curvature */
+float eval_track_roll(struct track *trk, float t)
+{
+	cgm_vec3 pos, pprev, pnext, next_dir, prev_dir, cross;
+
+	eval_curve(trk->path, t, &pos);
+	eval_curve(trk->path, t + 1e-4, &pnext);
+	eval_curve(trk->path, t - 1e-4, &pprev);
+
+	cgm_vcons(&next_dir, pnext.x - pos.x, 0, pnext.z - pos.z);
+	cgm_vnormalize(&next_dir);
+	cgm_vcons(&prev_dir, pos.x - pprev.x, 0, pos.z - pprev.z);
+	cgm_vnormalize(&prev_dir);
+
+	cgm_vcross(&cross, &next_dir, &prev_dir);
+	return cross.y;
 }
