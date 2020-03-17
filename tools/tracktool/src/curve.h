@@ -15,6 +15,8 @@ struct curve {
 struct curve *load_curve(const char *fname);
 void free_curve(struct curve *c);
 
+void curve_bounds(struct curve *c, cgm_vec3 *bbmin, cgm_vec3 *bbmax);
+
 int curve_segment(struct curve *c, float t, float *seg_t);
 void eval_curve(struct curve *c, float t, cgm_vec3 *ret);
 

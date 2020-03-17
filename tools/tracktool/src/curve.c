@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <float.h>
 #include "treestor.h"
 #include "curve.h"
 #include "util.h"
@@ -92,6 +93,28 @@ void free_curve(struct curve *c)
 	if(c) {
 		free(c->cp);
 		free(c);
+	}
+}
+
+void curve_bounds(struct curve *c, cgm_vec3 *bbmin, cgm_vec3 *bbmax)
+{
+	int i, j;
+	cgm_vec3 *p;
+
+	bbmin->x = bbmin->y = bbmin->z = FLT_MAX;
+	bbmax->x = bbmax->y = bbmax->z = -FLT_MAX;
+
+	for(i=0; i<c->num_cp; i++) {
+		p = &c->cp[i].pos;
+		for(j=0; j<3; j++) {
+			if(p->x < bbmin->x) bbmin->x = p->x;
+			if(p->x > bbmax->x) bbmax->x = p->x;
+			if(p->y < bbmin->y) bbmin->y = p->y;
+			if(p->y > bbmax->y) bbmax->y = p->y;
+			if(p->z < bbmin->z) bbmin->z = p->z;
+			if(p->z > bbmax->z) bbmax->z = p->z;
+			p++;
+		}
 	}
 }
 

@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <GL/glut.h>
 #include "curve.h"
+#include "track.h"
 
 static int init(void);
 static void cleanup(void);
@@ -20,6 +21,7 @@ static int parse_args(int argc, char **argv);
 
 
 static float cam_theta, cam_phi = 10, cam_dist = 10;
+static cgm_vec3 cam_pos;
 static int mouse_x, mouse_y;
 static int bnstate[8];
 static unsigned char keystate[256];
@@ -28,6 +30,9 @@ static unsigned int modkeys;
 static struct curve *curve;
 static float cpos_t;
 static cgm_vec3 cpos;
+
+static int seg_subdiv = 4;
+static struct track *trk;
 
 
 int main(int argc, char **argv)
@@ -78,6 +83,7 @@ static void display(void)
 	glTranslatef(0, 0, -cam_dist);
 	glRotatef(cam_phi, 1, 0, 0);
 	glRotatef(cam_theta, 0, 1, 0);
+	glTranslatef(-cam_pos.x, -cam_pos.y, -cam_pos.z);
 
 	draw_grid();
 	draw_curve(curve);
@@ -102,7 +108,7 @@ static void draw_curve(struct curve *c)
 	}
 	glEnd();
 
-
+/*
 	glPushAttrib(GL_ENABLE_BIT | GL_POINT_BIT);
 	glEnable(GL_POINT_SMOOTH);
 	glPointSize(5.0);
@@ -111,6 +117,7 @@ static void draw_curve(struct curve *c)
 	glVertex3f(cpos.x, cpos.y, cpos.z);
 	glEnd();
 	glPopAttrib();
+*/
 }
 
 static void draw_grid()
@@ -143,6 +150,22 @@ static void keyb(unsigned char key, int x, int y)
 	switch(key) {
 	case 27:
 		exit(0);
+
+	case 'g':
+		if(!trk) {
+			if(!(trk = malloc(sizeof *trk))) {
+				perror("failed to allocate track");
+				break;
+			}
+			if(create_track(trk, curve) == -1) {
+				free(trk);
+				trk = 0;
+				break;
+			}
+		}
+		printf("generating track mesh with %d subdivisions per segment\n", seg_subdiv);
+		gen_track_mesh(trk, seg_subdiv);
+		break;
 	}
 
 	keystate[key] = 1;
@@ -174,6 +197,7 @@ static void motion(int x, int y)
 
 	if((dx | dy) == 0) return;
 
+	/*
 	if(keystate['t']) {
 		cpos_t += dx * 0.001;
 		if(cpos_t < 0) cpos_t = 0;
@@ -183,6 +207,7 @@ static void motion(int x, int y)
 		glutPostRedisplay();
 		return;
 	}
+	*/
 
 	if(bnstate[0]) {
 		cam_theta += dx * 0.5;
@@ -191,13 +216,25 @@ static void motion(int x, int y)
 		if(cam_phi > 90) cam_phi = 90;
 		glutPostRedisplay();
 	}
+	if(bnstate[1]) {
+		float theta = cgm_deg_to_rad(cam_theta);
+		cgm_vec3 fwd, right;
+
+		cgm_vcons(&right, cos(theta), 0, sin(theta));
+		cgm_vcons(&fwd, -sin(theta), 0, cos(theta));
+
+		cgm_vadd_scaled(&cam_pos, &right, dx * -0.1 * log(cam_dist));
+		cgm_vadd_scaled(&cam_pos, &fwd, dy * -0.1 * log(cam_dist));
+		glutPostRedisplay();
+	}
 	if(bnstate[2]) {
 		if(modkeys & GLUT_ACTIVE_CTRL) {
-			cam_dist += dy;
+			cam_dist += dy * 0.1 / cam_dist;
 		} else {
-			cam_dist += dy * 0.1;
+			cam_dist += dy * 0.01 * cam_dist;
 		}
-		if(cam_dist < 0) cam_dist = 0;
+		if(cam_dist < 0.1) cam_dist = 0.1;
+		if(cam_dist > 10000) cam_dist = 10000;
 		glutPostRedisplay();
 	}
 }
@@ -205,6 +242,8 @@ static void motion(int x, int y)
 static int parse_args(int argc, char **argv)
 {
 	int i;
+	cgm_vec3 bbmin, bbmax, bbrad;
+	float rad;
 
 	for(i=1; i<argc; i++) {
 		if(argv[i][0] == '-') {
@@ -214,6 +253,15 @@ static int parse_args(int argc, char **argv)
 					if(!(curve = load_curve(argv[++i]))) {
 						return -1;
 					}
+					curve_bounds(curve, &bbmin, &bbmax);
+					bbrad.x = (bbmax.x - bbmin.x) / 2.0f;
+					bbrad.y = (bbmax.y - bbmin.y) / 2.0f;
+					bbrad.z = (bbmax.z - bbmin.z) / 2.0f;
+					rad = bbrad.x > bbrad.y ? (bbrad.x > bbrad.z ? bbrad.x : bbrad.z) : bbrad.y;
+					cam_dist = rad / tan(25.0 * M_PI / 180.0);
+					cam_pos.x = (bbmax.x + bbmin.x) / 2.0f;
+					cam_pos.y = (bbmax.y + bbmin.y) / 2.0f;
+					cam_pos.z = (bbmax.z + bbmin.z) / 2.0f;
 					break;
 
 				default:
