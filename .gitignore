@@ -34,5 +34,5 @@ data
 *.COF
 *.dja
 *.DJA
-tools/rlesprite/rlesprite
-tools/tracktool/tracktool
+tools/mksprite/mksprite
+tools/trktool/trktool

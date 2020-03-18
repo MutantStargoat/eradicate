@@ -1,6 +1,6 @@
 src = $(wildcard src/*.c)
 obj = $(src:.c=.o)
-bin = rlesprite
+bin = mksprite
 
 CFLAGS = -pedantic -Wall -g
 LDFLAGS = -lpng -lz

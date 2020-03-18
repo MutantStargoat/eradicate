@@ -19,33 +19,33 @@ fi
 #fi
 
 # process RLE sprites
-if [ ! -f tools/rlesprite/rlesprite ]; then
-	make -C tools/rlesprite || exit 1
+if [ ! -f tools/mksprite/mksprite ]; then
+	make -C tools/mksprite || exit 1
 fi
-alias rlesprite=tools/rlesprite/rlesprite
+alias mksprite=tools/mksprite/mksprite
 
 if [ ! -f data/dbgfont.spr -o data/src/legible.fnt -nt data/dbgfont.spr ]; then
-	echo 'rlesprite: dbgfont'
-	rlesprite -o data/dbgfont.spr -s 8x16 -conv565 data/src/legible.fnt
+	echo 'mksprite: dbgfont'
+	mksprite -o data/dbgfont.spr -s 8x16 -conv565 data/src/legible.fnt
 fi
 
 if [ ! -f data/nebula.spr -o data/src/nebula.fnt -nt data/nebula.spr ]; then
-	echo 'rlesprite: nebula'
-	rlesprite -o data/nebula.spr -s 16x16 -conv565 data/src/nebula.fnt
+	echo 'mksprite: nebula'
+	mksprite -o data/nebula.spr -s 16x16 -conv565 data/src/nebula.fnt
 fi
 
 if [ ! -f data/nebucol.spr -o data/src/nebucol.fnt -nt data/nebucol.spr ]; then
-	echo 'rlesprite: nebucol'
-	rlesprite -o data/nebucol.spr -s 16x16 -conv565 data/src/nebucol.fnt
+	echo 'mksprite: nebucol'
+	mksprite -o data/nebucol.spr -s 16x16 -conv565 data/src/nebucol.fnt
 fi
 
 if [ ! -f data/nebcobig.spr -o data/src/nebucol.fnt -nt data/nebcobig.spr ]; then
-	echo 'rlesprite: nebcobig'
+	echo 'mksprite: nebcobig'
 	convert data/src/nebucol.fnt -filter point -resize '200%' data/src/nebcobig.fnt
-	rlesprite -o data/nebcobig.spr -s 32x32 -conv565 data/src/nebcobig.fnt
+	mksprite -o data/nebcobig.spr -s 32x32 -conv565 data/src/nebcobig.fnt
 fi
 
 if [ ! -f data/icons.spr -o data/src/icons.png -nt data/icons.spr ]; then
-	echo 'rlesprite: icons'
-	rlesprite -o data/icons.spr -s 16x16 -conv565 data/src/icons.png
+	echo 'mksprite: icons'
+	mksprite -o data/icons.spr -s 16x16 -conv565 data/src/icons.png
 fi

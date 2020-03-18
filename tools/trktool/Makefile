@@ -1,7 +1,7 @@
 src = $(wildcard src/*.c)
 obj = $(src:.c=.o)
 dep = $(obj:.o=.d)
-bin = tracktool
+bin = trktool
 
 inc = -I../../libs/cgmath/src -I../../src
 
