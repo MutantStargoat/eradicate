@@ -33,8 +33,7 @@ libpath = libpath libs\imago
 obj = $(dosobj) $(gameobj) $(gfxobj) $(scrobj)
 bin = game.exe
 
-def = -dM_PI=3.141592653589793
-# -dUSE_MMX
+def = -dM_PI=3.141592653589793 -dUSE_MMX
 libs = imago.lib
 
 CC = wcc386

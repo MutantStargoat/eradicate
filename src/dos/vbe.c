@@ -33,6 +33,7 @@ int vbe_info(struct vbe_info *info)
 	void *lowbuf;
 	uint16_t seg, sel;
 	uint16_t *modeptr;
+	uint32_t offs;
 	struct dpmi_regs regs = {0};
 
 	assert(sizeof *info == 512);
@@ -63,7 +64,23 @@ int vbe_info(struct vbe_info *info)
 	FIXPTR(info->product);
 	FIXPTR(info->revstr);
 	FIXPTR(info->modes);
-	FIXPTR(info->accel_modes);
+	/* implementations without the accel capability, will use the space taken
+	 * by the accel_modes pointer for other data (probably video modes). We
+	 * need to check for the capability before "fixing" this pointer, otherwise
+	 * we'll shuffle random data.
+	 */
+	if(info->caps & VBE_ACCEL) {
+		FIXPTR(info->accel_modes);
+	}
+
+	/* info->modes should be pointing somewhere at the end of the original
+	 * low memory buffer. make it point at the same offset in the info
+	 * buffer where we copied everything instead.
+	 */
+	offs = (char*)info->modes - (char*)lowbuf;
+	if(offs < sizeof *info) {	/* this should always be true */
+		info->modes = (uint16_t*)((char*)info + offs);
+	}
 
 	modeptr = info->modes;
 	while(*modeptr != 0xffff) {
