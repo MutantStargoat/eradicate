@@ -7,6 +7,8 @@
 #include "gfxutil.h"
 #include "game.h"
 #include "util.h"
+#include "3dgfx/3dgfx.h"
+#include "3dgfx/mesh.h"
 
 #define PADX	42
 #define PADX2	(PADX * 2)
@@ -26,12 +28,28 @@ static int cur;
 static uint16_t *bgpix;
 static int bgwidth, bgheight;
 
+static struct g3d_mesh logo_mesh;
+static uint16_t *envpix;
+static int envwidth, envheight;
+
+
 int menu_init(void)
 {
 	if(!(bgpix = img_load_pixels("data/menbg640.png", &bgwidth, &bgheight, IMG_FMT_RGB565))) {
 		fprintf(stderr, "failed to load menu bg image\n");
 		return -1;
 	}
+
+	if(!(envpix = img_load_pixels("data/refmap.jpg", &envwidth, &envheight, IMG_FMT_RGB565))) {
+		fprintf(stderr, "failed to load environment map\n");
+		return -1;
+	}
+
+	if(load_mesh(&logo_mesh, "data/logo.obj") == -1) {
+		fprintf(stderr, "failed to load logo mesh\n");
+		return -1;
+	}
+	normalize_mesh_normals(&logo_mesh);
 	return 0;
 }
 
@@ -45,7 +63,26 @@ void menu_start(void)
 	draw = menu_draw;
 	key_event = menu_keyb;
 
-	memcpy(fb_pixels, bgpix, fb_size);
+	g3d_framebuffer(fb_width, fb_height, fb_pixels);
+
+	g3d_matrix_mode(G3D_PROJECTION);
+	g3d_load_identity();
+	g3d_perspective(60.0, (float)fb_width / (float)fb_height, 0.5, 100.0);
+
+	g3d_enable(G3D_CULL_FACE);
+	/*
+	g3d_enable(G3D_LIGHTING);
+	g3d_enable(G3D_LIGHT0);
+	*/
+	g3d_disable(G3D_CLIP_FRUSTUM);
+
+	g3d_polygon_mode(G3D_FLAT);
+
+	g3d_enable(G3D_TEXTURE_2D);
+	g3d_enable(G3D_TEXTURE_GEN);
+	g3d_set_texture(envwidth, envheight, envpix);
+
+	g3d_matrix_mode(G3D_MODELVIEW);
 }
 
 void menu_stop(void)
@@ -61,10 +98,23 @@ void menu_draw(void)
 	static uint16_t blurbuf[2][BBW * BBH];
 	uint16_t *fb = fb_pixels;
 	int fboffs, cleartop;
+	int blur_rad_x, blur_rad_y;
 	const struct menuent *ent = menuent + cur;
 
-	int blur_rad_x = (int)((sin(time_msec / 1000.0f) * 0.5f + 0.5f) * 50.0f);
-	int blur_rad_y = (int)((cos(time_msec / 1000.0f) * 0.5f + 0.5f) * 50.0f);
+	float sint = sin(time_msec / 1000.0f);
+	float cost = cos(time_msec / 1000.0f);
+
+	memcpy(fb_pixels, bgpix, fb_size);
+	g3d_load_identity();
+	g3d_translate(0, 1.2, -4.5);
+	g3d_rotate(cost * 4.0f, 1, 0, 0);
+	g3d_rotate(sint * 6.0f, 0, 1, 0);
+
+	/*zsort_mesh(&logo_mesh);*/
+	draw_mesh(&logo_mesh);
+
+	blur_rad_x = (int)((sint * 0.5f + 0.5f) * 50.0f);
+	blur_rad_y = (int)((cost * 0.5f + 0.5f) * 50.0f);
 
 	fboffs = ent->y * fb_width + ent->x;
 

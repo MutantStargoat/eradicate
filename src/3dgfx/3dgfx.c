@@ -478,7 +478,7 @@ void g3d_draw_indexed(int prim, const struct g3d_vertex *varr, int varr_size,
 			}
 			if(st->opt & G3D_TEXTURE_GEN) {
 				v[i].u = v[i].nx * 0.5 + 0.5;
-				v[i].v = v[i].ny * 0.5 + 0.5;
+				v[i].v = 0.5 - v[i].ny * 0.5;
 			}
 			if(st->opt & G3D_TEXTURE_MAT) {
 				float *mat = st->mat[G3D_TEXTURE][st->mtop[G3D_TEXTURE]];
