@@ -7,6 +7,7 @@
 #include "3dgfx/3dgfx.h"
 #include "3dgfx/mesh.h"
 #include "imago2.h"
+#include "track.h"
 
 static struct g3d_mesh ship_mesh;
 static uint16_t *ship_tex;
@@ -48,6 +49,7 @@ void race_start(void)
 		vmem = set_video_mode(vmidx, 1);
 	}
 
+	g3d_reset();
 	g3d_framebuffer(fb_width, fb_height, fb_pixels);
 
 	g3d_matrix_mode(G3D_PROJECTION);

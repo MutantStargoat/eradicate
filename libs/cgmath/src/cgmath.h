@@ -26,6 +26,10 @@
 #include <math.h>
 #include <string.h>
 
+#if defined(__WATCOMC__) && __WATCOMC__ < 1200
+#define inline __inline
+#endif
+
 typedef struct {
 	float x, y;
 } cgm_vec2;

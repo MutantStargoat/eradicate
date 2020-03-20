@@ -12,7 +12,7 @@ if ! ( mount | grep pcem ); then
 	do_umount=true
 fi
 
-tools/scripts/instdfs $mntpt/tmp
+tools/scripts/instdfs $mntpt/code/eradicat
 
 if $do_umount; then
 	umount $mntpt

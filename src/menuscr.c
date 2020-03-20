@@ -63,6 +63,7 @@ void menu_start(void)
 	draw = menu_draw;
 	key_event = menu_keyb;
 
+	g3d_reset();
 	g3d_framebuffer(fb_width, fb_height, fb_pixels);
 
 	g3d_matrix_mode(G3D_PROJECTION);

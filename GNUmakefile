@@ -6,7 +6,7 @@ dep = $(obj:.o=.d)
 bin = game
 
 def = -DUSE_MMX
-inc = -Isrc -Isrc/sdl -Isrc/3dgfx -Ilibs/imago/src
+inc = -Isrc -Isrc/sdl -Isrc/3dgfx -Ilibs/imago/src -Ilibs/cgmath/src
 warn = -pedantic -Wall
 
 CFLAGS = $(arch) $(warn) -g -MMD $(def) $(inc) `sdl-config --cflags`

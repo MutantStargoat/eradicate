@@ -89,12 +89,26 @@ static const float idmat[] = {
 
 int g3d_init(void)
 {
-	int i;
-
-	if(!(st = calloc(1, sizeof *st))) {
+	if(!(st = malloc(sizeof *st))) {
 		fprintf(stderr, "failed to allocate G3D context\n");
 		return -1;
 	}
+	g3d_reset();
+
+	return 0;
+}
+
+void g3d_destroy(void)
+{
+	free(st);
+}
+
+void g3d_reset(void)
+{
+	int i;
+
+	memset(st, 0, sizeof *st);
+
 	st->opt = G3D_CLIP_FRUSTUM;
 	st->polymode = POLYFILL_FLAT;
 
@@ -109,12 +123,6 @@ int g3d_init(void)
 	g3d_light_ambient(0.1, 0.1, 0.1);
 
 	g3d_mtl_diffuse(1, 1, 1);
-	return 0;
-}
-
-void g3d_destroy(void)
-{
-	free(st);
 }
 
 void g3d_framebuffer(int width, int height, void *pixels)

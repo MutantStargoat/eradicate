@@ -80,6 +80,7 @@ enum {
 
 int g3d_init(void);
 void g3d_destroy(void);
+void g3d_reset(void);
 
 void g3d_framebuffer(int width, int height, void *pixels);
 void g3d_framebuffer_addr(void *pixels);
