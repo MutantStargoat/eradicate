@@ -55,8 +55,9 @@ int gen_track_mesh(struct track *trk, int subdiv, float twist)
 
 #define DELTA		1e-5
 /* TODO make it per-vertex attribute */
-#define ROAD_RAD	3.0f
+#define ROAD_RAD	6.0f
 #define WING_SZ		0.8f
+#define TEX_V_SCALE	8.0f
 
 #define ROAD_VERTEX(vx, vy, vz, vnx, vny, vnz, vu, vv) \
 	do { \
@@ -65,7 +66,7 @@ int gen_track_mesh(struct track *trk, int subdiv, float twist)
 		vptr->y = (vy); \
 		vptr->z = (vz); \
 		vptr->u = (vu); \
-		vptr->v = (vv); \
+		vptr->v = (vv) * TEX_V_SCALE; \
 		vptr->nx = (vnx); \
 		vptr->ny = (vny); \
 		vptr->nz = (vny); \
@@ -90,8 +91,8 @@ int gen_track_seg_mesh(struct track *trk, int segidx, int subdiv, float twist)
 	struct g3d_vertex *varr, *vptr;
 	uint16_t *iarr, *iptr;
 
-	nverts = subdiv * 8;	/* road seg 4, plus 4 for the wings */
-	nidx = subdiv * 12;		/* road seg 4, plus 4 for each of the wings */
+	nverts = subdiv * 10;	/* road seg 6, plus 4 for the wings */
+	nidx = subdiv * 16;		/* road seg 8, plus 4 for each of the wings */
 
 	if(!(varr = malloc(nverts * sizeof *varr))) {
 		fprintf(stderr, "failed to allocate track segment %d vertex buffer (%d verts)\n", segidx, nverts);
@@ -118,23 +119,32 @@ int gen_track_seg_mesh(struct track *trk, int segidx, int subdiv, float twist)
 		vend[0] = (float)i / (float)subdiv;
 		vend[1] = (float)(i + 1) / (float)subdiv;
 
-		/* add the indices for the segment quads: left wing, right wing, road */
+		/* add the indices for the segment quads
+		 * +--+----+----+--+  <- 5, 6, 7, 8, 9
+		 * |  |    |    |  |
+		 * +--+----+----+--+  <- 0, 1, 2, 3, 4
+		 */
 		nverts = vptr - varr;
 		/* left wing */
 		*iptr++ = nverts;
 		*iptr++ = nverts + 1;
-		*iptr++ = nverts + 5;
-		*iptr++ = nverts + 4;
-		/* right wing */
-		*iptr++ = nverts + 7;
 		*iptr++ = nverts + 6;
-		*iptr++ = nverts + 2;
+		*iptr++ = nverts + 5;
+		/* right wing */
+		*iptr++ = nverts + 9;
+		*iptr++ = nverts + 8;
 		*iptr++ = nverts + 3;
-		/* road */
+		*iptr++ = nverts + 4;
+		/* road left */
 		*iptr++ = nverts + 1;
 		*iptr++ = nverts + 2;
+		*iptr++ = nverts + 7;
 		*iptr++ = nverts + 6;
-		*iptr++ = nverts + 5;
+		/* road right */
+		*iptr++ = nverts + 2;
+		*iptr++ = nverts + 3;
+		*iptr++ = nverts + 8;
+		*iptr++ = nverts + 7;
 
 		for(j=0; j<2; j++) {
 			t = cgm_lerp(tseg->path_t[0], tseg->path_t[1], vend[j]);
@@ -162,20 +172,23 @@ int gen_track_seg_mesh(struct track *trk, int segidx, int subdiv, float twist)
 			/* add row of vertices */
 			pos = cent;
 			cgm_vadd_scaled(&pos, &right, -ROAD_RAD - WING_SZ);
-			cgm_vadd_scaled(&pos, &up, WING_SZ);
+			cgm_vadd_scaled(&pos, &up, WING_SZ * 1.5);
 			ROAD_VERTEX(pos.x, pos.y, pos.z, 1, 1, 0, 0.0f, vend[j]);
 
 			pos = cent;
 			cgm_vadd_scaled(&pos, &right, -ROAD_RAD);
 			ROAD_VERTEX(pos.x, pos.y, pos.z, 0, 1, 0, 0.25f, vend[j]);
+
 			pos = cent;
+			ROAD_VERTEX(pos.x, pos.y, pos.z, 0, 1, 0, 0.99f, vend[j]);
+
 			cgm_vadd_scaled(&pos, &right, ROAD_RAD);
-			ROAD_VERTEX(pos.x, pos.y, pos.z, 0, 1, 0, 0.75f, vend[j]);
+			ROAD_VERTEX(pos.x, pos.y, pos.z, 0, 1, 0, 0.25f, vend[j]);
 
 			pos = cent;
 			cgm_vadd_scaled(&pos, &right, ROAD_RAD + WING_SZ);
-			cgm_vadd_scaled(&pos, &up, WING_SZ);
-			ROAD_VERTEX(pos.x, pos.y, pos.z, -1, 1, 0, 1.0f, vend[j]);
+			cgm_vadd_scaled(&pos, &up, WING_SZ * 1.5);
+			ROAD_VERTEX(pos.x, pos.y, pos.z, -1, 1, 0, 0.0f, vend[j]);
 		}
 	}
 

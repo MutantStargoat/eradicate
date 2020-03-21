@@ -140,23 +140,50 @@ int curve_segment(struct curve *c, float t, float *seg_t)
 
 void eval_curve(struct curve *c, float t, cgm_vec3 *ret)
 {
+	float ext_t;
 	int seg;
 	struct curve_cp *a, *b;
 
-	if(t <= 0.0f) {
-		*ret = c->cp[0].pos;
-		return;
-	}
-	if(t >= 1.0f) {
-		*ret = c->cp[c->num_cp - 1].pos;
-		return;
+	switch(c->mode) {
+	case CURVE_CLAMP:
+		if(t <= 0.0f) {
+			*ret = c->cp[0].pos;
+			return;
+		}
+		if(t >= 1.0f) {
+			*ret = c->cp[c->num_cp - 1].pos;
+			return;
+		}
+		seg = curve_segment(c, t, &t);
+		break;
+
+	case CURVE_REPEAT:
+		t = fmod(t, 1.0f);
+		if(t < 0.0f) t += 1.0f;
+		seg = curve_segment(c, t, &t);
+		break;
+
+	case CURVE_EXTRAP:
+		seg = curve_segment(c, t, &ext_t);
+		if(t >= 0.0f && t <= 1.0f) {
+			t = ext_t;
+		}
+		break;
 	}
 
-	seg = curve_segment(c, t, &t);
 	a = c->cp + seg;
 	b = a + 1;
 
 	ret->x = cgm_bezier(a->pos.x, a->t1.x, b->t0.x, b->pos.x, t);
 	ret->y = cgm_bezier(a->pos.y, a->t1.y, b->t0.y, b->pos.y, t);
 	ret->z = cgm_bezier(a->pos.z, a->t1.z, b->t0.z, b->pos.z, t);
+}
+
+void eval_tangent(struct curve *c, float t, cgm_vec3 *ret)
+{
+	cgm_vec3 pos;
+	eval_curve(c, t, &pos);
+	eval_curve(c, t + 1e-4, ret);
+	cgm_vsub(ret, &pos);
+	cgm_vnormalize(ret);
 }

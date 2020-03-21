@@ -380,9 +380,7 @@ static void generate(void)
 static void follow(void)
 {
 	eval_curve(curve, cpos_t, &cpos);
-	eval_curve(curve, fmod(cpos_t + 1e-4, 1.0f), &cdir);
-	cgm_vsub(&cdir, &cpos);
-	cgm_vnormalize(&cdir);
+	eval_tangent(curve, cpos_t, &cdir);
 }
 
 static int parse_args(int argc, char **argv)
@@ -399,6 +397,7 @@ static int parse_args(int argc, char **argv)
 					if(!(curve = load_curve(argv[++i]))) {
 						return -1;
 					}
+					curve->mode = CURVE_REPEAT;
 					curve_bounds(curve, &bbmin, &bbmax);
 					bbrad.x = (bbmax.x - bbmin.x) / 2.0f;
 					bbrad.y = (bbmax.y - bbmin.y) / 2.0f;

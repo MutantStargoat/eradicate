@@ -8,12 +8,27 @@
 #include "3dgfx/mesh.h"
 #include "imago2.h"
 #include "track.h"
+#include "fonts.h"
+#include "camera.h"
+
+#define TRK_SUBDIV	26
+#define TRK_TWIST	30
 
 static struct g3d_mesh ship_mesh;
 static uint16_t *ship_tex;
 static int ship_tex_width, ship_tex_height;
 
+static uint16_t *road_tex;
+static int road_tex_width, road_tex_height;
+
 static int menu_mode_idx = -1;
+
+static struct curve *path;
+static struct track trk;
+static struct camera cam[2];
+static int act_cam;
+
+static cgm_vec3 ppos, pdir;
 
 int race_init(void)
 {
@@ -26,6 +41,11 @@ int race_init(void)
 		fprintf(stderr, "failed to load ship texture\n");
 		return -1;
 	}
+	if(!(road_tex = img_load_pixels("data/road.png", &road_tex_width, &road_tex_height,
+				IMG_FMT_RGB565))) {
+		fprintf(stderr, "failed to load road texture\n");
+		return -1;
+	}
 
 	return 0;
 }
@@ -33,6 +53,7 @@ int race_init(void)
 void race_cleanup(void)
 {
 	img_free_pixels(ship_tex);
+	img_free_pixels(road_tex);
 	destroy_mesh(&ship_mesh);
 }
 
@@ -40,6 +61,35 @@ void race_start(void)
 {
 	int vmidx;
 
+	memset(fb_pixels, 0, fb_size);
+	select_font(FONT_MENU_SHADED);
+	fnt_align(FONT_CENTER);
+	fnt_print(fb_pixels, 320, 220, "Loading track...");
+	blit_frame(fb_pixels, 0);
+
+	if(!(path = load_curve("data/track1.trk"))) {
+		fprintf(stderr, "failed to load track path\n");
+		return;
+	}
+	if(create_track(&trk, path) == -1) {
+		fprintf(stderr, "failed to load track\n");
+		return;
+	}
+	if(gen_track_mesh(&trk, TRK_SUBDIV, TRK_TWIST) == -1) {
+		fprintf(stderr, "failed to generate track mesh\n");
+		destroy_track(&trk);
+		return;
+	}
+
+	eval_curve(path, 0, &ppos);
+	eval_tangent(path, 0, &pdir);
+
+	cam[0].dist = 10;
+	cam[0].height = 3;
+	cam[0].roll = 0;
+	cam_follow(cam, &ppos, &pdir);
+
+	/* loading done */
 	draw = race_draw;
 	key_event = race_keyb;
 
@@ -54,34 +104,48 @@ void race_start(void)
 
 	g3d_matrix_mode(G3D_PROJECTION);
 	g3d_load_identity();
-	g3d_perspective(50.0, (float)fb_width / (float)fb_height, 0.5, 100.0);
+	g3d_perspective(50.0, (float)fb_width / (float)fb_height, 0.5, 1000.0);
 
 	g3d_enable(G3D_CULL_FACE);
 	g3d_enable(G3D_LIGHTING);
 	g3d_enable(G3D_LIGHT0);
+
 }
 
 void race_stop(void)
 {
+	destroy_track(&trk);
+	free_curve(path);
+
 	if(menu_mode_idx >= 0) {
 		vmem = set_video_mode(menu_mode_idx, 1);
+		menu_mode_idx = -1;
 	}
 }
 
 void race_draw(void)
 {
+	int i;
+
 	memset(fb_pixels, 0, fb_size);
 
 	g3d_matrix_mode(G3D_MODELVIEW);
-	g3d_load_identity();
-	g3d_translate(0, 0, -10);
-	g3d_rotate(15, 1, 0, 0);
-	g3d_translate(0, -2, 0);
+	g3d_load_matrix(cam[act_cam].matrix);
+
+	g3d_set_texture(road_tex_width, road_tex_height, road_tex);
+	g3d_enable(G3D_TEXTURE_2D);
+	for(i=0; i<trk.num_tseg; i++) {
+		draw_mesh(&trk.tseg[i].mesh);
+	}
+
+	g3d_push_matrix();
+	g3d_translate(ppos.x, ppos.y, ppos.z);
 
 	g3d_set_texture(ship_tex_width, ship_tex_height, ship_tex);
-	g3d_enable(G3D_TEXTURE_2D);
 	zsort_mesh(&ship_mesh);
 	draw_mesh(&ship_mesh);
+
+	g3d_pop_matrix();
 
 	blit_frame(fb_pixels, 0);
 }
