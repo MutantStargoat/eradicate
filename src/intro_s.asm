@@ -3,7 +3,9 @@
 	bits 32
 
 	global fade_image
+	global _fade_image
 fade_image:
+_fade_image:
 	push ebp
 	mov ebp, esp
 	push ebx

@@ -1,0 +1,68 @@
+csrc = $(wildcard src/*.c) $(wildcard src/dos/*.c) $(wildcard src/3dgfx/*.c)
+asmsrc = $(wildcard src/*.asm)
+
+obj = $(csrc:.c=.odj) $(asmsrc:.asm=.odj)
+dep = $(obj:.odj=.dep)
+bin = game.exe
+
+ifeq ($(findstring COMMAND.COM, $(SHELL)), COMMAND.COM)
+	hostsys = dos
+else
+	hostsys = unix
+	TCPREFIX = i586-pc-msdosdjgpp-
+endif
+
+def = -DUSE_MMX
+inc = -Isrc -Isrc/dos -Isrc/3dgfx -Ilibs/imago/src -Ilibs/cgmath/src
+dbg = -g
+opt = -O3 -ffast-math -fno-strict-aliasing
+warn = -pedantic -Wall
+
+CC = $(TCPREFIX)gcc
+AR = $(TCPREFIX)ar
+CFLAGS = -march=pentium-mmx $(warn) $(dbg) $(opt) $(prof) -MMD $(def) $(inc)
+LDFLAGS = libs/imago/imago.dja -lm
+
+.PHONY: all
+all: $(bin)
+
+$(bin): $(obj) imago
+	$(CC) -o $@ -Wl,-Map=ld.map $(prof) $(obj) $(LDFLAGS)
+
+%.odj: %.asm
+	nasm -f coff -o $@ $<
+
+-include $(dep)
+
+%.odj: %.c
+	$(CC) $(CFLAGS) -o $@ -c $<
+
+.PHONY: imago
+imago:
+	$(MAKE) -C libs/imago -f Makefile.dj
+
+.PHONY: clean
+.PHONY: cleandep
+
+ifeq ($(hostsys), dos)
+clean:
+	del src\*.odj
+	del src\dos\*.odj
+	del src\3dgfx\*.odj
+	del $(bin)
+
+cleandep:
+	del src\*.dep
+	del src\dos\*.dep
+	del src\3dgfx\*.dep
+else
+clean:
+	rm -f $(obj) $(bin)
+
+cleandep:
+	rm -f $(dep)
+
+.PHONY: data
+data:
+	@tools/procdata
+endif

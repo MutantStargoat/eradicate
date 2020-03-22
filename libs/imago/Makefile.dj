@@ -1,0 +1,36 @@
+src = $(wildcard src/*.c) \
+	  $(wildcard zlib/*.c) \
+	  $(wildcard libpng/*.c) \
+	  $(wildcard jpeglib/*.c)
+obj = $(src:.c=.odj)
+alib = imago.dja
+
+ifeq ($(findstring COMMAND.COM, $(SHELL)), COMMAND.COM)
+	hostsys = dos
+else
+	hostsys = unix
+	TCPREFIX = i586-pc-msdosdjgpp-
+endif
+
+CC = $(TCPREFIX)gcc
+AR = $(TCPREFIX)ar
+CFLAGS = -Wno-main -march=pentium-mmx -O3 -ffast-math -Izlib -Ilibpng -Ijpeglib
+
+$(alib): $(obj)
+	$(AR) rcs $@ $(obj)
+
+%.odj: %.c
+	$(CC) $(CFLAGS) -o $@ -c $<
+
+.PHONY: clean
+ifeq ($(hostsys), dos)
+clean:
+	del src\*.odj
+	del zlib\*.odj
+	del libpng\*.odj
+	del jpeglib\*.odj
+	del $(alib)
+else
+clean:
+	rm -f $(obj) $(alib)
+endif
