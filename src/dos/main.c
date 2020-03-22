@@ -12,9 +12,11 @@ static int quit;
 
 int main(int argc, char **argv)
 {
-	void *fb_buf;
-	struct video_mode *vmodes;
 	int vmidx, status = 0;
+
+#ifdef __DJGPP__
+	__djgpp_nearptr_enable();
+#endif
 
 	init_logger("game.log");
 
@@ -24,7 +26,6 @@ int main(int argc, char **argv)
 	if(init_video() == -1) {
 		return 1;
 	}
-	vmodes = video_modes();
 
 	if((vmidx = match_video_mode(640, 480, 16)) == -1) {
 		return 1;
@@ -58,7 +59,6 @@ int main(int argc, char **argv)
 	}
 
 break_evloop:
-	free(fb_buf);
 	cleanup();
 	set_text_mode();
 	cleanup_video();

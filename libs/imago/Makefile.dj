@@ -1,3 +1,5 @@
+-include ../../config.mk
+
 src = $(wildcard src/*.c) \
 	  $(wildcard zlib/*.c) \
 	  $(wildcard libpng/*.c) \
@@ -12,9 +14,15 @@ else
 	TCPREFIX = i586-pc-msdosdjgpp-
 endif
 
+ifeq ($(USE_MMX), false)
+	arch = -march=pentium
+else
+	arch = -march=pentium-mmx
+endif
+
 CC = $(TCPREFIX)gcc
 AR = $(TCPREFIX)ar
-CFLAGS = -Wno-main -march=pentium-mmx -O3 -ffast-math -Izlib -Ilibpng -Ijpeglib
+CFLAGS = -Wno-main $(arch) -O3 -ffast-math -Izlib -Ilibpng -Ijpeglib
 
 $(alib): $(obj)
 	$(AR) rcs $@ $(obj)

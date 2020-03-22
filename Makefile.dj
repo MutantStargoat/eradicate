@@ -1,3 +1,5 @@
+-include config.mk
+
 csrc = $(wildcard src/*.c) $(wildcard src/dos/*.c) $(wildcard src/3dgfx/*.c)
 asmsrc = $(wildcard src/*.asm)
 
@@ -12,7 +14,14 @@ else
 	TCPREFIX = i586-pc-msdosdjgpp-
 endif
 
-def = -DUSE_MMX
+# to build without MMX, create a file config.mk with the line: USE_MMX = false
+ifeq ($(USE_MMX), false)
+	arch = -march=pentium
+else
+	def = -DUSE_MMX
+	arch = -march=pentium-mmx
+endif
+
 inc = -Isrc -Isrc/dos -Isrc/3dgfx -Ilibs/imago/src -Ilibs/cgmath/src
 dbg = -g
 opt = -O3 -ffast-math -fno-strict-aliasing
@@ -20,7 +29,7 @@ warn = -pedantic -Wall
 
 CC = $(TCPREFIX)gcc
 AR = $(TCPREFIX)ar
-CFLAGS = -march=pentium-mmx $(warn) $(dbg) $(opt) $(prof) -MMD $(def) $(inc)
+CFLAGS = $(arch) $(warn) $(dbg) $(opt) $(prof) -MMD $(def) $(inc)
 LDFLAGS = libs/imago/imago.dja -lm
 
 .PHONY: all
@@ -40,6 +49,10 @@ $(bin): $(obj) imago
 .PHONY: imago
 imago:
 	$(MAKE) -C libs/imago -f Makefile.dj
+
+.PHONY: cleanlibs
+cleanlibs:
+	$(MAKE) -C libs/imago -f Makefile.dj clean
 
 .PHONY: clean
 .PHONY: cleandep
