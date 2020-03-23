@@ -7,6 +7,8 @@
 #include "curve.h"
 #include "util.h"
 
+#define DEF_PROJ_REFINE_THRES	1e-3f
+
 struct curve *load_curve(const char *fname)
 {
 	struct curve *curve;
@@ -27,6 +29,7 @@ struct curve *load_curve(const char *fname)
 		ts_free_tree(root);
 		return 0;
 	}
+	curve->proj_refine_thres = DEF_PROJ_REFINE_THRES;
 
 	node = root->child_list;
 	while(node) {
@@ -186,4 +189,38 @@ void eval_tangent(struct curve *c, float t, cgm_vec3 *ret)
 	eval_curve(c, t + 1e-4, ret);
 	cgm_vsub(ret, &pos);
 	cgm_vnormalize(ret);
+}
+
+float curve_proj_guess(struct curve *c, const cgm_vec3 *pos, float tguess, float sinterv, cgm_vec3 *res)
+{
+	cgm_vec3 p, pp, pn;
+	float t, tp, tn;
+	float dist, dp, dn;
+
+	sinterv *= 0.5f;
+
+	tp = tguess - sinterv;
+	tn = tguess + sinterv;
+	eval_curve(c, tp, &pp);
+	eval_curve(c, tn, &pn);
+	dp = cgm_vdist_sq(pos, &pp);
+	dn = cgm_vdist_sq(pos, &pn);
+
+	while(sinterv > c->proj_refine_thres) {
+		t = (dp + dn) * 0.5f;
+		eval_curve(c, t, &p);
+		dist = cgm_vdist_sq(pos, &p);
+
+		if(dp < dn) {
+			tn = t;
+			dn = dist;
+		} else {
+			tp = t;
+			dp = dist;
+		}
+		sinterv *= 0.5f;
+	}
+
+	if(res) *res = p;
+	return t;
 }

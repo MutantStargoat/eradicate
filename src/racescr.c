@@ -11,6 +11,32 @@
 #include "fonts.h"
 #include "camera.h"
 
+enum {
+	INP_FWD,
+	INP_BRK,
+	INP_LTURN,
+	INP_RTURN,
+	INP_LBRK,
+	INP_RBRK,
+	INP_FIRE,
+	INP_CAM,
+	NUM_INPUTS
+};
+
+static int keymap[NUM_INPUTS][2] = {
+	{'w', KB_UP},
+	{'s', KB_DOWN},
+	{'a', KB_LEFT},
+	{'d', KB_RIGHT},
+	{'q', 'z'},
+	{'e', 'x'},
+	{' ', KB_NUM_0},
+	{'\t', -1}
+};
+
+static int inpstate[NUM_INPUTS];
+
+
 #define TRK_SUBDIV	26
 #define TRK_TWIST	30
 
@@ -28,7 +54,9 @@ static struct track trk;
 static struct camera cam[2];
 static int act_cam;
 
-static cgm_vec3 ppos, pdir;
+static cgm_vec3 ppos, pdir, pvel;
+
+static long prev_upd;
 
 int race_init(void)
 {
@@ -83,6 +111,7 @@ void race_start(void)
 
 	eval_curve(path, 0, &ppos);
 	eval_tangent(path, 0, &pdir);
+	cgm_vcons(&pvel, 0, 0, 0);
 
 	cam[0].dist = 10;
 	cam[0].height = 3;
@@ -110,6 +139,7 @@ void race_start(void)
 	g3d_enable(G3D_LIGHTING);
 	g3d_enable(G3D_LIGHT0);
 
+	prev_upd = time_msec;
 }
 
 void race_stop(void)
@@ -123,10 +153,36 @@ void race_stop(void)
 	}
 }
 
+static void update(void)
+{
+	float dt;
+	long dt_ms = time_msec - prev_upd;
+	prev_upd = time_msec;
+
+	dt = dt_ms / 1000.0f;
+
+	if(inpstate[INP_FWD]) {
+		cgm_vadd_scaled(&pvel, &pdir, dt);
+	}
+	if(inpstate[INP_BRK]) {
+		cgm_vscale(&pvel, dt * 0.1);
+	}
+	if(inpstate[INP_LTURN]) {
+		cgm_vrotate(&pdir, dt * 0.1, 0, 1, 0);	/* TODO take roll into account */
+	}
+	if(inpstate[INP_RTURN]) {
+		cgm_vrotate(&pdir, -dt * 0.1, 0, 1, 0);
+	}
+
+	cgm_vadd_scaled(&ppos, &pvel, dt);
+
+}
+
 void race_draw(void)
 {
 	int i;
 
+	update();
 	memset(fb_pixels, 0, fb_size);
 
 	g3d_matrix_mode(G3D_MODELVIEW);
@@ -152,6 +208,8 @@ void race_draw(void)
 
 void race_keyb(int key, int pressed)
 {
+	int i;
+
 	if(!pressed) return;
 
 	switch(key) {
@@ -162,5 +220,11 @@ void race_keyb(int key, int pressed)
 
 	default:
 		break;
+	}
+
+	for(i=0; i<NUM_INPUTS; i++) {
+		if(key == keymap[i][0] || key == keymap[i][1]) {
+			inpstate[i] = pressed;
+		}
 	}
 }
