@@ -55,6 +55,10 @@ static struct camera cam[2];
 static int act_cam;
 
 static cgm_vec3 ppos, pdir, pvel;
+static float pspeed;
+static float pxform[16];
+static float projt;
+static cgm_vec3 proj_pos;
 
 static long prev_upd;
 
@@ -99,6 +103,9 @@ void race_start(void)
 		fprintf(stderr, "failed to load track path\n");
 		return;
 	}
+	path->mode = CURVE_REPEAT;
+	path->proj_refine_thres = 1e-5;
+
 	if(create_track(&trk, path) == -1) {
 		fprintf(stderr, "failed to load track\n");
 		return;
@@ -109,6 +116,8 @@ void race_start(void)
 		return;
 	}
 
+	pspeed = 0;
+	projt = 0;
 	eval_curve(path, 0, &ppos);
 	eval_tangent(path, 0, &pdir);
 	cgm_vcons(&pvel, 0, 0, 0);
@@ -136,8 +145,8 @@ void race_start(void)
 	g3d_perspective(50.0, (float)fb_width / (float)fb_height, 0.5, 1000.0);
 
 	g3d_enable(G3D_CULL_FACE);
-	g3d_enable(G3D_LIGHTING);
-	g3d_enable(G3D_LIGHT0);
+	/*g3d_enable(G3D_LIGHTING);
+	g3d_enable(G3D_LIGHT0);*/
 
 	prev_upd = time_msec;
 }
@@ -153,29 +162,50 @@ void race_stop(void)
 	}
 }
 
+#define DRAG	1.0
+#define BRK		0.1
+
 static void update(void)
 {
-	float dt;
+	cgm_vec3 targ, up = {0, 1, 0};
+	float dt, s, brk;
 	long dt_ms = time_msec - prev_upd;
 	prev_upd = time_msec;
 
 	dt = dt_ms / 1000.0f;
 
+	brk = DRAG;
+
 	if(inpstate[INP_FWD]) {
-		cgm_vadd_scaled(&pvel, &pdir, dt);
+		cgm_vadd_scaled(&pvel, &pdir, dt * 50.0);
 	}
 	if(inpstate[INP_BRK]) {
-		cgm_vscale(&pvel, dt * 0.1);
+		brk += BRK;
 	}
 	if(inpstate[INP_LTURN]) {
-		cgm_vrotate(&pdir, dt * 0.1, 0, 1, 0);	/* TODO take roll into account */
+		cgm_vrotate(&pdir, dt * 0.5, 0, 1, 0);	/* TODO take roll into account */
 	}
 	if(inpstate[INP_RTURN]) {
-		cgm_vrotate(&pdir, -dt * 0.1, 0, 1, 0);
+		cgm_vrotate(&pdir, -dt * 0.5, 0, 1, 0);
 	}
+
+	pspeed = cgm_vlength(&pvel) - brk;
+	s = pspeed == 0.0f ? 0.0f : 1.0f / pspeed;
+
+	if(pspeed < 0) pspeed = 0;
+	s *= pspeed;
+	cgm_vscale(&pvel, s * dt);
 
 	cgm_vadd_scaled(&ppos, &pvel, dt);
 
+	projt = curve_proj_guess(path, &ppos, projt, 0.001, &proj_pos);
+	ppos.y = proj_pos.y;
+
+	targ = ppos;
+	cgm_vadd(&targ, &pdir);
+	cgm_mlookat(pxform, &ppos, &targ, &up);
+
+	cam_follow(cam, &ppos, &pdir);
 }
 
 void race_draw(void)
@@ -195,7 +225,7 @@ void race_draw(void)
 	}
 
 	g3d_push_matrix();
-	g3d_translate(ppos.x, ppos.y, ppos.z);
+	g3d_mult_matrix(pxform);
 
 	g3d_set_texture(ship_tex_width, ship_tex_height, ship_tex);
 	zsort_mesh(&ship_mesh);
@@ -203,12 +233,35 @@ void race_draw(void)
 
 	g3d_pop_matrix();
 
+	g3d_disable(G3D_TEXTURE_2D);
+	g3d_begin(G3D_LINES);
+	g3d_color3b(255, 92, 92);
+	g3d_vertex(proj_pos.x, proj_pos.y, proj_pos.z);
+	g3d_vertex(proj_pos.x + 0.5, proj_pos.y, proj_pos.z);
+	g3d_color3b(92, 255, 92);
+	g3d_vertex(proj_pos.x, proj_pos.y, proj_pos.z);
+	g3d_vertex(proj_pos.x, proj_pos.y + 0.5, proj_pos.z);
+	g3d_color3b(92, 92, 255);
+	g3d_vertex(proj_pos.x, proj_pos.y, proj_pos.z);
+	g3d_vertex(proj_pos.x, proj_pos.y, proj_pos.z + 0.5);
+	g3d_end();
+
+	select_font(FONT_VGA);
+	fnt_align(FONT_LEFT);
+	fnt_printf(fb_pixels, 0, 20, "t:%.3f", projt);
+
 	blit_frame(fb_pixels, 0);
 }
 
 void race_keyb(int key, int pressed)
 {
 	int i;
+
+	for(i=0; i<NUM_INPUTS; i++) {
+		if(key == keymap[i][0] || key == keymap[i][1]) {
+			inpstate[i] = pressed;
+		}
+	}
 
 	if(!pressed) return;
 
@@ -220,11 +273,5 @@ void race_keyb(int key, int pressed)
 
 	default:
 		break;
-	}
-
-	for(i=0; i<NUM_INPUTS; i++) {
-		if(key == keymap[i][0] || key == keymap[i][1]) {
-			inpstate[i] = pressed;
-		}
 	}
 }

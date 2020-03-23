@@ -207,7 +207,7 @@ float curve_proj_guess(struct curve *c, const cgm_vec3 *pos, float tguess, float
 	dn = cgm_vdist_sq(pos, &pn);
 
 	while(sinterv > c->proj_refine_thres) {
-		t = (dp + dn) * 0.5f;
+		t = (tp + tn) * 0.5f;
 		eval_curve(c, t, &p);
 		dist = cgm_vdist_sq(pos, &p);
 
