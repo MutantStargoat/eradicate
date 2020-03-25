@@ -27,6 +27,16 @@ static INLINE int32_t cround64(double val)
 	return *(int32_t*)&val;
 }
 
+static INLINE float rsqrt(float x)
+{
+	float xhalf = x * 0.5f;
+	int32_t i = *(int32_t*)&x;
+	i = 0x5f3759df - (i >> 1);
+	x = *(float*)&i;
+	x = x * (1.5f - xhalf * x * x);
+	return x;
+}
+
 extern uint32_t perf_start_count, perf_interval_count;
 
 #ifdef __WATCOMC__
