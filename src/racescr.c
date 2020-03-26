@@ -162,41 +162,43 @@ void race_stop(void)
 	}
 }
 
+#define ACCEL	10.0
 #define DRAG	1.0
-#define BRK		0.1
+#define BRK		12.0
+#define MAX_SPEED	100.0
+#define MAX_TURN_RATE	5.0
 
 static void update(void)
 {
 	cgm_vec3 targ, up = {0, 1, 0};
-	float dt, s, brk;
+	float dt, s, turn_rate;
 	long dt_ms = time_msec - prev_upd;
 	prev_upd = time_msec;
 
 	dt = dt_ms / 1000.0f;
 
-	brk = DRAG;
+	pspeed -= DRAG * dt;
 
 	if(inpstate[INP_FWD]) {
-		cgm_vadd_scaled(&pvel, &pdir, dt * 50.0);
+		pspeed += ACCEL * dt;
 	}
 	if(inpstate[INP_BRK]) {
-		brk += BRK;
+		pspeed -= BRK * dt;
 	}
-	if(inpstate[INP_LTURN]) {
-		cgm_vrotate(&pdir, dt * 0.5, 0, 1, 0);	/* TODO take roll into account */
-	}
-	if(inpstate[INP_RTURN]) {
-		cgm_vrotate(&pdir, -dt * 0.5, 0, 1, 0);
-	}
-
-	pspeed = cgm_vlength(&pvel) - brk;
-	s = pspeed == 0.0f ? 0.0f : 1.0f / pspeed;
 
 	if(pspeed < 0) pspeed = 0;
-	s *= pspeed;
-	cgm_vscale(&pvel, s * dt);
+	if(pspeed > MAX_SPEED) pspeed = MAX_SPEED;
+	cgm_vadd_scaled(&ppos, &pdir, pspeed * dt);
 
-	cgm_vadd_scaled(&ppos, &pvel, dt);
+	turn_rate = pspeed < 0.001f ? 0.0f : 100.0f / pspeed;
+	if(turn_rate > MAX_TURN_RATE) turn_rate = MAX_TURN_RATE;
+
+	if(inpstate[INP_LTURN]) {
+		cgm_vrotate(&pdir, dt * turn_rate, 0, 1, 0);	/* TODO take roll into account */
+	}
+	if(inpstate[INP_RTURN]) {
+		cgm_vrotate(&pdir, -dt * turn_rate, 0, 1, 0);
+	}
 
 	projt = curve_proj_guess(path, &ppos, projt, 0.001, &proj_pos);
 	ppos.y = proj_pos.y;
