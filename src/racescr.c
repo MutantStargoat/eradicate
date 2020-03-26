@@ -10,6 +10,7 @@
 #include "track.h"
 #include "fonts.h"
 #include "camera.h"
+#include "util.h"
 
 enum {
 	INP_FWD,
@@ -39,6 +40,16 @@ static int inpstate[NUM_INPUTS];
 
 #define TRK_SUBDIV	26
 #define TRK_TWIST	30
+#define COL_DIST	5.0
+
+#define ACCEL	10.0
+#define DRAG	1.0
+#define BRK		12.0
+#define MAX_SPEED	100.0
+#define MAX_TURN_RATE	5.0
+#define COL_BRK	1.2
+
+static void draw_ui(void);
 
 static struct g3d_mesh ship_mesh;
 static uint16_t *ship_tex;
@@ -61,6 +72,8 @@ static float projt;
 static cgm_vec3 proj_pos;
 
 static long prev_upd;
+
+static int wrong_way;
 
 int race_init(void)
 {
@@ -162,16 +175,11 @@ void race_stop(void)
 	}
 }
 
-#define ACCEL	10.0
-#define DRAG	1.0
-#define BRK		12.0
-#define MAX_SPEED	100.0
-#define MAX_TURN_RATE	5.0
-
 static void update(void)
 {
 	cgm_vec3 targ, up = {0, 1, 0};
-	float dt, s, turn_rate;
+	cgm_vec3 offs_dir, path_dir;
+	float dt, s, turn_rate, lensq;
 	long dt_ms = time_msec - prev_upd;
 	prev_upd = time_msec;
 
@@ -190,7 +198,7 @@ static void update(void)
 	if(pspeed > MAX_SPEED) pspeed = MAX_SPEED;
 	cgm_vadd_scaled(&ppos, &pdir, pspeed * dt);
 
-	turn_rate = pspeed < 0.001f ? 0.0f : 100.0f / pspeed;
+	turn_rate = pspeed < 0.001f ? 0.0f : 92.0f / pspeed;
 	if(turn_rate > MAX_TURN_RATE) turn_rate = MAX_TURN_RATE;
 
 	if(inpstate[INP_LTURN]) {
@@ -202,6 +210,22 @@ static void update(void)
 
 	projt = curve_proj_guess(path, &ppos, projt, 0.001, &proj_pos);
 	ppos.y = proj_pos.y;
+
+	eval_curve(path, projt + 0.001, &path_dir);
+	cgm_vsub(&path_dir, &proj_pos);
+	wrong_way = cgm_vdot(&path_dir, &pdir) < 0.0f;
+
+	/* collision */
+	offs_dir = ppos;
+	cgm_vsub(&offs_dir, &proj_pos);
+	if((lensq = cgm_vlength_sq(&offs_dir)) > COL_DIST * COL_DIST) {
+		s = rsqrt(lensq) * COL_DIST;
+		ppos.x = proj_pos.x + offs_dir.x * s;
+		ppos.y = proj_pos.y + offs_dir.y * s;
+		ppos.z = proj_pos.z + offs_dir.z * s;
+		pspeed -= pspeed * COL_BRK * dt;
+		if(pspeed < 0.0f) pspeed = 0.0f;
+	}
 
 	targ = ppos;
 	cgm_vadd(&targ, &pdir);
@@ -216,6 +240,8 @@ void race_draw(void)
 
 	update();
 	memset(fb_pixels, 0, fb_size);
+
+	g3d_polygon_mode(G3D_FLAT);
 
 	g3d_matrix_mode(G3D_MODELVIEW);
 	g3d_load_matrix(cam[act_cam].matrix);
@@ -248,11 +274,74 @@ void race_draw(void)
 	g3d_vertex(proj_pos.x, proj_pos.y, proj_pos.z + 0.5);
 	g3d_end();
 
+	draw_ui();
+
+	blit_frame(fb_pixels, 0);
+}
+
+static const struct g3d_vertex speedo_verts[] = {
+	{0.139, 0.000, 0,	1, 0, 0, 0, 0, 0,	13, 140, 156, 255},
+	{0.197, 0.106, 0,	1, 0, 0, 0, 0, 0,	13, 139, 146, 255},
+	{0.267, 0.227, 0,	1, 0, 0, 0, 0, 0,	41, 137, 96, 255},
+	{0.348, 0.318, 0,	1, 0, 0, 0, 0, 0,	71, 125, 52, 255},
+	{0.453, 0.410, 0,	1, 0, 0, 0, 0, 0,	111, 105, 0, 255},
+	{0.569, 0.484, 0,	1, 0, 0, 0, 0, 0,	153, 84, 0, 255},
+	{0.697, 0.545, 0,	1, 0, 0, 0, 0, 0,	182, 69, 0, 255},
+	{0.889, 0.606, 0,	1, 0, 0, 0, 0, 0,	206, 57, 0, 255},
+	{1.104, 0.615, 0,	1, 0, 0, 0, 0, 0,	253, 33, 0, 255},
+	{0.011, 0.060, 0,	1, 0, 0, 0, 0, 0,	13, 140, 156, 255},
+	{0.065, 0.196, 0,	1, 0, 0, 0, 0, 0,	13, 139, 146, 255},
+	{0.139, 0.363, 0,	1, 0, 0, 0, 0, 0,	41, 137, 96, 255},
+	{0.209, 0.500, 0,	1, 0, 0, 0, 0, 0,	71, 125, 52, 255},
+	{0.302, 0.651, 0,	1, 0, 0, 0, 0, 0,	111, 105, 0, 255},
+	{0.441, 0.803, 0,	1, 0, 0, 0, 0, 0,	153, 84, 0, 255},
+	{0.616, 0.920, 0,	1, 0, 0, 0, 0, 0,	182, 69, 0, 255},
+	{0.883, 1.000, 0,	1, 0, 0, 0, 0, 0,	206, 57, 0, 255},
+	{1.200, 1.010, 0,	1, 0, 0, 0, 0, 0,	253, 33, 0, 255},
+};
+static const uint16_t speedo_idx[] = {
+	0, 1, 10, 9, 1, 2, 11, 10, 2, 3, 12, 11, 3, 4, 13, 12,
+	4, 5, 14, 13, 5, 6, 15, 14, 6, 7, 16, 15, 7, 8, 17, 16
+};
+#define SPEEDO_NVERTS	(sizeof speedo_verts / sizeof *speedo_verts)
+#define SPEEDO_NIDX		(sizeof speedo_idx / sizeof *speedo_idx)
+
+static void draw_ui(void)
+{
+	int i, speed_level;
+
+	g3d_matrix_mode(G3D_PROJECTION);
+	g3d_push_matrix();
+	g3d_load_identity();
+	g3d_ortho(0, fb_width, 0, fb_height, -1, 1);
+
+	g3d_matrix_mode(G3D_MODELVIEW);
+	g3d_load_identity();
+
+	/* draw speedometer */
+	g3d_translate(fb_width * 0.7, fb_height * 0.05, 0);
+	g3d_scale(fb_width / 5.0f, fb_height / 6.0f, 1);
+	g3d_polygon_mode(G3D_FLAT);
+	speed_level = pspeed * 8.0f / MAX_SPEED + 0.5f;
+	g3d_draw_indexed(G3D_QUADS, speedo_verts, SPEEDO_NVERTS, speedo_idx, speed_level * 4);
+	g3d_polygon_mode(G3D_WIRE);
+	g3d_enable(G3D_LIGHTING);
+	g3d_draw_indexed(G3D_QUADS, speedo_verts, SPEEDO_NVERTS, speedo_idx, SPEEDO_NIDX);
+	g3d_disable(G3D_LIGHTING);
+
+	if(wrong_way && (time_msec & 0x500)) {
+		select_font(fb_width > 400 ? FONT_MENU_SHADED_BIG : FONT_MENU_SHADED);
+		fnt_align(FONT_CENTER);
+		fnt_print(fb_pixels, fb_width / 2, fb_height / 8, "WRONG WAY!");
+		/* TODO do something resolution-independent (or just provide a few sizes of fonts) */
+	}
+
 	select_font(FONT_VGA);
 	fnt_align(FONT_LEFT);
 	fnt_printf(fb_pixels, 0, 20, "t:%.3f", projt);
 
-	blit_frame(fb_pixels, 0);
+	g3d_matrix_mode(G3D_PROJECTION);
+	g3d_pop_matrix();
 }
 
 void race_keyb(int key, int pressed)

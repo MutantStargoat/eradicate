@@ -10,6 +10,7 @@
 #define GUARD_YPAD	1
 
 int fb_width, fb_height, fb_bpp, fb_scan_size;
+float fb_aspect;
 long fb_size, fb_buf_size;
 void *fb_pixels, *vmem;
 void *fb_buf;
@@ -89,6 +90,8 @@ int resizefb(int width, int height, int bpp)
 	fb_height = height;
 	fb_bpp = bpp;
 	fb_size = fb_scan_size * fb_height;
+
+	fb_aspect = (float)fb_width / (float)fb_height;
 
 	return 0;
 }

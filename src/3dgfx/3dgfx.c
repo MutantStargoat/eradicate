@@ -247,7 +247,7 @@ void g3d_pop_matrix(void)
 
 void g3d_translate(float x, float y, float z)
 {
-	float m[] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
+	float m[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 	m[12] = x;
 	m[13] = y;
 	m[14] = z;
@@ -256,7 +256,7 @@ void g3d_translate(float x, float y, float z)
 
 void g3d_rotate(float deg, float x, float y, float z)
 {
-	float m[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+	float m[16] = {0};
 
 	float angle = M_PI * deg / 180.0f;
 	float sina = sin(angle);
@@ -282,7 +282,7 @@ void g3d_rotate(float deg, float x, float y, float z)
 
 void g3d_scale(float x, float y, float z)
 {
-	float m[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+	float m[16] = {0};
 	m[0] = x;
 	m[5] = y;
 	m[10] = z;
@@ -292,7 +292,7 @@ void g3d_scale(float x, float y, float z)
 
 void g3d_ortho(float left, float right, float bottom, float top, float znear, float zfar)
 {
-	float m[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+	float m[16] = {0};
 
 	float dx = right - left;
 	float dy = top - bottom;
@@ -304,13 +304,14 @@ void g3d_ortho(float left, float right, float bottom, float top, float znear, fl
 	m[12] = -(right + left) / dx;
 	m[13] = -(top + bottom) / dy;
 	m[14] = -(zfar + znear) / dz;
+	m[15] = 1.0f;
 
 	g3d_mult_matrix(m);
 }
 
 void g3d_frustum(float left, float right, float bottom, float top, float nr, float fr)
 {
-	float m[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+	float m[16] = {0};
 
 	float dx = right - left;
 	float dy = top - bottom;
@@ -334,7 +335,7 @@ void g3d_frustum(float left, float right, float bottom, float top, float nr, flo
 
 void g3d_perspective(float vfov_deg, float aspect, float znear, float zfar)
 {
-	float m[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+	float m[16] = {0};
 
 	float vfov = M_PI * vfov_deg / 180.0f;
 	float s = 1.0f / tan(vfov * 0.5f);

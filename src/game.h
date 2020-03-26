@@ -9,6 +9,7 @@
 
 extern int fb_width;
 extern int fb_height;
+extern float fb_aspect;
 extern int fb_bpp;
 extern int fb_scan_size;
 extern long fb_size;
