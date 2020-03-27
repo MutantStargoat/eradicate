@@ -42,12 +42,14 @@ static int inpstate[NUM_INPUTS];
 #define TRK_TWIST	30
 #define COL_DIST	5.0
 
-#define ACCEL	10.0
-#define DRAG	1.0
-#define BRK		12.0
-#define MAX_SPEED	100.0
-#define MAX_TURN_RATE	5.0
-#define COL_BRK	1.2
+#define ACCEL		10.0f
+#define DRAG		1.0f
+#define BRK			12.0f
+#define MAX_SPEED	100.0f
+#define MAX_TURN_RATE	1.5f
+#define COL_BRK		1.2f
+
+#define MAX_ROLL	32.0f
 
 static void draw_ui(void);
 
@@ -66,13 +68,16 @@ static struct camera cam[2];
 static int act_cam;
 
 static cgm_vec3 ppos, pdir, pvel;
-static float pspeed;
+static float pspeed, proll;
+static float turn_rate;
 static float pxform[16];
 static float projt;
 static cgm_vec3 proj_pos;
 
 static long prev_upd;
 
+static int cur_seg;
+static int nseg_to_draw = 2;
 static int wrong_way;
 
 int race_init(void)
@@ -134,6 +139,7 @@ void race_start(void)
 	eval_curve(path, 0, &ppos);
 	eval_tangent(path, 0, &pdir);
 	cgm_vcons(&pvel, 0, 0, 0);
+	cur_seg = 0;
 
 	cam[0].dist = 10;
 	cam[0].height = 3;
@@ -175,11 +181,21 @@ void race_stop(void)
 	}
 }
 
+#define CLAMP(x, a, b)	((x) < (a) ? (a) : ((x) > (b) ? (b) : (x)))
+
+#define TURN_MORE(d)	\
+	do { \
+		turn_rate += pspeed < 0.001f ? 0.0f : (d) * dt / pspeed; \
+		turn_rate = CLAMP(turn_rate, -MAX_TURN_RATE, MAX_TURN_RATE); \
+		proll += (d) * 0.5f * dt; \
+		proll = CLAMP(proll, -MAX_ROLL, MAX_ROLL); \
+	} while(0)
+
 static void update(void)
 {
 	cgm_vec3 targ, up = {0, 1, 0};
 	cgm_vec3 offs_dir, path_dir;
-	float dt, s, turn_rate, lensq;
+	float dt, s, lensq;
 	long dt_ms = time_msec - prev_upd;
 	prev_upd = time_msec;
 
@@ -198,17 +214,21 @@ static void update(void)
 	if(pspeed > MAX_SPEED) pspeed = MAX_SPEED;
 	cgm_vadd_scaled(&ppos, &pdir, pspeed * dt);
 
-	turn_rate = pspeed < 0.001f ? 0.0f : 92.0f / pspeed;
-	if(turn_rate > MAX_TURN_RATE) turn_rate = MAX_TURN_RATE;
-
 	if(inpstate[INP_LTURN]) {
+		TURN_MORE(128.0f);
 		cgm_vrotate(&pdir, dt * turn_rate, 0, 1, 0);	/* TODO take roll into account */
-	}
-	if(inpstate[INP_RTURN]) {
-		cgm_vrotate(&pdir, -dt * turn_rate, 0, 1, 0);
+	} else if(inpstate[INP_RTURN]) {
+		TURN_MORE(-128.0f);
+		cgm_vrotate(&pdir, dt * turn_rate, 0, 1, 0);
+	} else {
+		proll *= 0.1f;
+		if(fabs(proll) < 0.01f) proll = 0.0f;
+		turn_rate = 0;
 	}
 
 	projt = curve_proj_guess(path, &ppos, projt, 0.001, &proj_pos);
+	cur_seg = projt * trk.num_tseg;
+	if(cur_seg >= trk.num_tseg) cur_seg -= trk.num_tseg;
 	ppos.y = proj_pos.y;
 
 	eval_curve(path, projt + 0.001, &path_dir);
@@ -231,12 +251,13 @@ static void update(void)
 	cgm_vadd(&targ, &pdir);
 	cgm_mlookat(pxform, &ppos, &targ, &up);
 
-	cam_follow(cam, &ppos, &pdir);
+	cam_follow_step(cam, &ppos, &pdir, 0.1f);
 }
+
 
 void race_draw(void)
 {
-	int i;
+	int i, seg, inc;
 
 	update();
 	memset(fb_pixels, 0, fb_size);
@@ -248,12 +269,30 @@ void race_draw(void)
 
 	g3d_set_texture(road_tex_width, road_tex_height, road_tex);
 	g3d_enable(G3D_TEXTURE_2D);
-	for(i=0; i<trk.num_tseg; i++) {
-		draw_mesh(&trk.tseg[i].mesh);
+
+	/* draw nseg_to_draw segments in front in back to front order
+	 * and one segment back (nseg_to_draw + 1 and keep decrementing)
+	 */
+	inc = wrong_way ? -1 : 1;
+	seg = cur_seg + inc * (nseg_to_draw - 1);
+	if(seg < 0) {
+		seg += trk.num_tseg;
+	} else if(seg >= trk.num_tseg) {
+		seg -= trk.num_tseg;
+	}
+	for(i=0; i<nseg_to_draw + 1; i++) {
+		draw_mesh(&trk.tseg[seg].mesh);
+		seg -= inc;
+		if(seg < 0) {
+			seg = trk.num_tseg - 1;
+		} else if(seg >= trk.num_tseg) {
+			seg = 0;
+		}
 	}
 
 	g3d_push_matrix();
 	g3d_mult_matrix(pxform);
+	g3d_rotate(proll, 0, 0, 1);
 
 	g3d_set_texture(ship_tex_width, ship_tex_height, ship_tex);
 	zsort_mesh(&ship_mesh);
@@ -308,7 +347,7 @@ static const uint16_t speedo_idx[] = {
 
 static void draw_ui(void)
 {
-	int i, speed_level;
+	int speed_level;
 
 	g3d_matrix_mode(G3D_PROJECTION);
 	g3d_push_matrix();

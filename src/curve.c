@@ -222,5 +222,8 @@ float curve_proj_guess(struct curve *c, const cgm_vec3 *pos, float tguess, float
 	}
 
 	if(res) *res = p;
+
+	t = fmod(t, 1.0f);
+	if(t < 0.0f) t += 1.0f;
 	return t;
 }
