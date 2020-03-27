@@ -37,6 +37,8 @@ static int keymap[NUM_INPUTS][2] = {
 
 static int inpstate[NUM_INPUTS];
 
+#define CAM_HEIGHT	2.0f
+#define CAM_DIST	10.0f
 
 #define TRK_SUBDIV	26
 #define TRK_TWIST	30
@@ -141,10 +143,9 @@ void race_start(void)
 	cgm_vcons(&pvel, 0, 0, 0);
 	cur_seg = 0;
 
-	cam[0].dist = 10;
-	cam[0].height = 3;
+	cam[0].dist = CAM_DIST;
 	cam[0].roll = 0;
-	cam_follow(cam, &ppos, &pdir);
+	cam_follow(cam, &ppos, &pdir, CAM_HEIGHT);
 
 	/* loading done */
 	draw = race_draw;
@@ -251,7 +252,8 @@ static void update(void)
 	cgm_vadd(&targ, &pdir);
 	cgm_mlookat(pxform, &ppos, &targ, &up);
 
-	cam_follow_step(cam, &ppos, &pdir, 0.1f);
+	cgm_vadd_scaled(&targ, &up, 1.0f);
+	cam_follow_step(cam, &targ, &pdir, CAM_HEIGHT, 5.0f * dt);
 }
 
 
