@@ -6,7 +6,7 @@
 #include "gfx.h"
 #include "3dgfx/3dgfx.h"
 #include "3dgfx/mesh.h"
-#include "imago2.h"
+#include "image.h"
 #include "track.h"
 #include "fonts.h"
 #include "camera.h"
@@ -56,11 +56,10 @@ static int inpstate[NUM_INPUTS];
 static void draw_ui(void);
 
 static struct g3d_mesh ship_mesh;
-static uint16_t *ship_tex;
-static int ship_tex_width, ship_tex_height;
+static struct g3d_mesh sky_mesh;
 
-static uint16_t *road_tex;
-static int road_tex_width, road_tex_height;
+static struct image ship_tex, road_tex;
+static struct image skybox_tex[6];
 
 static int menu_mode_idx = -1;
 
@@ -88,14 +87,13 @@ int race_init(void)
 		fprintf(stderr, "failed to load ship mesh\n");
 		return -1;
 	}
-	if(!(ship_tex = img_load_pixels("data/shiptex.png", &ship_tex_width,
-				&ship_tex_height, IMG_FMT_RGB565))) {
-		fprintf(stderr, "failed to load ship texture\n");
+	if(load_image(&ship_tex, "data/shiptex.png") == -1) {
 		return -1;
 	}
-	if(!(road_tex = img_load_pixels("data/road.png", &road_tex_width, &road_tex_height,
-				IMG_FMT_RGB565))) {
-		fprintf(stderr, "failed to load road texture\n");
+	if(load_image(&road_tex, "data/road.png") == -1) {
+		return -1;
+	}
+	if(load_cubemap(skybox_tex, "data/sky1_%s.jpg") == -1) {
 		return -1;
 	}
 
@@ -104,8 +102,9 @@ int race_init(void)
 
 void race_cleanup(void)
 {
-	img_free_pixels(ship_tex);
-	img_free_pixels(road_tex);
+	destroy_image(&ship_tex);
+	destroy_image(&road_tex);
+	destroy_cubemap(skybox_tex);
 	destroy_mesh(&ship_mesh);
 }
 
@@ -217,12 +216,12 @@ static void update(void)
 
 	if(inpstate[INP_LTURN]) {
 		TURN_MORE(128.0f);
-		cgm_vrotate(&pdir, dt * turn_rate, 0, 1, 0);	/* TODO take roll into account */
+		cgm_vrotate(&pdir, dt * turn_rate, 0, 1, 0);
 	} else if(inpstate[INP_RTURN]) {
 		TURN_MORE(-128.0f);
 		cgm_vrotate(&pdir, dt * turn_rate, 0, 1, 0);
 	} else {
-		proll *= 0.1f;
+		proll -= proll * 4.0f * dt;
 		if(fabs(proll) < 0.01f) proll = 0.0f;
 		turn_rate = 0;
 	}
@@ -248,12 +247,15 @@ static void update(void)
 		if(pspeed < 0.0f) pspeed = 0.0f;
 	}
 
+	pdir.y = path_dir.y * 0.2f;	/* adjust the nose up/down to match the path slope */
+
 	targ = ppos;
 	cgm_vadd(&targ, &pdir);
 	cgm_mlookat(pxform, &ppos, &targ, &up);
 
 	cgm_vadd_scaled(&targ, &up, 1.0f);
 	cam_follow_step(cam, &targ, &pdir, CAM_HEIGHT, 5.0f * dt);
+	/*cam_follow(cam, &targ, &pdir, CAM_HEIGHT);*/
 }
 
 
@@ -269,7 +271,7 @@ void race_draw(void)
 	g3d_matrix_mode(G3D_MODELVIEW);
 	g3d_load_matrix(cam[act_cam].matrix);
 
-	g3d_set_texture(road_tex_width, road_tex_height, road_tex);
+	g3d_set_texture(road_tex.width, road_tex.height, road_tex.pixels);
 	g3d_enable(G3D_TEXTURE_2D);
 
 	/* draw nseg_to_draw segments in front in back to front order
@@ -296,7 +298,7 @@ void race_draw(void)
 	g3d_mult_matrix(pxform);
 	g3d_rotate(proll, 0, 0, 1);
 
-	g3d_set_texture(ship_tex_width, ship_tex_height, ship_tex);
+	g3d_set_texture(ship_tex.width, ship_tex.height, ship_tex.pixels);
 	zsort_mesh(&ship_mesh);
 	draw_mesh(&ship_mesh);
 

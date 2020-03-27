@@ -26,5 +26,5 @@ void cam_follow_step(struct camera *cam, cgm_vec3 *targ_pos, cgm_vec3 *targ_dir,
 
 	cgm_vlerp(&targ, &cam->targ, targ_pos, delta * 3.0f);
 	cgm_vlerp(&dir, &cam->dir, targ_dir, delta);
-	cam_follow(cam, &targ, &dir, cgm_lerp(cam->height, height, delta));
+	cam_follow(cam, &targ, &dir, height);/*cgm_lerp(cam->height, height, delta));*/
 }
