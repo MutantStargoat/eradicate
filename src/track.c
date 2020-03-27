@@ -116,8 +116,8 @@ int gen_track_seg_mesh(struct track *trk, int segidx, int subdiv, float twist)
 	m->prim = G3D_QUADS;
 
 	for(i=0; i<subdiv; i++) {
-		vend[0] = (float)i / (float)subdiv;
-		vend[1] = (float)(i + 1) / (float)subdiv;
+		vend[0] = (float)(subdiv - i - 1) / (float)subdiv;
+		vend[1] = (float)(subdiv - i) / (float)subdiv;
 
 		/* add the indices for the segment quads
 		 * +--+----+----+--+  <- 5, 6, 7, 8, 9
