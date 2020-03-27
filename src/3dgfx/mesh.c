@@ -408,6 +408,7 @@ int gen_plane_mesh(struct g3d_mesh *m, float width, float height, int usub, int 
 int gen_cube_mesh(struct g3d_mesh *mesh, float sz, int sub)
 {
 	int i;
+	float offs;
 	struct g3d_mesh *m;
 	struct g3d_mesh tmpmesh;
 	static float rotface[][4] = {
@@ -419,6 +420,9 @@ int gen_cube_mesh(struct g3d_mesh *mesh, float sz, int sub)
 		{-90, 1, 0, 0}
 	};
 
+	offs = sz;
+	sz = fabs(sz);
+
 	g3d_matrix_mode(G3D_MODELVIEW);
 	g3d_push_matrix();
 
@@ -428,7 +432,7 @@ int gen_cube_mesh(struct g3d_mesh *mesh, float sz, int sub)
 			return -1;
 		g3d_load_identity();
 		g3d_rotate(rotface[i][0], rotface[i][1], rotface[i][2], rotface[i][3]);
-		g3d_translate(0, 0, sz / 2.0f);
+		g3d_translate(0, 0, offs / 2.0f);
 		apply_mesh_xform(m, g3d_get_matrix(G3D_MODELVIEW, 0));
 		if(i > 0) {
 			if(append_mesh(mesh, m) == -1) {

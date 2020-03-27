@@ -37,6 +37,9 @@ static int keymap[NUM_INPUTS][2] = {
 
 static int inpstate[NUM_INPUTS];
 
+#define SKY_SUBDIV	3
+#define SKY_FACE_QUADS	(SKY_SUBDIV * SKY_SUBDIV)
+
 #define CAM_HEIGHT	2.0f
 #define CAM_DIST	10.0f
 
@@ -53,13 +56,14 @@ static int inpstate[NUM_INPUTS];
 
 #define MAX_ROLL	32.0f
 
+static void draw_skybox(void);
 static void draw_ui(void);
 
 static struct g3d_mesh ship_mesh;
 static struct g3d_mesh sky_mesh;
 
 static struct image ship_tex, road_tex;
-static struct image skybox_tex[6];
+static struct image sky_tex;
 
 static int menu_mode_idx = -1;
 
@@ -83,6 +87,10 @@ static int wrong_way;
 
 int race_init(void)
 {
+	if(gen_sphere_mesh(&sky_mesh, -10.0f, 16, 8) == -1) {
+		fprintf(stderr, "failed to generate skybox mesh\n");
+		return -1;
+	}
 	if(load_mesh(&ship_mesh, "data/ship.obj") == -1) {
 		fprintf(stderr, "failed to load ship mesh\n");
 		return -1;
@@ -93,7 +101,7 @@ int race_init(void)
 	if(load_image(&road_tex, "data/road.png") == -1) {
 		return -1;
 	}
-	if(load_cubemap(skybox_tex, "data/sky1_%s.jpg") == -1) {
+	if(load_image(&sky_tex, "data/sky1.jpg") == -1) {
 		return -1;
 	}
 
@@ -102,9 +110,10 @@ int race_init(void)
 
 void race_cleanup(void)
 {
+	destroy_mesh(&sky_mesh);
 	destroy_image(&ship_tex);
 	destroy_image(&road_tex);
-	destroy_cubemap(skybox_tex);
+	destroy_image(&sky_tex);
 	destroy_mesh(&ship_mesh);
 }
 
@@ -247,7 +256,8 @@ static void update(void)
 		if(pspeed < 0.0f) pspeed = 0.0f;
 	}
 
-	pdir.y = path_dir.y * 0.2f;	/* adjust the nose up/down to match the path slope */
+	/* adjust the nose up/down to match the path slope */
+	pdir.y = path_dir.y * (wrong_way ? -0.2f : 0.2f);
 
 	targ = ppos;
 	cgm_vadd(&targ, &pdir);
@@ -267,8 +277,10 @@ void race_draw(void)
 	memset(fb_pixels, 0, fb_size);
 
 	g3d_polygon_mode(G3D_FLAT);
-
 	g3d_matrix_mode(G3D_MODELVIEW);
+
+	draw_skybox();
+
 	g3d_load_matrix(cam[act_cam].matrix);
 
 	g3d_set_texture(road_tex.width, road_tex.height, road_tex.pixels);
@@ -320,6 +332,22 @@ void race_draw(void)
 	draw_ui();
 
 	blit_frame(fb_pixels, 0);
+}
+
+static void draw_skybox(void)
+{
+	float matrix[16];
+
+	memcpy(matrix, cam[act_cam].matrix, sizeof matrix);
+	matrix[12] = matrix[13] = matrix[14] = 0.0f;
+
+	g3d_matrix_mode(G3D_MODELVIEW);
+	g3d_load_matrix(matrix);
+
+	g3d_enable(G3D_TEXTURE_2D);
+
+	g3d_set_texture(sky_tex.width, sky_tex.height, sky_tex.pixels);
+	draw_mesh(&sky_mesh);
 }
 
 static const struct g3d_vertex speedo_verts[] = {
