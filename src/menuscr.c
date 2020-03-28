@@ -9,6 +9,7 @@
 #include "util.h"
 #include "3dgfx/3dgfx.h"
 #include "3dgfx/mesh.h"
+#include "joy.h"
 
 #define PADX	42
 #define PADX2	(PADX * 2)
@@ -104,6 +105,20 @@ void menu_draw(void)
 
 	float sint = sin(time_msec / 1000.0f);
 	float cost = cos(time_msec / 1000.0f);
+
+	if(have_joy) {
+		unsigned int pressed = joy_bnstate & joy_bndelta;
+		if(pressed & JOY_UP) {
+			menu_keyb(KB_UP, 1);
+		}
+		if(pressed & JOY_DOWN) {
+			menu_keyb(KB_DOWN, 1);
+		}
+		if(pressed & JOY_BN0) {
+			menu_keyb('\n', 1);
+			return;
+		}
+	}
 
 	memcpy(fb_pixels, bgpix, fb_size);
 	g3d_load_identity();

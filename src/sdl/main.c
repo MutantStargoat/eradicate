@@ -6,6 +6,7 @@
 #include "game.h"
 #include "gfx.h"
 #include "timer.h"
+#include "joy.h"
 
 #define FB_WIDTH	640
 #define FB_HEIGHT	480
@@ -35,6 +36,10 @@ static struct video_mode *cur_vmode;
 static unsigned int num_pressed;
 static unsigned char keystate[256];
 
+static SDL_Joystick *joy;
+static int joy_numaxes, joy_numbn;
+unsigned int joy_bnstate, joy_bnprev, joy_bndelta;
+
 
 int main(int argc, char **argv)
 {
@@ -46,13 +51,20 @@ int main(int argc, char **argv)
 		printf("Framebuffer scaling x%d\n", fbscale);
 	}
 
-	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_NOPARACHUTE);
+	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_JOYSTICK | SDL_INIT_NOPARACHUTE);
 	if(!set_video_mode(match_video_mode(FB_WIDTH, FB_HEIGHT, FB_BPP), 1)) {
 		return 1;
 	}
 
 	SDL_WM_SetCaption("eradicate/SDL", 0);
 	SDL_ShowCursor(0);
+
+	if((joy = SDL_JoystickOpen(0))) {
+		joy_numaxes = SDL_JoystickNumAxes(joy);
+		joy_numbn = SDL_JoystickNumButtons(joy);
+		printf("Using joystick: %s (%d axes, %d buttons)\n", SDL_JoystickName(0),
+				joy_numaxes, joy_numbn);
+	}
 
 	time_msec = 0;
 	if(init(argc, argv) == -1) {
@@ -70,6 +82,10 @@ int main(int argc, char **argv)
 			if(quit) goto break_evloop;
 		}
 
+		if(joy) {
+			joy_update();
+		}
+
 		time_msec = get_msec();
 		draw();
 	}
@@ -77,6 +93,7 @@ int main(int argc, char **argv)
 break_evloop:
 	cleanup();
 	resizefb(0, 0, 0);
+	if(joy) SDL_JoystickClose(joy);
 	SDL_Quit();
 	return 0;
 }
@@ -205,6 +222,46 @@ static int bnmask(int sdlbn)
 	return 0;
 }
 */
+
+int joy_detect(void)
+{
+	return joy != 0;
+}
+
+void joy_update(void)
+{
+	int i, val;
+
+	SDL_JoystickUpdate();
+
+	joy_bnprev = joy_bnstate;
+	joy_bnstate = 0;
+
+	if(joy_numaxes >= 2) {
+		val = SDL_JoystickGetAxis(joy, 0);
+		if(val < -8192) {
+			joy_bnstate |= JOY_LEFT;
+		} else if(val > 8192) {
+			joy_bnstate |= JOY_RIGHT;
+		}
+		val = SDL_JoystickGetAxis(joy, 1);
+		if(val < -8192) {
+			joy_bnstate |= JOY_UP;
+		} else if(val > 8192) {
+			joy_bnstate |= JOY_DOWN;
+		}
+	}
+
+	for(i=0; i<joy_numbn; i++) {
+		if(SDL_JoystickGetButton(joy, i)) {
+			joy_bnstate |= JOY_BN0 << i;
+		}
+	}
+
+	joy_bndelta = joy_bnstate ^ joy_bnprev;
+	printf("%x\r", joy_bnstate);
+	fflush(stdout);
+}
 
 int kb_isdown(int key)
 {
