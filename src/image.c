@@ -27,7 +27,7 @@ int load_image(struct image *img, const char *fname)
 			goto not565;
 		}
 
-		if(fread(&width, 2, 1, fp) <= 0 || fread(&height, 2, 1, fp) <= 0) {
+		if(!fread(&width, 2, 1, fp) || !fread(&height, 2, 1, fp)) {
 			fprintf(stderr, "unexpected EOF while reading: %s\n", fname);
 			fclose(fp);
 			return -1;
