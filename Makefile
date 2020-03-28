@@ -33,13 +33,15 @@ libpath = libpath libs\imago
 obj = $(dosobj) $(gameobj) $(gfxobj) $(scrobj)
 bin = game.exe
 
+opt = -otexan
+#opt = -od
 def = -dM_PI=3.141592653589793
 #-dUSE_MMX
 libs = imago.lib
 
 CC = wcc386
 LD = wlink
-CFLAGS = -d3 -5 -fp5 -otexan $(def) -s -zq -bt=dos $(incpath)
+CFLAGS = -d3 -5 -fp5 $(opt) $(def) -s -zq -bt=dos $(incpath)
 LDFLAGS = option map $(libpath) library { $(libs) }
 
 $(bin): cflags.occ $(obj) libs/imago/imago.lib

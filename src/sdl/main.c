@@ -32,6 +32,9 @@ static struct video_mode vmodes[] = {
 };
 static struct video_mode *cur_vmode;
 
+static unsigned int num_pressed;
+static unsigned char keystate[256];
+
 
 int main(int argc, char **argv)
 {
@@ -203,9 +206,28 @@ static int bnmask(int sdlbn)
 }
 */
 
+int kb_isdown(int key)
+{
+	switch(key) {
+	case KB_ANY:
+		return num_pressed;
+
+	case KB_ALT:
+		return keystate[KB_LALT] + keystate[KB_RALT];
+
+	case KB_CTRL:
+		return keystate[KB_LCTRL] + keystate[KB_RCTRL];
+	}
+
+	if(isalpha(key)) {
+		key = tolower(key);
+	}
+	return keystate[key];
+}
+
 static void handle_event(SDL_Event *ev)
 {
-	int key;
+	int key, pressed;
 
 	switch(ev->type) {
 	case SDL_QUIT:
@@ -219,9 +241,12 @@ static void handle_event(SDL_Event *ev)
 			toggle_fullscreen();
 			break;
 		}
+		key = sdlkey_to_gamekey(ev->key.keysym.sym, ev->key.keysym.mod);
+		pressed = ev->key.state == SDL_PRESSED ? 1 : 0;
+		keystate[key] = pressed;
+
 		if(key_event) {
-			key = sdlkey_to_gamekey(ev->key.keysym.sym, ev->key.keysym.mod);
-			key_event(key, ev->key.state == SDL_PRESSED ? 1 : 0);
+			key_event(key, pressed);
 		} else {
 			if(ev->key.keysym.sym == SDLK_ESCAPE) {
 				quit = 1;

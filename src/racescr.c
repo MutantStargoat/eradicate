@@ -101,7 +101,7 @@ int race_init(void)
 	if(load_image(&road_tex, "data/road.png") == -1) {
 		return -1;
 	}
-	if(load_image(&sky_tex, "data/sky1.jpg") == -1) {
+	if(load_image(&sky_tex, "data/sky1.ppm") == -1) {
 		return -1;
 	}
 
@@ -202,11 +202,22 @@ void race_stop(void)
 
 static void update(void)
 {
+	int i;
 	cgm_vec3 targ, up = {0, 1, 0};
 	cgm_vec3 offs_dir, path_dir;
 	float dt, s, lensq;
 	long dt_ms = time_msec - prev_upd;
 	prev_upd = time_msec;
+
+	/* update input state */
+	for(i=0; i<NUM_INPUTS; i++) {
+		if(kb_isdown(keymap[i][0]) || kb_isdown(keymap[i][1])) {
+			inpstate[i] = 1;
+		} else {
+			inpstate[i] = 0;
+		}
+	}
+
 
 	dt = dt_ms / 1000.0f;
 
@@ -417,14 +428,6 @@ static void draw_ui(void)
 
 void race_keyb(int key, int pressed)
 {
-	int i;
-
-	for(i=0; i<NUM_INPUTS; i++) {
-		if(key == keymap[i][0] || key == keymap[i][1]) {
-			inpstate[i] = pressed;
-		}
-	}
-
 	if(!pressed) return;
 
 	switch(key) {

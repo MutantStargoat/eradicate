@@ -48,6 +48,7 @@ obj = src\conv.obj src\filejpeg.obj src\filepng.obj src\fileppm.obj src\filergbe
 
 alib = imago.lib
 
+#opt = -5 -fp5 -od
 opt = -5 -fp5 -otexan
 dbg = -d1
 def = -DPNG_NO_SNPRINTF

@@ -39,6 +39,14 @@ enum {
 	KB_HELP, KB_PRINT, KB_SYSRQ, KB_BREAK
 };
 
+#ifndef KB_ANY
+#define KB_ANY		(-1)
+#define KB_ALT		(-2)
+#define KB_CTRL		(-3)
+#define KB_SHIFT	(-4)
+#endif
+
+
 int init(int argc, char **argv);
 void cleanup(void);
 
@@ -52,5 +60,7 @@ void game_quit(void);
 void dbg_print(void *fb, int x, int y, const char *str);
 void dbg_printf(void *fb, int x, int y, const char *fmt, ...);
 void dbg_fps(void *fb);
+
+int kb_isdown(int key);
 
 #endif	/* GAME_H_ */
