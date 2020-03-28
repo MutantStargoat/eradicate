@@ -9,6 +9,7 @@ struct image {
 };
 
 int load_image(struct image *img, const char *fname);
+int dump_image(struct image *img, const char *fname);
 void destroy_image(struct image *img);
 
 int load_cubemap(struct image *cube, const char *fname_fmt);

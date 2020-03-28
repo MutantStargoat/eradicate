@@ -101,9 +101,6 @@ int race_init(void)
 	if(load_image(&road_tex, "data/road.png") == -1) {
 		return -1;
 	}
-	if(load_image(&sky_tex, "data/sky1.ppm") == -1) {
-		return -1;
-	}
 
 	return 0;
 }
@@ -113,7 +110,6 @@ void race_cleanup(void)
 	destroy_mesh(&sky_mesh);
 	destroy_image(&ship_tex);
 	destroy_image(&road_tex);
-	destroy_image(&sky_tex);
 	destroy_mesh(&ship_mesh);
 }
 
@@ -140,6 +136,11 @@ void race_start(void)
 	}
 	if(gen_track_mesh(&trk, TRK_SUBDIV, TRK_TWIST) == -1) {
 		fprintf(stderr, "failed to generate track mesh\n");
+		destroy_track(&trk);
+		return;
+	}
+
+	if(load_image(&sky_tex, "data/sky1.565") == -1) {
 		destroy_track(&trk);
 		return;
 	}
@@ -188,6 +189,7 @@ void race_stop(void)
 		vmem = set_video_mode(menu_mode_idx, 1);
 		menu_mode_idx = -1;
 	}
+	destroy_image(&sky_tex);
 }
 
 #define CLAMP(x, a, b)	((x) < (a) ? (a) : ((x) > (b) ? (b) : (x)))
