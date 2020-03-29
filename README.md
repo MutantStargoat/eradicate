@@ -1,6 +1,10 @@
 Eradicate
 =========
 Futuristic arcade racing game for DOS.
+Written for the MS-DOS game jam: https://itch.io/jam/dos-game-jam-2
+
+No releases yet, as it's not finished. Check back later, or grab the source and
+try your luck if you want to follow along.
 
 Grab the data with:
     svn co svn://mutantstargoat.com/datadirs/eradicate data
