@@ -21,6 +21,7 @@ void race_start(void);
 void race_stop(void);
 void race_draw(void);
 void race_keyb(int key, int pressed);
+void race_input(int inp);
 
 int options_init(void);
 void options_cleanup(void);

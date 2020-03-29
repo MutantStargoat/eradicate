@@ -4,6 +4,7 @@
 #include "gfx.h"
 #include "gfxutil.h"
 #include "game.h"
+#include "joy.h"
 
 #define FADE_DUR	800
 
@@ -43,6 +44,13 @@ void intro_draw(void)
 {
 	long tm;
 	uint16_t fade;
+
+	if(have_joy) {
+		if(joy_bnpress & JOY_BN_ANY) {
+			menu_start();
+			return;
+		}
+	}
 
 	tm = time_msec - start_time;
 	if(tm < FADE_DUR) {

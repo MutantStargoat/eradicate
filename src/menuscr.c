@@ -101,23 +101,16 @@ void menu_draw(void)
 	uint16_t *fb = fb_pixels;
 	int fboffs, cleartop;
 	int blur_rad_x, blur_rad_y;
-	const struct menuent *ent = menuent + cur;
+	const struct menuent *ent;
+	float sint, cost;
 
-	float sint = sin(time_msec / 1000.0f);
-	float cost = cos(time_msec / 1000.0f);
+	sint = sin(time_msec / 1000.0f);
+	cost = cos(time_msec / 1000.0f);
 
+	/* simulate keyboard events from joystick input */
 	if(have_joy) {
-		unsigned int pressed = joy_bnstate & joy_bndelta;
-		if(pressed & JOY_UP) {
-			menu_keyb(KB_UP, 1);
-		}
-		if(pressed & JOY_DOWN) {
-			menu_keyb(KB_DOWN, 1);
-		}
-		if(pressed & JOY_BN0) {
-			menu_keyb('\n', 1);
-			return;
-		}
+		joy_keyemu();
+		if(draw != menu_draw) return;
 	}
 
 	memcpy(fb_pixels, bgpix, fb_size);
@@ -132,6 +125,7 @@ void menu_draw(void)
 	blur_rad_x = (int)((sint * 0.5f + 0.5f) * 50.0f);
 	blur_rad_y = (int)((cost * 0.5f + 0.5f) * 50.0f);
 
+	ent = menuent + cur;
 	fboffs = ent->y * fb_width + ent->x;
 
 	memset(blurbuf[0], 0, sizeof blurbuf[0]);
@@ -160,9 +154,11 @@ void menu_keyb(int key, int pressed)
 	if(!pressed) return;
 
 	switch(key) {
+#ifndef NDEBUG
 	case 27:
 		game_quit();
 		break;
+#endif
 
 	case KB_UP:
 		if(cur > 0) cur--;

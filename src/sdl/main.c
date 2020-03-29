@@ -7,6 +7,7 @@
 #include "gfx.h"
 #include "timer.h"
 #include "joy.h"
+#include "input.h"
 
 #define FB_WIDTH	640
 #define FB_HEIGHT	480
@@ -38,7 +39,9 @@ static unsigned char keystate[256];
 
 static SDL_Joystick *joy;
 static int joy_numaxes, joy_numbn;
-unsigned int joy_bnstate, joy_bnprev, joy_bndelta;
+unsigned int joy_bnstate, joy_bndiff, joy_bnpress;
+static unsigned int joy_bnprev;
+int16_t joy_pos[2];
 
 
 int main(int argc, char **argv)
@@ -82,9 +85,8 @@ int main(int argc, char **argv)
 			if(quit) goto break_evloop;
 		}
 
-		if(joy) {
-			joy_update();
-		}
+		/* update input state from keyboard and joystick */
+		inp_update();
 
 		time_msec = get_msec();
 		draw();
@@ -239,12 +241,14 @@ void joy_update(void)
 
 	if(joy_numaxes >= 2) {
 		val = SDL_JoystickGetAxis(joy, 0);
+		joy_pos[0] = val;
 		if(val < -8192) {
 			joy_bnstate |= JOY_LEFT;
 		} else if(val > 8192) {
 			joy_bnstate |= JOY_RIGHT;
 		}
 		val = SDL_JoystickGetAxis(joy, 1);
+		joy_pos[1] = val;
 		if(val < -8192) {
 			joy_bnstate |= JOY_UP;
 		} else if(val > 8192) {
@@ -258,9 +262,8 @@ void joy_update(void)
 		}
 	}
 
-	joy_bndelta = joy_bnstate ^ joy_bnprev;
-	printf("%x\r", joy_bnstate);
-	fflush(stdout);
+	joy_bndiff = joy_bnstate ^ joy_bnprev;
+	joy_bnpress = joy_bnstate & joy_bndiff;
 }
 
 int kb_isdown(int key)

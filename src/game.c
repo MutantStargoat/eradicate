@@ -5,6 +5,7 @@
 #include "3dgfx/3dgfx.h"
 #include "screens.h"
 #include "fonts.h"
+#include "joy.h"
 
 #define GUARD_XPAD	0
 #define GUARD_YPAD	1
@@ -22,6 +23,7 @@ int show_fps = 1;
 
 void (*draw)(void);
 void (*key_event)(int key, int pressed);
+void (*input_event)(int inp);
 
 
 int init(int argc, char **argv)

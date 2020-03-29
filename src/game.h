@@ -56,6 +56,7 @@ int resizefb(int width, int height, int bpp);
 
 extern void (*draw)(void);
 extern void (*key_event)(int key, int pressed);
+extern void (*input_event)(int inp);
 
 void game_quit(void);
 

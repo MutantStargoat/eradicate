@@ -11,31 +11,7 @@
 #include "fonts.h"
 #include "camera.h"
 #include "util.h"
-
-enum {
-	INP_FWD,
-	INP_BRK,
-	INP_LTURN,
-	INP_RTURN,
-	INP_LBRK,
-	INP_RBRK,
-	INP_FIRE,
-	INP_CAM,
-	NUM_INPUTS
-};
-
-static int keymap[NUM_INPUTS][2] = {
-	{'w', KB_UP},
-	{'s', KB_DOWN},
-	{'a', KB_LEFT},
-	{'d', KB_RIGHT},
-	{'q', 'z'},
-	{'e', 'x'},
-	{' ', KB_NUM_0},
-	{'\t', -1}
-};
-
-static int inpstate[NUM_INPUTS];
+#include "input.h"
 
 #define SKY_SUBDIV	3
 #define SKY_FACE_QUADS	(SKY_SUBDIV * SKY_SUBDIV)
@@ -204,31 +180,20 @@ void race_stop(void)
 
 static void update(void)
 {
-	int i;
 	cgm_vec3 targ, up = {0, 1, 0};
 	cgm_vec3 offs_dir, path_dir;
 	float dt, s, lensq;
 	long dt_ms = time_msec - prev_upd;
 	prev_upd = time_msec;
 
-	/* update input state */
-	for(i=0; i<NUM_INPUTS; i++) {
-		if(kb_isdown(keymap[i][0]) || kb_isdown(keymap[i][1])) {
-			inpstate[i] = 1;
-		} else {
-			inpstate[i] = 0;
-		}
-	}
-
-
 	dt = dt_ms / 1000.0f;
 
 	pspeed -= DRAG * dt;
 
-	if(inpstate[INP_FWD]) {
+	if(inpstate & INP_FWD_BIT) {
 		pspeed += ACCEL * dt;
 	}
-	if(inpstate[INP_BRK]) {
+	if(inpstate & INP_BRK_BIT) {
 		pspeed -= BRK * dt;
 	}
 
@@ -236,10 +201,10 @@ static void update(void)
 	if(pspeed > MAX_SPEED) pspeed = MAX_SPEED;
 	cgm_vadd_scaled(&ppos, &pdir, pspeed * dt);
 
-	if(inpstate[INP_LTURN]) {
+	if(inpstate & INP_LTURN_BIT) {
 		TURN_MORE(128.0f);
 		cgm_vrotate(&pdir, dt * turn_rate, 0, 1, 0);
-	} else if(inpstate[INP_RTURN]) {
+	} else if(inpstate & INP_RTURN_BIT) {
 		TURN_MORE(-128.0f);
 		cgm_vrotate(&pdir, dt * turn_rate, 0, 1, 0);
 	} else {
@@ -424,6 +389,9 @@ static void draw_ui(void)
 	fnt_align(FONT_LEFT);
 	fnt_printf(fb_pixels, 0, 20, "t:%.3f", projt);
 
+	fnt_printf(fb_pixels, 0, 40, "s:%04x", inpstate);
+	fnt_printf(fb_pixels, 0, 60, "p:%04x", inppress);
+
 	g3d_matrix_mode(G3D_PROJECTION);
 	g3d_pop_matrix();
 }
@@ -440,5 +408,16 @@ void race_keyb(int key, int pressed)
 
 	default:
 		break;
+	}
+}
+
+void race_input(int inp)
+{
+	switch(inp) {
+	case INP_FIRE:
+		break;	/* TODO */
+
+	case INP_CAM:
+		break;	/* TODO */
 	}
 }
