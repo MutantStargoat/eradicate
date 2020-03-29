@@ -16,8 +16,6 @@ long fb_size, fb_buf_size;
 void *fb_pixels, *vmem;
 void *fb_buf;
 
-int have_joy;
-
 long time_msec;
 int show_fps = 1;
 
@@ -30,7 +28,7 @@ int init(int argc, char **argv)
 {
 	load_options(GAME_CFG_FILE);
 
-	have_joy = joy_detect();
+	joy_detect();
 
 	if(init_fonts() == -1) {
 		return -1;

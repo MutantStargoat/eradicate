@@ -16,6 +16,7 @@ enum {
 
 #define JOY_BN_ANY	0xfff0
 
+extern int have_joy;
 extern unsigned int joy_bnstate, joy_bndiff, joy_bnpress;
 extern int16_t joy_pos[2];
 

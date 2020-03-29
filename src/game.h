@@ -15,8 +15,6 @@ extern int fb_scan_size;
 extern long fb_size;
 extern void *fb_pixels, *vmem;
 
-extern int have_joy;
-
 extern long time_msec;
 extern int show_fps;
 

@@ -37,6 +37,7 @@ static struct video_mode *cur_vmode;
 static unsigned int num_pressed;
 static unsigned char keystate[256];
 
+static int have_joy;
 static SDL_Joystick *joy;
 static int joy_numaxes, joy_numbn;
 unsigned int joy_bnstate, joy_bndiff, joy_bnpress;

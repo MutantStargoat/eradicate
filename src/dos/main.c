@@ -7,6 +7,8 @@
 #include "gfx.h"
 #include "logger.h"
 #include "cdpmi.h"
+#include "joy.h"
+#include "input.h"
 
 static int quit;
 
@@ -53,6 +55,8 @@ int main(int argc, char **argv)
 			}
 		}
 		if(quit) goto break_evloop;
+
+		inp_update();
 
 		time_msec = get_msec();
 		draw();
