@@ -3,6 +3,7 @@
 #include "joy.h"
 
 #define MAX_COUNT	2048
+#define MIN_COUNT	16
 
 static unsigned int read_joy(int *xret, int *yret);
 
@@ -23,26 +24,38 @@ int joy_detect(void)
 
 void joy_update(void)
 {
-	int i;
+	int i, rng;
 	unsigned int prev_bnstate;
 
 	prev_bnstate = joy_bnstate;
 	joy_bnstate = read_joy(rawcnt, rawcnt + 1);
-	joy_bndiff = joy_bnstate ^ prev_bnstate;
-	joy_bnpress = joy_bnstate & joy_bndiff;
 
 	for(i=0; i<2; i++) {
 		if(rawcnt[i] < MAX_COUNT) {
 			if(cal_cent[i] == 0) cal_cent[i] = rawcnt[i];
-			if(rawcnt[i] < cal_min[i]) cal_min[i] = rawcnt[i];
+			if(cal_min[i] == 0 || rawcnt[i] < cal_min[i]) cal_min[i] = rawcnt[i];
 			if(rawcnt[i] > cal_max[i]) cal_max[i] = rawcnt[i];
 
 			if(rawcnt[i] < cal_cent[i]) {
-				joy_pos[i] = ((rawcnt[i] - cal_min[i]) << 16) / (cal_cent[i] - cal_min[i]) - 0x8000;
+				if((rng = cal_cent[i] - cal_min[i])) {
+					joy_pos[i] = ((rawcnt[i] - cal_min[i]) << 15) / rng - 0x8000;
+				} else {
+					joy_pos[i] = 0;
+				}
 			} else {
-				joy_pos[i] = ((rawcnt[i] - cal_cent[i]) << 16) / (cal_max[i] - cal_cent[i]) - 0x8000;
+				if((rng = cal_max[i] - cal_cent[i] + 1)) {
+					joy_pos[i] = ((rawcnt[i] - cal_cent[i]) << 15) / rng;
+				} else {
+					joy_pos[i] = 0;
+				}
 			}
 		} else {
+			joy_pos[i] = 0;
+		}
+
+		/* if the range is too short, discard any movement and center */
+		rng = cal_max[i] - cal_min[i];
+		if(rng < MIN_COUNT) {
 			joy_pos[i] = 0;
 		}
 
@@ -52,6 +65,9 @@ void joy_update(void)
 			joy_bnstate |= JOY_RIGHT << (i << 1);
 		}
 	}
+
+	joy_bndiff = joy_bnstate ^ prev_bnstate;
+	joy_bnpress = joy_bnstate & joy_bndiff;
 }
 
 #define JOY_PORT	0x201
@@ -65,6 +81,8 @@ static unsigned int read_joy(int *xret, int *yret)
 {
 	int i, pending = 2;
 	unsigned char val = 0xff, diff, prev;
+
+	*xret = *yret = MAX_COUNT;
 
 	_disable();
 

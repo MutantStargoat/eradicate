@@ -61,6 +61,7 @@ static long prev_upd;
 static int cur_seg;
 static int nseg_to_draw = 2;
 static int wrong_way;
+static int col_side;
 
 int race_init(void)
 {
@@ -214,7 +215,7 @@ static void update(void)
 		turn_rate = 0;
 	}
 
-	projt = curve_proj_guess(path, &ppos, projt, 0.001, &proj_pos);
+	projt = curve_proj_guess(path, &ppos, projt, 0.002, &proj_pos);
 	cur_seg = projt * trk.num_tseg;
 	if(cur_seg >= trk.num_tseg) cur_seg -= trk.num_tseg;
 	ppos.y = proj_pos.y;
@@ -233,6 +234,9 @@ static void update(void)
 		ppos.z = proj_pos.z + offs_dir.z * s;
 		pspeed -= pspeed * COL_BRK * dt;
 		if(pspeed < 0.0f) pspeed = 0.0f;
+		col_side = 1;
+	} else {
+		col_side = 0;
 	}
 
 	/* adjust the nose up/down to match the path slope */
@@ -388,6 +392,10 @@ static void draw_ui(void)
 
 	select_font(FONT_VGA);
 	fnt_align(FONT_LEFT);
+	if(col_side) {
+		fnt_print(fb_pixels, 250, 0, "col");
+	}
+
 	fnt_printf(fb_pixels, 0, 20, "t:%.3f", projt);
 
 	fnt_printf(fb_pixels, 0, 40, "s:%04x", inpstate);

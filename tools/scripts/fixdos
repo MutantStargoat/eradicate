@@ -2,8 +2,11 @@
 
 mkwrong=$(find . -name makefile)
 
-for i in $mkwrong; do
+for i in $(find . -name makefile); do
 	mv $i `dirname $i`/Makefile
+done
+for i in $(find . -name makefile.dj); do
+	mv $i `dirname $i`/Makefile.dj
 done
 
 files=$(git ls-files -m)

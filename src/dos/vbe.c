@@ -29,7 +29,6 @@ static int cur_pitch;
 
 int vbe_info(struct vbe_info *info)
 {
-	int i, num;
 	void *lowbuf;
 	uint16_t seg, sel;
 	uint16_t *modeptr;
@@ -113,7 +112,6 @@ int vbe_num_modes(struct vbe_info *info)
 
 int vbe_mode_info(int mode, struct vbe_mode_info *minf)
 {
-	int i, num;
 	void *lowbuf;
 	uint16_t seg, sel;
 	struct dpmi_regs regs = {0};
