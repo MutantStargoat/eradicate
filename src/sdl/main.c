@@ -37,9 +37,9 @@ static struct video_mode *cur_vmode;
 static unsigned int num_pressed;
 static unsigned char keystate[256];
 
-static int have_joy;
 static SDL_Joystick *joy;
 static int joy_numaxes, joy_numbn;
+int have_joy;
 unsigned int joy_bnstate, joy_bndiff, joy_bnpress;
 static unsigned int joy_bnprev;
 int16_t joy_pos[2];
@@ -228,7 +228,8 @@ static int bnmask(int sdlbn)
 
 int joy_detect(void)
 {
-	return joy != 0;
+	have_joy = joy != 0;
+	return have_joy;
 }
 
 void joy_update(void)

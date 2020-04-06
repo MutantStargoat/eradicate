@@ -18,10 +18,10 @@ int joymap[NUM_INPUTS] = {
 	JOY_DOWN,
 	JOY_LEFT,
 	JOY_RIGHT,
-	-1,
-	-1,
+	0,
+	0,
 	JOY_BN1,
-	-1
+	0
 };
 
 unsigned int inpstate, inppress;

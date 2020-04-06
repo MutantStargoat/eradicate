@@ -12,6 +12,7 @@
 #include "camera.h"
 #include "util.h"
 #include "input.h"
+#include "joy.h"
 
 #define SKY_SUBDIV	3
 #define SKY_FACE_QUADS	(SKY_SUBDIV * SKY_SUBDIV)
@@ -390,7 +391,12 @@ static void draw_ui(void)
 	fnt_printf(fb_pixels, 0, 20, "t:%.3f", projt);
 
 	fnt_printf(fb_pixels, 0, 40, "s:%04x", inpstate);
-	fnt_printf(fb_pixels, 0, 60, "p:%04x", inppress);
+
+	fnt_printf(fb_pixels, 100, 0, "x:%d", (int)joy_pos[0]);
+#ifdef MSDOS
+	fnt_printf(fb_pixels, 100, 20, "min/c/max: %d/%d/%d", cal_min[0], cal_cent[0], cal_max[0]);
+	fnt_printf(fb_pixels, 100, 40, "count: %d", rawcnt[0]);
+#endif
 
 	g3d_matrix_mode(G3D_PROJECTION);
 	g3d_pop_matrix();

@@ -24,4 +24,9 @@ int joy_detect(void);
 void joy_update(void);
 void joy_keyemu(void);
 
+#ifdef MSDOS
+extern int cal_min[2], cal_cent[2], cal_max[2];
+extern int rawcnt[2];
+#endif
+
 #endif	/* JOY_H_ */
