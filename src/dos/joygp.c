@@ -3,7 +3,7 @@
 #include "joy.h"
 
 #define MAX_COUNT	2048
-#define MIN_COUNT	16
+#define MIN_COUNT	32
 
 static unsigned int read_joy(int *xret, int *yret);
 
@@ -16,10 +16,13 @@ int rawcnt[2];
 
 int joy_detect(void)
 {
+	/*
 	int xcnt, ycnt;
 
 	read_joy(&xcnt, &ycnt);
 	return have_joy = (xcnt < MAX_COUNT || ycnt < MAX_COUNT);
+	*/
+	return 0;	/* TODO disable until we add a calibration screen */
 }
 
 void joy_update(void)

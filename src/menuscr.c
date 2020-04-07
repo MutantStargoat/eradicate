@@ -10,6 +10,7 @@
 #include "3dgfx/3dgfx.h"
 #include "3dgfx/mesh.h"
 #include "joy.h"
+#include "audio.h"
 
 #define PADX	42
 #define PADX2	(PADX * 2)
@@ -33,6 +34,7 @@ static struct g3d_mesh logo_mesh;
 static uint16_t *envpix;
 static int envwidth, envheight;
 
+static struct au_module mus;
 
 int menu_init(void)
 {
@@ -51,11 +53,17 @@ int menu_init(void)
 		return -1;
 	}
 	normalize_mesh_normals(&logo_mesh);
+
+	if(au_load_module(&mus, "data/musmenu/cosmosis.xm") == -1) {
+		return -1;
+	}
+
 	return 0;
 }
 
 void menu_cleanup(void)
 {
+	au_free_module(&mus);
 	img_free_pixels(bgpix);
 }
 
@@ -63,6 +71,8 @@ void menu_start(void)
 {
 	draw = menu_draw;
 	key_event = menu_keyb;
+
+	au_play_module(&mus);
 
 	g3d_reset();
 	g3d_framebuffer(fb_width, fb_height, fb_pixels);
