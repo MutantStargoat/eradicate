@@ -9,6 +9,7 @@
 #include "cdpmi.h"
 #include "joy.h"
 #include "input.h"
+#include "audio.h"
 
 static int quit;
 
@@ -21,6 +22,13 @@ int main(int argc, char **argv)
 #endif
 
 	init_logger("game.log");
+
+	/* au_init needs to be called early, before init_timer, and also before
+	 * we enter graphics mode, to use the midas configuration tool if necessary
+	 */
+	if(au_init() == -1) {
+		return 1;
+	}
 
 	init_timer(100);
 	kb_init(32);
@@ -40,8 +48,6 @@ int main(int argc, char **argv)
 		status = -1;
 		goto break_evloop;
 	}
-
-	reset_timer();
 
 	for(;;) {
 		int key;
@@ -67,6 +73,7 @@ break_evloop:
 	set_text_mode();
 	cleanup_video();
 	kb_shutdown();
+	au_shutdown();
 	return status;
 }
 

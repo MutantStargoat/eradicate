@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "audio.h"
 #include "midasdll.h"
 
@@ -30,34 +31,51 @@ void au_shutdown(void)
 	MIDASclose();
 }
 
-int au_load_module(struct au_module *mod, const char *fname)
+struct au_module *au_load_module(const char *fname)
 {
+	struct au_module *mod;
 	MIDASmoduleInfo info;
-	const char *name;
+	char *name, *end;
+
+	if(!(mod = malloc(sizeof *mod))) {
+		fprintf(stderr, "au_load_module: failed to allocate module\n");
+		return 0;
+	}
 
 	if(!(mod->impl = MIDASloadModule((char*)fname))) {
 		fprintf(stderr, "au_load_module: failed to load module: %s\n", fname);
-		return -1;
+		free(mod);
+		return 0;
 	}
 
-	if(MIDASgetModuleInfo(mod->impl, &info) && info.songName[0]) {
+	name = 0;
+	if(MIDASgetModuleInfo(mod->impl, &info)) {
 		name = info.songName;
-	} else {
+		end = name + strlen(name) - 1;
+		while(end >= name && isspace(*end)) {
+			*end-- = 0;
+		}
+		if(!*name) name = 0;
+	}
+
+	if(!name) {
+		/* fallback to using the filename */
 		if((name = strrchr(fname, '/')) || (name = strrchr(fname, '\\'))) {
 			name++;
 		} else {
-			name = fname;
+			name = (char*)fname;
 		}
 	}
 
 	if(!(mod->name = malloc(strlen(name) + 1))) {
 		fprintf(stderr, "au_load_module: mod->name malloc failed\n");
 		MIDASfreeModule(mod->impl);
-		return -1;
+		return 0;
 	}
 	strcpy(mod->name, name);
 
-	return 0;
+	printf("loaded module \"%s\" (%s)\n", name, fname);
+	return mod;
 }
 
 void au_free_module(struct au_module *mod)
@@ -115,4 +133,35 @@ void au_music_volume(int v)
 	if(curmod) {
 		MIDASsetMusicVolume(modplay, v);
 	}
+}
+
+/* when using MIDAS, we can't access the PIT directly, so we don't build timer.c
+ * and implement all the timer functions here, using MIDAS callbacks
+ */
+static volatile unsigned long ticks;
+static unsigned long tick_interval;
+
+static void MIDAS_CALL midas_timer(void)
+{
+	ticks++;
+}
+
+/* macro to divide and round to the nearest integer */
+#define DIV_ROUND(a, b) \
+	((a) / (b) + ((a) % (b)) / ((b) / 2))
+
+void init_timer(int res_hz)
+{
+	MIDASsetTimerCallbacks(res_hz * 1000, 0, midas_timer, 0, 0);
+	tick_interval = DIV_ROUND(1000, res_hz);
+}
+
+void reset_timer(void)
+{
+	ticks = 0;
+}
+
+unsigned long get_msec(void)
+{
+	return ticks * tick_interval;
 }

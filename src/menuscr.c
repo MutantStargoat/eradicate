@@ -10,7 +10,8 @@
 #include "3dgfx/3dgfx.h"
 #include "3dgfx/mesh.h"
 #include "joy.h"
-#include "audio.h"
+#include "playlist.h"
+#include "fonts.h"
 
 #define PADX	42
 #define PADX2	(PADX * 2)
@@ -34,7 +35,7 @@ static struct g3d_mesh logo_mesh;
 static uint16_t *envpix;
 static int envwidth, envheight;
 
-static struct au_module mus;
+static struct playlist *mus;
 
 int menu_init(void)
 {
@@ -54,25 +55,23 @@ int menu_init(void)
 	}
 	normalize_mesh_normals(&logo_mesh);
 
-	if(au_load_module(&mus, "data/musmenu/cosmosis.xm") == -1) {
-		return -1;
+	if((mus = create_playlist("data/musmenu"))) {
+		shuffle_playlist(mus);
 	}
-
 	return 0;
 }
 
 void menu_cleanup(void)
 {
-	au_free_module(&mus);
+	if(mus) destroy_playlist(mus);
 	img_free_pixels(bgpix);
 }
 
 void menu_start(void)
 {
+	printf("menu_start\n");
 	draw = menu_draw;
 	key_event = menu_keyb;
-
-	au_play_module(&mus);
 
 	g3d_reset();
 	g3d_framebuffer(fb_width, fb_height, fb_pixels);
@@ -95,6 +94,8 @@ void menu_start(void)
 	g3d_set_texture(envwidth, envheight, envpix);
 
 	g3d_matrix_mode(G3D_MODELVIEW);
+
+	if(mus) start_playlist(mus);
 }
 
 void menu_stop(void)
@@ -113,6 +114,7 @@ void menu_draw(void)
 	int blur_rad_x, blur_rad_y;
 	const struct menuent *ent;
 	float sint, cost;
+	long mus_time;
 
 	sint = sin(time_msec / 1000.0f);
 	cost = cos(time_msec / 1000.0f);
@@ -152,6 +154,8 @@ void menu_draw(void)
 	blit(fb + fboffs, fb_width, blurbuf[0], ent->len, ent->height, BBW);
 	blit_key(fb + fboffs, fb_width, bgpix + fboffs, ent->len, ent->height, bgwidth, 0);
 
+	if(mus) proc_playlist(mus);
+
 	if(show_fps) {
 		blit(fb, fb_width, bgpix, 64, 16, bgwidth);
 	}
@@ -184,6 +188,7 @@ void menu_keyb(int key, int pressed)
 	case '\r':
 		switch(cur) {
 		case 0:
+			if(mus) stop_playlist(mus);
 			race_start();
 			break;
 
@@ -195,5 +200,9 @@ void menu_keyb(int key, int pressed)
 			game_quit();
 			break;
 		}
+
+	case '\t':
+		if(mus) next_playlist(mus);
+		break;
 	}
 }

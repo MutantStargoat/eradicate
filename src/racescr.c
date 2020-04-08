@@ -13,6 +13,7 @@
 #include "util.h"
 #include "input.h"
 #include "joy.h"
+#include "playlist.h"
 
 #define SKY_SUBDIV	3
 #define SKY_FACE_QUADS	(SKY_SUBDIV * SKY_SUBDIV)
@@ -63,6 +64,8 @@ static int nseg_to_draw = 2;
 static int wrong_way;
 static int col_side;
 
+static struct playlist *mus;
+
 int race_init(void)
 {
 	if(gen_sphere_mesh(&sky_mesh, -10.0f, 16, 8) == -1) {
@@ -80,11 +83,15 @@ int race_init(void)
 		return -1;
 	}
 
+	if((mus = create_playlist("data/musgame"))) {
+		shuffle_playlist(mus);
+	}
 	return 0;
 }
 
 void race_cleanup(void)
 {
+	if(mus) destroy_playlist(mus);
 	destroy_mesh(&sky_mesh);
 	destroy_image(&ship_tex);
 	destroy_image(&road_tex);
@@ -94,6 +101,8 @@ void race_cleanup(void)
 void race_start(void)
 {
 	int vmidx;
+
+	printf("race_start\n");
 
 	memset(fb_pixels, 0, fb_size);
 	select_font(FONT_MENU_SHADED);
@@ -155,11 +164,13 @@ void race_start(void)
 	/*g3d_enable(G3D_LIGHTING);
 	g3d_enable(G3D_LIGHT0);*/
 
+	if(mus) start_playlist(mus);
 	prev_upd = time_msec;
 }
 
 void race_stop(void)
 {
+	printf("race_stop\n");
 	destroy_track(&trk);
 	free_curve(path);
 
@@ -168,6 +179,8 @@ void race_stop(void)
 		menu_mode_idx = -1;
 	}
 	destroy_image(&sky_tex);
+
+	if(mus) stop_playlist(mus);
 }
 
 #define CLAMP(x, a, b)	((x) < (a) ? (a) : ((x) > (b) ? (b) : (x)))
@@ -313,6 +326,7 @@ void race_draw(void)
 	g3d_end();
 
 	draw_ui();
+	if(mus) proc_playlist(mus);
 
 	blit_frame(fb_pixels, 0);
 }
@@ -420,6 +434,10 @@ void race_keyb(int key, int pressed)
 	case 27:
 		race_stop();
 		menu_start();
+		break;
+
+	case '\t':
+		if(mus) next_playlist(mus);
 		break;
 
 	default:

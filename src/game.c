@@ -6,10 +6,9 @@
 #include "screens.h"
 #include "fonts.h"
 #include "joy.h"
-#include "audio.h"
 
 #define GUARD_XPAD	0
-#define GUARD_YPAD	1
+#define GUARD_YPAD	32
 
 int fb_width, fb_height, fb_bpp, fb_scan_size;
 float fb_aspect;
@@ -30,10 +29,6 @@ int init(int argc, char **argv)
 	load_options(GAME_CFG_FILE);
 
 	joy_detect();
-
-	if(au_init() == -1) {
-		return -1;
-	}
 
 	if(init_fonts() == -1) {
 		return -1;
@@ -67,7 +62,6 @@ void cleanup(void)
 	intro_cleanup();
 	options_cleanup();
 	menu_cleanup();
-	au_shutdown();
 }
 
 int resizefb(int width, int height, int bpp)

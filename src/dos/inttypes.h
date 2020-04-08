@@ -18,8 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef INT_TYPES_H_
 #define INT_TYPES_H_
 
-/*#if defined(__WATCOMC__) && __WATCOMC__ < 0x1200*/
-#if defined(__DOS__) || defined(__MSDOS__)
+#if defined(__WATCOMC__) && __WATCOMC__ < 1200
 typedef char int8_t;
 typedef short int16_t;
 typedef long int32_t;
