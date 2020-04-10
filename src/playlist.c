@@ -100,7 +100,16 @@ void destroy_playlist(struct playlist *pl)
 
 void shuffle_playlist(struct playlist *pl)
 {
-	/* TODO */
+	int i;
+
+	for(i=0; i<pl->num_files-1; i++) {
+		int r = rand() % (pl->num_files - i);
+		if(r != i) {
+			char *tmp = pl->files[i];
+			pl->files[i] = pl->files[r];
+			pl->files[r] = tmp;
+		}
+	}
 }
 
 int start_playlist(struct playlist *pl)
@@ -145,7 +154,7 @@ struct au_module *playlist_current(struct playlist *pl)
 	return pl->mod;
 }
 
-#define TITLE_DUR		4096
+#define TITLE_DUR		8192
 #define TITLE_MOVE_DUR	(TITLE_DUR >> 2)
 #define TITLE_OUT_START	(TITLE_DUR - TITLE_MOVE_DUR)
 #define TITLE_HEIGHT	16

@@ -95,7 +95,10 @@ void menu_start(void)
 
 	g3d_matrix_mode(G3D_MODELVIEW);
 
-	if(mus) start_playlist(mus);
+	if(mus) {
+		shuffle_playlist(mus);
+		start_playlist(mus);
+	}
 }
 
 void menu_stop(void)

@@ -83,9 +83,7 @@ int race_init(void)
 		return -1;
 	}
 
-	if((mus = create_playlist("data/musgame"))) {
-		shuffle_playlist(mus);
-	}
+	mus = create_playlist("data/musgame");
 	return 0;
 }
 
@@ -164,7 +162,10 @@ void race_start(void)
 	/*g3d_enable(G3D_LIGHTING);
 	g3d_enable(G3D_LIGHT0);*/
 
-	if(mus) start_playlist(mus);
+	if(mus) {
+		shuffle_playlist(mus);
+		start_playlist(mus);
+	}
 	prev_upd = time_msec;
 }
 
