@@ -114,7 +114,6 @@ void menu_draw(void)
 	int blur_rad_x, blur_rad_y;
 	const struct menuent *ent;
 	float sint, cost;
-	long mus_time;
 
 	sint = sin(time_msec / 1000.0f);
 	cost = cos(time_msec / 1000.0f);
@@ -200,6 +199,7 @@ void menu_keyb(int key, int pressed)
 			game_quit();
 			break;
 		}
+		break;
 
 	case '\t':
 		if(mus) next_playlist(mus);
