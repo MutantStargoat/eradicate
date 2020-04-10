@@ -33,8 +33,8 @@ void au_shutdown(void)
 
 struct au_module *au_load_module(const char *fname)
 {
+	static MIDASmoduleInfo info;
 	struct au_module *mod;
-	MIDASmoduleInfo info;
 	char *name, *end;
 
 	if(!(mod = malloc(sizeof *mod))) {

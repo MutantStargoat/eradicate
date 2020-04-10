@@ -175,7 +175,8 @@ long proc_playlist(struct playlist *pl)
 		}
 		select_font(FONT_MENU);
 		fnt_align(FONT_LEFT);
-		fnt_printf(fb_pixels, 5, y, "now playing: %s", pl->mod->name);
+		fnt_print(fb_pixels, 5, y - 16, "now playing:");
+		fnt_print(fb_pixels, 20, y, pl->mod->name);
 	}
 	return mus_time;
 }
