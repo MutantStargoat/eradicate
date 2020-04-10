@@ -6,11 +6,12 @@ dep = $(obj:.o=.d)
 bin = game
 
 def = -DUSE_MMX
-inc = -Isrc -Isrc/sdl -Isrc/3dgfx -Ilibs/imago/src -Ilibs/cgmath/src
+inc = -Isrc -Isrc/sdl -Isrc/3dgfx -Ilibs/imago/src -Ilibs/cgmath/src \
+	  -Ilibs/mikmod/include
 warn = -pedantic -Wall
 
 CFLAGS = $(arch) $(warn) -g -MMD $(def) $(inc) `sdl-config --cflags`
-LDFLAGS = $(arch) -Llibs/imago -limago $(sdl_ldflags) -lm
+LDFLAGS = $(arch) -Llibs/imago -limago -Llibs/mikmod -lmikmod $(sdl_ldflags) -lm
 
 ifneq ($(shell uname -m), i386)
 	arch = -m32
@@ -22,7 +23,7 @@ endif
 .PHONY: all
 all: $(bin)
 
-$(bin): $(obj) imago
+$(bin): $(obj) imago mikmod
 	$(CC) -o $@ $(obj) $(LDFLAGS)
 
 %.o: %.asm
@@ -33,6 +34,10 @@ $(bin): $(obj) imago
 .PHONY: imago
 imago:
 	$(MAKE) -C libs/imago
+
+.PHONY: mikmod
+mikmod:
+	$(MAKE) -C libs/mikmod
 
 .PHONY: clean
 clean:

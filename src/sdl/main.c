@@ -8,6 +8,7 @@
 #include "timer.h"
 #include "joy.h"
 #include "input.h"
+#include "audio.h"
 
 #define FB_WIDTH	640
 #define FB_HEIGHT	480
@@ -63,6 +64,10 @@ int main(int argc, char **argv)
 	SDL_WM_SetCaption("eradicate/SDL", 0);
 	SDL_ShowCursor(0);
 
+	if(au_init() == -1) {
+		return 1;
+	}
+
 	if((joy = SDL_JoystickOpen(0))) {
 		joy_numaxes = SDL_JoystickNumAxes(joy);
 		joy_numbn = SDL_JoystickNumButtons(joy);
@@ -96,6 +101,7 @@ int main(int argc, char **argv)
 break_evloop:
 	cleanup();
 	resizefb(0, 0, 0);
+	au_shutdown();
 	if(joy) SDL_JoystickClose(joy);
 	SDL_Quit();
 	return 0;

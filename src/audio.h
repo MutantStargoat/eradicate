@@ -15,6 +15,7 @@ struct au_module *au_load_module(const char *fname);
 void au_free_module(struct au_module *mod);
 
 int au_play_module(struct au_module *mod);
+void au_update(void);
 int au_stop_module(struct au_module *mod);
 int au_module_state(struct au_module *mod);
 

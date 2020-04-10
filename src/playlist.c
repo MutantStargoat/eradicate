@@ -156,6 +156,8 @@ long proc_playlist(struct playlist *pl)
 
 	if(!pl->mod) return -1;
 
+	au_update();
+
 	if(au_module_state(pl->mod) == AU_STOPPED) {
 		if(next_playlist(pl) == -1) {
 			return -1;
