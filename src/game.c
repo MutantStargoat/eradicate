@@ -1,11 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <limits.h>
 #include "game.h"
 #include "3dgfx/3dgfx.h"
 #include "screens.h"
 #include "fonts.h"
 #include "joy.h"
+#include "audio.h"
 
 #define GUARD_XPAD	0
 #define GUARD_YPAD	32
@@ -19,6 +21,10 @@ void *fb_buf;
 long time_msec;
 int show_fps = 1;
 
+static int mute;
+static int cur_vol;
+static long last_vol_chg = -16384;
+
 void (*draw)(void);
 void (*key_event)(int key, int pressed);
 void (*input_event)(int inp);
@@ -27,6 +33,8 @@ void (*input_event)(int inp);
 int init(int argc, char **argv)
 {
 	load_options(GAME_CFG_FILE);
+
+	cur_vol = au_volume(AU_CUR);
 
 	joy_detect();
 
@@ -98,6 +106,60 @@ int resizefb(int width, int height, int bpp)
 	fb_aspect = (float)fb_width / (float)fb_height;
 
 	return 0;
+}
+
+void game_key(int key, int pressed)
+{
+	if(pressed) {
+		switch(key) {
+		case 27:
+			if(!key_event) {
+				game_quit();
+				return;
+			}
+			break;
+
+		case '-':
+			cur_vol = au_volume(AU_VOLDN);
+			last_vol_chg = time_msec;
+			break;
+
+		case '=':
+			cur_vol = au_volume(AU_VOLUP);
+			last_vol_chg = time_msec;
+			break;
+
+		case 'm':
+			mute ^= 1;
+			if(mute) {
+				au_volume(0);
+			} else {
+				au_volume(cur_vol);
+			}
+			last_vol_chg = time_msec;
+			break;
+
+		default:
+			break;
+		}
+	}
+
+	if(key_event) {
+		key_event(key, pressed);
+	}
+}
+
+void draw_volume_bar(void *fb, int x, int y)
+{
+	if(time_msec - last_vol_chg < 3000) {
+		select_font(FONT_VGA);
+		fnt_align(FONT_LEFT);
+		if(mute) {
+			fnt_print(fb, x, y, "VOL:MUTED");
+		} else {
+			fnt_printf(fb, x, y, "VOL: %3d%%", 101 * cur_vol >> 8);
+		}
+	}
 }
 
 void dbg_print(void *fb, int x, int y, const char *str)

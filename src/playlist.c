@@ -173,6 +173,8 @@ long proc_playlist(struct playlist *pl)
 		}
 	}
 
+	draw_volume_bar(fb_pixels, fb_width - 80, 8);
+
 	mus_time = time_msec - pl->cur_start_time;
 	if(mus_time < TITLE_DUR) {
 		int y;

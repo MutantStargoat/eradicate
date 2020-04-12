@@ -313,13 +313,7 @@ static void handle_event(SDL_Event *ev)
 		pressed = ev->key.state == SDL_PRESSED ? 1 : 0;
 		keystate[key] = pressed;
 
-		if(key_event) {
-			key_event(key, pressed);
-		} else {
-			if(ev->key.keysym.sym == SDLK_ESCAPE) {
-				quit = 1;
-			}
-		}
+		game_key(key, pressed);
 		break;
 
 		/*

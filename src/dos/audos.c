@@ -5,15 +5,26 @@
 #include "audio.h"
 #include "midasdll.h"
 
+#define SET_MUS_VOL(vol) \
+	do { \
+		int mv = (vol) * vol_master >> 10; \
+		MIDASsetMusicVolume(modplay, mv ? mv + 1 : 0); \
+	} while(0)
+
 static MIDASmodulePlayHandle modplay;
 static struct au_module *curmod;
-static int vol;
+
+static int vol_master, vol_mus, vol_sfx;
 
 int au_init(void)
 {
 	modplay = 0;
 	curmod = 0;
-	vol = 64;
+	vol_master = vol_mus = vol_sfx = 255;
+
+	/* TODO: load volume levels from config
+	 * load audio card config, autodetect, or present config dialog
+	 */
 
 	MIDASstartup();
 	MIDASinit();
@@ -101,6 +112,7 @@ int au_play_module(struct au_module *mod)
 		fprintf(stderr, "au_play_module: failed to play module: %s\n", mod->name);
 		return -1;
 	}
+	SET_MUS_VOL(vol_mus);
 	curmod = mod;
 	return 0;
 }
@@ -127,16 +139,37 @@ int au_module_state(struct au_module *mod)
 	return curmod ? AU_PLAYING : AU_STOPPED;
 }
 
-void au_music_volume(int v)
+int au_volume(int vol)
 {
-	v = v ? (v + 1) >> 2 : 0;
+	AU_VOLADJ(vol_master, vol);
+	if(vol != vol_master) {
+		vol_master = vol;
 
-	if(vol == v) return;
-
-	vol = v;
-	if(curmod) {
-		MIDASsetMusicVolume(modplay, v);
+		au_sfx_volume(vol_sfx);
+		au_music_volume(vol_mus);
 	}
+	return vol_master;
+}
+
+int au_sfx_volume(int vol)
+{
+	AU_VOLADJ(vol_sfx, vol);
+	vol_sfx = vol;
+
+	/* TODO set sfx volume */
+	return vol_sfx;
+}
+
+
+int au_music_volume(int vol)
+{
+	AU_VOLADJ(vol_mus, vol);
+	vol_mus = vol;
+
+	if(curmod) {
+		SET_MUS_VOL(vol);
+	}
+	return vol_mus;
 }
 
 /* when using MIDAS, we can't access the PIT directly, so we don't build timer.c

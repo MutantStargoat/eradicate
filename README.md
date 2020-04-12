@@ -33,6 +33,9 @@ See COPYING for details.
 
 Build
 -----
+First copy `libmidas.a` (DJGPP) and/or `midas.lib` (Watcom) from `data/bin` to
+`libs/midas`.
+
   - *Watcom*: change into `libs/imago` and type `wmake`, then return to project
     root, and type `wmake`.
   - *DJGPP*: type `make -f Makefile.dj`.

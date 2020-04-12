@@ -2,8 +2,10 @@
 
 csrc = $(wildcard src/*.c) $(wildcard src/dos/*.c) $(wildcard src/3dgfx/*.c)
 asmsrc = $(wildcard src/*.asm)
+#Ssrc = $(wildcard src/dos/*.S)
 
 obj = $(csrc:.c=.odj) $(asmsrc:.asm=.odj)
+#$(Ssrc:.S=.odj)
 dep = $(obj:.odj=.dep)
 bin = game.exe
 
@@ -22,7 +24,7 @@ else
 	arch = -march=pentium-mmx
 endif
 
-inc = -Isrc -Isrc/dos -Isrc/3dgfx -Ilibs/imago/src -Ilibs/cgmath/src
+inc = -Isrc -Isrc/dos -Isrc/3dgfx -Ilibs/imago/src -Ilibs/cgmath/src -Ilibs/midas
 dbg = -g
 opt = -O3 -ffast-math -fno-strict-aliasing
 warn = -pedantic -Wall
@@ -30,7 +32,7 @@ warn = -pedantic -Wall
 CC = $(TCPREFIX)gcc
 AR = $(TCPREFIX)ar
 CFLAGS = $(arch) $(warn) $(dbg) $(opt) $(prof) -MMD $(def) $(inc)
-LDFLAGS = libs/imago/imago.dja -lm
+LDFLAGS = libs/imago/imago.dja libs/midas/libmidas.a -lm
 
 .PHONY: all
 all: $(bin)
@@ -40,6 +42,9 @@ $(bin): $(obj) imago
 
 %.odj: %.asm
 	nasm -f coff -o $@ $<
+
+#%.odj: %.S
+#	$(CC) $(CFLAGS) -o $@ -c $<
 
 -include $(dep)
 

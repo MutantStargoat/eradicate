@@ -56,7 +56,10 @@ extern void (*draw)(void);
 extern void (*key_event)(int key, int pressed);
 extern void (*input_event)(int inp);
 
+void game_key(int key, int pressed);
 void game_quit(void);
+
+void draw_volume_bar(void *fb, int x, int y);
 
 void dbg_print(void *fb, int x, int y, const char *str);
 void dbg_printf(void *fb, int x, int y, const char *fmt, ...);

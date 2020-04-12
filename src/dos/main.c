@@ -51,16 +51,10 @@ int main(int argc, char **argv)
 
 	for(;;) {
 		int key;
-		if(key_event) {
-			while((key = kb_getkey()) != -1) {
-				key_event(key, 1);
-			}
-		} else {
-			while((key = kb_getkey()) != -1) {
-				if(key == 27) goto break_evloop;
-			}
+		while((key = kb_getkey()) != -1) {
+			game_key(key, 1);
+			if(quit) goto break_evloop;
 		}
-		if(quit) goto break_evloop;
 
 		inp_update();
 

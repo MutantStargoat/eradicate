@@ -1,3 +1,8 @@
+/* for sound we use MIDAS, which takes over the PIT and we can't use it
+ * therefore only compile this file for NO_SOUND builds.
+ */
+#ifdef NO_SOUND
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -174,3 +179,5 @@ static void INTERRUPT timer_irq()
 	/* send EOI to the PIC */
 	outp(PIC1_CMD, OCW2_EOI);
 }
+
+#endif	/* NO_SOUND */

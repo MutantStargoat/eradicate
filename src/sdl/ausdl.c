@@ -6,13 +6,19 @@
 #include "mikmod.h"
 #include "audio.h"
 
+#define SET_MUS_VOL(vol) \
+	do { \
+		int mv = (vol) * vol_master >> 9; \
+		Player_SetVolume(mv ? mv + 1 : 0); \
+	} while(0)
+
 static struct au_module *curmod;
-static int vol;
+static int vol_master, vol_mus, vol_sfx;
 
 int au_init(void)
 {
 	curmod = 0;
-	vol = 128;
+	vol_master = vol_mus = vol_sfx = 255;
 
 	MikMod_RegisterDriver(&drv_sdl);
 
@@ -138,12 +144,30 @@ int au_module_state(struct au_module *mod)
 	return curmod ? AU_PLAYING : AU_STOPPED;
 }
 
-void au_music_volume(int v)
+int au_volume(int vol)
 {
-	v = v ? (v + 1) >> 1 : 0;
+	AU_VOLADJ(vol_master, vol);
+	if(vol != vol_master) {
+		vol_master = vol;
 
-	if(vol == v) return;
+		au_sfx_volume(vol_sfx);
+		au_music_volume(vol_mus);
+	}
+	return vol_master;
+}
 
-	vol = v;
-	Player_SetVolume(v);
+int au_sfx_volume(int vol)
+{
+	AU_VOLADJ(vol_sfx, vol);
+	vol_sfx = vol;
+	/* TODO */
+	return vol_sfx;
+}
+
+int au_music_volume(int vol)
+{
+	AU_VOLADJ(vol_mus, vol);
+	vol_mus = vol;
+	SET_MUS_VOL(vol);
+	return vol_mus;
 }
