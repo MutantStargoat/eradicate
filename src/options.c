@@ -8,10 +8,13 @@
 #define DEF_YRES	240
 #define DEF_BPP		16
 #define DEF_VOL		255
+#define DEF_JS_MIN	0
+#define DEF_JS_MAX	0
 
 struct options opt = {
 	DEF_XRES, DEF_YRES, DEF_BPP,
-	DEF_VOL, DEF_VOL, DEF_VOL
+	DEF_VOL, DEF_VOL, DEF_VOL,
+	{ DEF_JS_MIN, DEF_JS_MAX, DEF_JS_MIN, DEF_JS_MAX }
 };
 
 int load_options(const char *fname)
@@ -30,6 +33,11 @@ int load_options(const char *fname)
 	opt.vol_master = ts_lookup_int(cfg, "options.audio.master", DEF_VOL);
 	opt.vol_mus = ts_lookup_int(cfg, "options.audio.music", DEF_VOL);
 	opt.vol_sfx = ts_lookup_int(cfg, "options.audio.sfx", DEF_VOL);
+
+	opt.jscal.xmin = ts_lookup_int(cfg, "options.joy.xmin", DEF_JS_MIN);
+	opt.jscal.xmax = ts_lookup_int(cfg, "options.joy.xmax", DEF_JS_MAX);
+	opt.jscal.ymin = ts_lookup_int(cfg, "options.joy.ymin", DEF_JS_MIN);
+	opt.jscal.ymax = ts_lookup_int(cfg, "options.joy.ymax", DEF_JS_MAX);
 
 	ts_free_tree(cfg);
 	return 0;
@@ -64,6 +72,14 @@ int save_options(const char *fname)
 	WROPT(2, "music = %d", opt.vol_mus, DEF_VOL);
 	WROPT(2, "sfx = %d", opt.vol_sfx, DEF_VOL);
 	fprintf(fp, "\t}\n");
+
+	fprintf(fp, "\tjoy {\n");
+	WROPT(2, "xmin = %d", opt.jscal.xmin, DEF_JS_MIN);
+	WROPT(2, "xmax = %d", opt.jscal.xmax, DEF_JS_MAX);
+	WROPT(2, "ymin = %d", opt.jscal.ymin, DEF_JS_MIN);
+	WROPT(2, "ymax = %d", opt.jscal.ymax, DEF_JS_MAX);
+	fprintf(fp, "\t}\n");
+
 	fprintf(fp, "}\n");
 	fprintf(fp, "# vi:ts=4 sts=4 sw=4 noexpandtab:\n");
 
