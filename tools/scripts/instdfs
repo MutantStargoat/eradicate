@@ -40,10 +40,12 @@ if $rev; then
 	cd $destdir
 	destdir=$cwd
 else
-	mkdir -p $destdir/data
+	mkdir -p $destdir/data $destdir/data/musgame $destdir/data/musmenu
 	cp game.exe $destdir
-	rm -f $destdir/data/*
+	rm -f $destdir/data/*.*
 	cp data/*.* $destdir/data/
+	cp data/musgame/* $destdir/data/musgame/
+	cp data/musmenu/* $destdir/data/musmenu/
 fi
 
 findsrc()

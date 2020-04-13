@@ -22,6 +22,13 @@ Recommended hardware:
   - Any ISA sound card
   - Any gameport-compatible gamepad
 
+Eradicate attempts to auto-detect the installed sound card, and only asks the
+user for manual sound card configuration if the auto-detection fails. If for
+some reason your sound card is not detected correctly, or if you wish to change
+the current settings, start the game with the `-setup` option. You will only
+need to do this once; your choices are automatically saved, and will be used
+every time you start the game in the future.
+
 License
 -------
 Copyright (C) 2020 John Tsiombikas <nuclear@mutantstargoat.org>

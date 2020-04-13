@@ -11,6 +11,8 @@
 		MIDASsetMusicVolume(modplay, mv ? mv + 1 : 0); \
 	} while(0)
 
+extern int force_snd_config;
+
 static MIDASmodulePlayHandle modplay;
 static struct au_module *curmod;
 
@@ -22,11 +24,16 @@ int au_init(void)
 	curmod = 0;
 	vol_master = vol_mus = vol_sfx = 255;
 
-	/* TODO: load volume levels from config
-	 * load audio card config, autodetect, or present config dialog
-	 */
-
 	MIDASstartup();
+
+	if(force_snd_config || (!MIDASloadConfig("sound.cfg") && !MIDASdetectSoundCard())) {
+		if(MIDASconfig()) {
+			if(!MIDASsaveConfig("sound.cfg")) {
+				fprintf(stderr, "failed to save sound card configuration\n");
+			}
+		}
+	}
+
 	MIDASinit();
 
 	MIDASstartBackgroundPlay(0);

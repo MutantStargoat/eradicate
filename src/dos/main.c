@@ -13,9 +13,19 @@
 
 static int quit;
 
+int force_snd_config;
+
+
 int main(int argc, char **argv)
 {
+	int i;
 	int vmidx, status = 0;
+
+	for(i=1; i<argc; i++) {
+		if(strcmp(argv[i], "-setup") == 0) {
+			force_snd_config = 1;
+		}
+	}
 
 #ifdef __DJGPP__
 	__djgpp_nearptr_enable();
