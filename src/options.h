@@ -3,6 +3,7 @@
 
 struct options {
 	int xres, yres, bpp;
+	int vol_master, vol_mus, vol_sfx;
 };
 
 extern struct options opt;

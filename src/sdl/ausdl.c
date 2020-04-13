@@ -110,6 +110,7 @@ int au_play_module(struct au_module *mod)
 	}
 
 	Player_Start(mod->impl);
+	SET_MUS_VOL(vol_mus);
 	curmod = mod;
 	return 0;
 }
@@ -168,6 +169,9 @@ int au_music_volume(int vol)
 {
 	AU_VOLADJ(vol_mus, vol);
 	vol_mus = vol;
-	SET_MUS_VOL(vol);
+
+	if(curmod) {
+		SET_MUS_VOL(vol);
+	}
 	return vol_mus;
 }

@@ -22,7 +22,6 @@ long time_msec;
 int show_fps = 1;
 
 static int mute;
-static int cur_vol;
 static long last_vol_chg = -16384;
 
 void (*draw)(void);
@@ -34,7 +33,9 @@ int init(int argc, char **argv)
 {
 	load_options(GAME_CFG_FILE);
 
-	cur_vol = au_volume(AU_CUR);
+	au_music_volume(opt.vol_mus);
+	au_sfx_volume(opt.vol_sfx);
+	au_volume(opt.vol_master);
 
 	joy_detect();
 
@@ -65,6 +66,8 @@ int init(int argc, char **argv)
 
 void cleanup(void)
 {
+	save_options(GAME_CFG_FILE);
+
 	g3d_destroy();
 	race_cleanup();
 	intro_cleanup();
@@ -120,12 +123,12 @@ void game_key(int key, int pressed)
 			break;
 
 		case '-':
-			cur_vol = au_volume(AU_VOLDN);
+			opt.vol_master = au_volume(AU_VOLDN);
 			last_vol_chg = time_msec;
 			break;
 
 		case '=':
-			cur_vol = au_volume(AU_VOLUP);
+			opt.vol_master = au_volume(AU_VOLUP);
 			last_vol_chg = time_msec;
 			break;
 
@@ -134,7 +137,7 @@ void game_key(int key, int pressed)
 			if(mute) {
 				au_volume(0);
 			} else {
-				au_volume(cur_vol);
+				au_volume(opt.vol_master);
 			}
 			last_vol_chg = time_msec;
 			break;
@@ -157,7 +160,7 @@ void draw_volume_bar(void *fb, int x, int y)
 		if(mute) {
 			fnt_print(fb, x, y, "VOL:MUTED");
 		} else {
-			fnt_printf(fb, x, y, "VOL: %3d%%", 101 * cur_vol >> 8);
+			fnt_printf(fb, x, y, "VOL: %3d%%", 101 * opt.vol_master >> 8);
 		}
 	}
 }
