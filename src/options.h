@@ -9,6 +9,7 @@ struct joystick {
 struct options {
 	int xres, yres, bpp;
 	int vol_master, vol_mus, vol_sfx;
+	int music;
 	struct joystick jscal;
 };
 

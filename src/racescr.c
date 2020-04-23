@@ -164,7 +164,9 @@ void race_start(void)
 
 	if(mus) {
 		shuffle_playlist(mus);
-		start_playlist(mus);
+		if(opt.music) {
+			start_playlist(mus);
+		}
 	}
 	prev_upd = time_msec;
 }
@@ -438,7 +440,19 @@ void race_keyb(int key, int pressed)
 		break;
 
 	case '\t':
-		if(mus) next_playlist(mus);
+		if(mus && opt.music) {
+			next_playlist(mus);
+		}
+		break;
+
+	case 'm':
+		if(mus) {
+			if(opt.music) {
+				cont_playlist(mus);
+			} else {
+				stop_playlist(mus);
+			}
+		}
 		break;
 
 	default:

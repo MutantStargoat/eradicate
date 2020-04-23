@@ -5,8 +5,8 @@ enum { AU_STOPPED, AU_PLAYING };
 
 enum {
 	AU_CUR = 0x7000,
-	AU_VOLUP,
-	AU_VOLDN
+	AU_VOLUP = 0x7100,
+	AU_VOLDN = 0x7200
 };
 
 struct au_module {
@@ -32,15 +32,18 @@ int au_music_volume(int vol);
 /* pay no attention to the man behind the curtain */
 #define AU_VOLADJ(vol, newvol) \
 	do { \
-		switch(newvol) { \
+		int d; \
+		switch(newvol & 0xff00) { \
 		case AU_CUR: \
 			return (vol); \
 		case AU_VOLUP: \
-			(newvol) = (vol) + 16; \
-			if((newvol) > 256) (newvol) = 255; \
+			d = newvol & 0xff; \
+			(newvol) = (vol) + (d ? d : 16); \
+			if((newvol) >= 256) (newvol) = 255; \
 			break; \
 		case AU_VOLDN: \
-			(newvol) = (vol) - 16; \
+			d = newvol & 0xff; \
+			(newvol) = (vol) - (d ? d : 16); \
 			if((newvol) < 0) (newvol) = 0; \
 			break; \
 		default: \

@@ -21,7 +21,6 @@ void *fb_buf;
 long time_msec;
 int show_fps = 1;
 
-static int mute;
 static long last_vol_chg = -16384;
 
 void (*draw)(void);
@@ -123,22 +122,17 @@ void game_key(int key, int pressed)
 			break;
 
 		case '-':
-			opt.vol_master = au_volume(AU_VOLDN);
+			opt.vol_master = au_volume(AU_VOLDN | 31);
 			last_vol_chg = time_msec;
 			break;
 
 		case '=':
-			opt.vol_master = au_volume(AU_VOLUP);
+			opt.vol_master = au_volume(AU_VOLUP | 31);
 			last_vol_chg = time_msec;
 			break;
 
 		case 'm':
-			mute ^= 1;
-			if(mute) {
-				au_volume(0);
-			} else {
-				au_volume(opt.vol_master);
-			}
+			opt.music ^= 1;
 			last_vol_chg = time_msec;
 			break;
 
@@ -152,16 +146,103 @@ void game_key(int key, int pressed)
 	}
 }
 
+#define VOL_BARS	8
 void draw_volume_bar(void *fb, int x, int y)
 {
+	int i, savpmod;
+	unsigned int savopt;
 	if(time_msec - last_vol_chg < 3000) {
-		select_font(FONT_VGA);
-		fnt_align(FONT_LEFT);
-		if(mute) {
-			fnt_print(fb, x, y, "VOL:MUTED");
+		savopt = g3d_getopt(G3D_ALL);
+		savpmod = g3d_get_polygon_mode();
+
+		g3d_matrix_mode(G3D_PROJECTION);
+		g3d_push_matrix();
+		g3d_load_identity();
+		g3d_ortho(0, 640, 0, 480, -1, 1);
+
+		g3d_matrix_mode(G3D_MODELVIEW);
+		g3d_load_identity();
+
+		g3d_polygon_mode(G3D_FLAT);
+
+		g3d_disable(G3D_TEXTURE_2D);
+
+		/* draw speaker icon */
+		g3d_translate(520, 460, 0);
+		g3d_scale(3.2, 2.8, 3.2);
+		g3d_begin(G3D_QUADS);
+		g3d_color3b(128, 240, 128);
+		g3d_vertex(-5, -2, 0);
+		g3d_vertex(-3.6, -2, 0);
+		g3d_vertex(-3.6, 2, 0);
+		g3d_vertex(-5, 2, 0);
+		g3d_vertex(-3, -2, 0);
+		g3d_vertex(0, -5, 0);
+		g3d_vertex(0, 5, 0);
+		g3d_vertex(-3, 2, 0);
+		if(opt.music) {
+			g3d_vertex(0.9, 3.7, 0);
+			g3d_vertex(1.9, 1.9, 0);
+			g3d_vertex(2.5, 2.3, 0);
+			g3d_vertex(1.3, 4, 0);
+			g3d_vertex(2.2, 0, 0);
+			g3d_vertex(3, 0, 0);
+			g3d_vertex(2.5, 2.3, 0);
+			g3d_vertex(1.9, 1.9, 0);
+			g3d_vertex(1.9, -1.9, 0);
+			g3d_vertex(2.5, -2.3, 0);
+			g3d_vertex(3, 0, 0);
+			g3d_vertex(2.2, 0, 0);
+			g3d_vertex(1.3, -4, 0);
+			g3d_vertex(2.5, -2.3, 0);
+			g3d_vertex(1.9, -1.9, 0);
+			g3d_vertex(0.9, -3.7, 0);
+
+			g3d_vertex(3.6, 2.8, 0);
+			g3d_vertex(4.3, 3.2, 0);
+			g3d_vertex(2.9, 5.5, 0);
+			g3d_vertex(2.2, 5, 0);
+			g3d_vertex(4.1, 0, 0);
+			g3d_vertex(5, 0, 0);
+			g3d_vertex(4.3, 3.2, 0);
+			g3d_vertex(3.6, 2.8, 0);
+			g3d_vertex(3.6, -2.8, 0);
+			g3d_vertex(4.3, -3.2, 0);
+			g3d_vertex(5, 0, 0);
+			g3d_vertex(4.1, 0, 0);
+			g3d_vertex(2.2, -5, 0);
+			g3d_vertex(2.9, -5.5, 0);
+			g3d_vertex(4.3, -3.2, 0);
+			g3d_vertex(3.6, -2.8, 0);
 		} else {
-			fnt_printf(fb, x, y, "VOL: %3d%%", 101 * opt.vol_master >> 8);
+			g3d_vertex(-7, -5, 0);
+			g3d_vertex(-6, -6, 0);
+			g3d_vertex(4, 5, 0);
+			g3d_vertex(3, 6, 0);
 		}
+
+		if(opt.music) {
+			for(i=0; i<VOL_BARS; i++) {
+				float x = 8 + i * 3.5;
+				if(opt.vol_master < 255 && i >= opt.vol_master >> 5) {
+					g3d_end();
+					g3d_polygon_mode(G3D_WIRE);
+					g3d_begin(G3D_QUADS);
+				}
+				g3d_vertex(x, -3.5, 0);
+				g3d_vertex(x + 1.5, -3.5, 0);
+				g3d_vertex(x + 1.5, 3.5, 0);
+				g3d_vertex(x, 3.5, 0);
+			}
+		}
+		g3d_end();
+
+		g3d_matrix_mode(G3D_PROJECTION);
+		g3d_pop_matrix();
+		g3d_matrix_mode(G3D_MODELVIEW);
+
+		g3d_setopt(savopt, G3D_ALL);
+		g3d_polygon_mode(savpmod);
 	}
 }
 

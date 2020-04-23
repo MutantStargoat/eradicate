@@ -189,6 +189,11 @@ void g3d_polygon_mode(int pmode)
 	st->polymode = pmode;
 }
 
+int g3d_get_polygon_mode(void)
+{
+	return st->polymode;
+}
+
 void g3d_matrix_mode(int mmode)
 {
 	st->mmode = mmode;

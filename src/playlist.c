@@ -118,6 +118,11 @@ int start_playlist(struct playlist *pl)
 	return next_playlist(pl);
 }
 
+int cont_playlist(struct playlist *pl)
+{
+	return next_playlist(pl);
+}
+
 void stop_playlist(struct playlist *pl)
 {
 	if(pl->mod) {
@@ -163,6 +168,8 @@ long proc_playlist(struct playlist *pl)
 {
 	long mus_time;
 
+	draw_volume_bar(fb_pixels, fb_width - 80, 8);
+
 	if(!pl->mod) return -1;
 
 	au_update();
@@ -172,8 +179,6 @@ long proc_playlist(struct playlist *pl)
 			return -1;
 		}
 	}
-
-	draw_volume_bar(fb_pixels, fb_width - 80, 8);
 
 	mus_time = time_msec - pl->cur_start_time;
 	if(mus_time < TITLE_DUR) {

@@ -95,7 +95,7 @@ void menu_start(void)
 
 	g3d_matrix_mode(G3D_MODELVIEW);
 
-	if(mus) {
+	if(mus && opt.music) {
 		shuffle_playlist(mus);
 		start_playlist(mus);
 	}
@@ -190,7 +190,9 @@ void menu_keyb(int key, int pressed)
 	case '\r':
 		switch(cur) {
 		case 0:
-			if(mus) stop_playlist(mus);
+			if(mus && opt.music) {
+				stop_playlist(mus);
+			}
 			race_start();
 			break;
 
@@ -205,7 +207,19 @@ void menu_keyb(int key, int pressed)
 		break;
 
 	case '\t':
-		if(mus) next_playlist(mus);
+		if(mus && opt.music) {
+			next_playlist(mus);
+		}
+		break;
+
+	case 'm':
+		if(mus) {
+			if(opt.music) {
+				cont_playlist(mus);
+			} else {
+				stop_playlist(mus);
+			}
+		}
 		break;
 	}
 }

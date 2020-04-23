@@ -93,6 +93,7 @@ unsigned int g3d_getopt(unsigned int mask);
 
 void g3d_front_face(unsigned int order);
 void g3d_polygon_mode(int pmode);
+int g3d_get_polygon_mode(void);
 
 void g3d_matrix_mode(int mmode);
 

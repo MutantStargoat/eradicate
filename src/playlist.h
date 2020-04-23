@@ -11,6 +11,7 @@ void destroy_playlist(struct playlist *pl);
 void shuffle_playlist(struct playlist *pl);
 
 int start_playlist(struct playlist *pl);
+int cont_playlist(struct playlist *pl);
 void stop_playlist(struct playlist *pl);
 int next_playlist(struct playlist *pl);
 
