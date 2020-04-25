@@ -39,6 +39,11 @@ void select_font(int idx)
 	actsz = fontsize[idx];
 }
 
+int selected_font(void)
+{
+	return actfnt - fonts;
+}
+
 void fnt_print(void *fb, int x, int y, const char *str)
 {
 	uint16_t *dest;
@@ -91,4 +96,14 @@ void fnt_align(int a)
 int fnt_strwidth(const char *str)
 {
 	return strlen(str) * actsz;
+}
+
+int fnt_width(int font)
+{
+	return fontsize[font];
+}
+
+int fnt_height(int font)
+{
+	return fontsize[font];
 }

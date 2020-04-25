@@ -41,7 +41,7 @@ fi
 
 if [ ! -f data/nebcobig.spr -o data/src/nebucol.fnt -nt data/nebcobig.spr ]; then
 	echo 'mksprite: nebcobig'
-	convert data/src/nebucol.fnt -filter point -resize '200%' data/src/nebcobig.fnt
+	#convert data/src/nebucol.fnt -filter point -resize '200%' data/src/nebcobig.fnt
 	mksprite -o data/nebcobig.spr -s 32x32 -conv565 data/src/nebcobig.fnt
 fi
 

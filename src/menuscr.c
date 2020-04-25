@@ -12,19 +12,11 @@
 #include "joy.h"
 #include "playlist.h"
 #include "fonts.h"
+#include "ui.h"
 
-#define PADX	42
-#define PADX2	(PADX * 2)
-#define PADY	16
-#define PADY2	(PADY * 2)
-
-static const struct menuent {
-	int x, y, len, height;
-} menuent[] = {
-	{252 - PADX, 281 - PADY, 147 + PADX2, 37 + PADY2},
-	{244 - PADX, 344 - PADY, 161 + PADX2, 37 + PADY2},
-	{276 - PADX, 407 - PADY, 102 + PADX2, 38 + PADY2}
-};
+enum { MENU_START, MENU_OPTIONS, MENU_QUIT, NUM_MENU_ENTRIES};
+static const char *menu_str[NUM_MENU_ENTRIES] = {"Start", "Options", "Quit"};
+static void *menu_widget[NUM_MENU_ENTRIES];
 
 static int cur;
 
@@ -39,6 +31,8 @@ static struct playlist *mus;
 
 int menu_init(void)
 {
+	int i;
+
 	if(!(bgpix = img_load_pixels("data/menbg640.png", &bgwidth, &bgheight, IMG_FMT_RGB565))) {
 		fprintf(stderr, "failed to load menu bg image\n");
 		return -1;
@@ -55,6 +49,17 @@ int menu_init(void)
 	}
 	normalize_mesh_normals(&logo_mesh);
 
+	for(i=0; i<NUM_MENU_ENTRIES; i++) {
+		struct ui_button *bn;
+		if(!(bn = ui_button(menu_str[i]))) {
+			return -1;
+		}
+		ui_move(bn, 50, 300 + i * 50);
+		bn->w.font = FONT_MENU_SHADED_BIG;
+		menu_widget[i] = bn;
+	}
+	ui_set_focus(menu_widget[0], 1);
+
 	if((mus = create_playlist("data/musmenu"))) {
 		shuffle_playlist(mus);
 	}
@@ -63,6 +68,11 @@ int menu_init(void)
 
 void menu_cleanup(void)
 {
+	int i;
+	for(i=0; i<NUM_MENU_ENTRIES; i++) {
+		ui_free(menu_widget[i]);
+	}
+
 	if(mus) destroy_playlist(mus);
 	img_free_pixels(bgpix);
 }
@@ -105,17 +115,9 @@ void menu_stop(void)
 {
 }
 
-
-#define BBW		256
-#define BBH		64
-
 void menu_draw(void)
 {
-	static uint16_t blurbuf[2][BBW * BBH];
-	uint16_t *fb = fb_pixels;
-	int fboffs, cleartop;
-	int blur_rad_x, blur_rad_y;
-	const struct menuent *ent;
+	int i;
 	float sint, cost;
 
 	sint = sin(time_msec / 1000.0f);
@@ -136,33 +138,17 @@ void menu_draw(void)
 	/*zsort_mesh(&logo_mesh);*/
 	draw_mesh(&logo_mesh);
 
-	blur_rad_x = (int)((sint * 0.5f + 0.5f) * 50.0f);
-	blur_rad_y = (int)((cost * 0.5f + 0.5f) * 50.0f);
-
-	ent = menuent + cur;
-	fboffs = ent->y * fb_width + ent->x;
-
-	memset(blurbuf[0], 0, sizeof blurbuf[0]);
-	blit(blurbuf[0], BBW, bgpix + fboffs, ent->len, ent->height, bgwidth);
-
-	blur_horiz(blurbuf[1], blurbuf[0], BBW, BBH, blur_rad_x + 3, 0x140);
-	blur_vert(blurbuf[0], blurbuf[1], BBW, BBH, blur_rad_y / 4 + 3, 0x140);
-
-	//wait_vsync();
-
-	cleartop = 280 * fb_width;
-	memcpy(fb + cleartop, bgpix + cleartop, (fb_height - 280) * fb_width << 1);
-
-	blit(fb + fboffs, fb_width, blurbuf[0], ent->len, ent->height, BBW);
-	blit_key(fb + fboffs, fb_width, bgpix + fboffs, ent->len, ent->height, bgwidth, 0);
+	for(i=0; i<NUM_MENU_ENTRIES; i++) {
+		ui_draw(menu_widget[i]);
+	}
 
 	if(mus) proc_playlist(mus);
 
 	if(show_fps) {
-		blit(fb, fb_width, bgpix, 64, 16, bgwidth);
+		blit(fb_pixels, fb_width, bgpix, 64, 16, bgwidth);
 	}
 
-	blit_frame(fb_pixels, 0);
+	blit_frame(fb_pixels, opt.vsync);
 }
 
 void menu_keyb(int key, int pressed)
@@ -177,30 +163,34 @@ void menu_keyb(int key, int pressed)
 #endif
 
 	case KB_UP:
-		if(cur > 0) cur--;
+		if(cur > 0) {
+			ui_set_focus(menu_widget[cur], 0);
+			ui_set_focus(menu_widget[--cur], 1);
+		}
 		break;
 
 	case KB_DOWN:
-		if(cur < sizeof menuent / sizeof *menuent - 1) {
-			cur++;
+		if(cur < NUM_MENU_ENTRIES - 1) {
+			ui_set_focus(menu_widget[cur], 0);
+			ui_set_focus(menu_widget[++cur], 1);
 		}
 		break;
 
 	case '\n':
 	case '\r':
 		switch(cur) {
-		case 0:
+		case MENU_START:
 			if(mus && opt.music) {
 				stop_playlist(mus);
 			}
 			race_start();
 			break;
 
-		case 1:
+		case MENU_OPTIONS:
 			options_start();
 			break;
 
-		case 2:
+		case MENU_QUIT:
 			game_quit();
 			break;
 		}

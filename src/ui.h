@@ -12,12 +12,17 @@ struct ui_base {
 	int type;
 	int x, y;
 	char *text;
+	int font;
 	int focus;
 	struct ui_base *next, *prev;
 
 	void (*draw)();
 	void (*keypress)();
 	void (*free)();
+};
+
+struct ui_button {
+	struct ui_base w;
 };
 
 struct ui_bnbox {
@@ -42,6 +47,7 @@ struct ui_list {
 	int num_items, max_items, sel;
 };
 
+struct ui_button *ui_button(const char *text);
 struct ui_bnbox *ui_bnbox(const char *tx1, const char *tx2);
 struct ui_ckbox *ui_ckbox(const char *text, int chk);
 struct ui_list *ui_list(const char *text);

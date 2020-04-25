@@ -8,6 +8,7 @@ struct joystick {
 
 struct options {
 	int xres, yres, bpp;
+	int vsync;
 	int vol_master, vol_mus, vol_sfx;
 	int music;
 	struct joystick jscal;

@@ -331,7 +331,7 @@ void race_draw(void)
 	draw_ui();
 	if(mus) proc_playlist(mus);
 
-	blit_frame(fb_pixels, 0);
+	blit_frame(fb_pixels, opt.vsync);
 }
 
 static void draw_skybox(void)

@@ -97,7 +97,7 @@ void options_draw(void)
 		ui_draw(widgets[i]);
 	}
 
-	blit_frame(fb_pixels, 0);
+	blit_frame(fb_pixels, opt.vsync);
 }
 
 void options_keyb(int key, int pressed)

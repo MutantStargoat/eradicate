@@ -8,8 +8,11 @@
 #include "sprite.h"
 #include "util.h"
 
+static void free_button(struct ui_button *w);
 static void free_bnbox(struct ui_bnbox *w);
 static void free_list(struct ui_list *w);
+
+static void draw_button(struct ui_button *w);
 
 static void draw_bnbox(struct ui_bnbox *w);
 static void key_bnbox(struct ui_bnbox *w, int key);
@@ -32,6 +35,7 @@ static void init_icons(void)
 static void init_base(struct ui_base *b)
 {
 	memset(b, 0, sizeof *b);
+	b->font = FONT_MENU_SHADED;
 
 	init_icons();
 }
@@ -41,6 +45,30 @@ static void free_base(struct ui_base *b)
 	if(b) {
 		free(b->text);
 	}
+}
+
+struct ui_button *ui_button(const char *text)
+{
+	struct ui_button *w;
+	int len = strlen(text);
+
+	if(!(w = malloc(sizeof *w))) {
+		perror("failed to allocate ui_button");
+		return 0;
+	}
+	init_base(&w->w);
+
+	if(!(w->w.text = malloc(len + 1))) {
+		perror("ui_button: failed to allocate text buffer");
+		free(w);
+		return 0;
+	}
+	memcpy(w->w.text, text, len + 1);
+
+	w->w.draw = draw_button;
+	w->w.keypress = 0;
+	w->w.free = free_button;
+	return w;
 }
 
 struct ui_bnbox *ui_bnbox(const char *tx1, const char *tx2)
@@ -78,6 +106,14 @@ struct ui_bnbox *ui_bnbox(const char *tx1, const char *tx2)
 	w->w.keypress = key_bnbox;
 	w->w.free = free_bnbox;
 	return w;
+}
+
+static void free_button(struct ui_button *w)
+{
+	if(w) {
+		free_base(&w->w);
+		free(w);
+	}
 }
 
 static void free_bnbox(struct ui_bnbox *w)
@@ -291,12 +327,29 @@ static void draw_selbox(int x, int y, int w, int h)
 	draw_sprite(fb + y0 * fb_scan_size + (x0 << 1), fb_scan_size, &spr_icons, 0);
 }
 
+
+static void draw_button(struct ui_button *w)
+{
+	int x, y, width;
+
+	select_font(w->w.font);
+	fnt_align(FONT_LEFT);
+
+	width = fnt_strwidth(w->w.text);
+
+	x = w->w.x;
+	y = w->w.y;
+	if(w->w.focus) draw_selbox(x - 3, y, width, fnt_height(w->w.font));
+	fnt_print(fb_pixels, x, y, w->w.text);
+}
+
 static void draw_bnbox(struct ui_bnbox *w)
 {
-	int x, y;
+	int x, y, fntsz;
 	int width1, width2;
 
-	select_font(FONT_MENU_SHADED);
+	select_font(w->w.font);
+	fntsz = fnt_height(w->w.font);
 	fnt_align(FONT_LEFT);
 
 	width1 = fnt_strwidth(w->w.text);
@@ -304,12 +357,12 @@ static void draw_bnbox(struct ui_bnbox *w)
 
 	x = w->w.x - width1 - 30;
 	y = w->w.y;
-	if(w->w.focus && w->sel == 0) draw_selbox(x - 3, y, width1, 16);
+	if(w->w.focus && w->sel == 0) draw_selbox(x - 3, y, width1, fntsz);
 	fnt_print(fb_pixels, x, y, w->w.text);
 
 	x = w->w.x + 30;
 	fnt_print(fb_pixels, x, y, w->text2);
-	if(w->w.focus && w->sel == 1) draw_selbox(x - 3, y, width2, 16);
+	if(w->w.focus && w->sel == 1) draw_selbox(x - 3, y, width2, fntsz);
 }
 
 static void key_bnbox(struct ui_bnbox *w, int key)
@@ -328,10 +381,11 @@ static void key_bnbox(struct ui_bnbox *w, int key)
 static void draw_list(struct ui_list *w)
 {
 	static int dotadv[] = {0, 8, 7, 5};
-	int i, x, y, seldist, prevdist, label_width;
+	int i, x, y, seldist, prevdist, label_width, fntsz;
 	uint16_t *fbptr;
 
-	select_font(FONT_MENU_SHADED);
+	select_font(w->w.font);
+	fntsz = fnt_height(w->w.font);
 	fnt_align(FONT_RIGHT);
 
 	label_width = fnt_strwidth(w->w.text);
@@ -339,7 +393,7 @@ static void draw_list(struct ui_list *w)
 	x = w->w.x - 6;
 	y = w->w.y;
 
-	if(w->w.focus) draw_selbox(x - label_width - 3, y, 0, 16);
+	if(w->w.focus) draw_selbox(x - label_width - 3, y, 0, fntsz);
 
 	fnt_print(fb_pixels, x, y, w->w.text);
 	x += 12;

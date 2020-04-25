@@ -7,6 +7,7 @@
 #define DEF_XRES	320
 #define DEF_YRES	240
 #define DEF_BPP		16
+#define DEF_VSYNC	1
 #define DEF_VOL		255
 #define DEF_MUS		1
 #define DEF_JS_MIN	0
@@ -14,6 +15,7 @@
 
 struct options opt = {
 	DEF_XRES, DEF_YRES, DEF_BPP,
+	DEF_VSYNC,
 	DEF_VOL, DEF_VOL, DEF_VOL,
 	DEF_MUS,
 	{ DEF_JS_MIN, DEF_JS_MAX, DEF_JS_MIN, DEF_JS_MAX }
@@ -31,6 +33,7 @@ int load_options(const char *fname)
 	opt.xres = ts_lookup_int(cfg, "options.gfx.xres", DEF_XRES);
 	opt.yres = ts_lookup_int(cfg, "options.gfx.yres", DEF_YRES);
 	opt.bpp = ts_lookup_int(cfg, "options.gfx.bpp", DEF_BPP);
+	opt.vsync = ts_lookup_int(cfg, "options.gfx.vsync", DEF_VSYNC);
 
 	opt.vol_master = ts_lookup_int(cfg, "options.audio.volmaster", DEF_VOL);
 	opt.vol_mus = ts_lookup_int(cfg, "options.audio.volmusic", DEF_VOL);
@@ -68,6 +71,7 @@ int save_options(const char *fname)
 	WROPT(2, "xres = %d", opt.xres, DEF_XRES);
 	WROPT(2, "yres = %d", opt.yres, DEF_YRES);
 	WROPT(2, "bpp = %d", opt.bpp, DEF_BPP);
+	WROPT(2, "vsync = %d", opt.vsync, DEF_VSYNC);
 	fprintf(fp, "\t}\n");
 
 	fprintf(fp, "\taudio {\n");
