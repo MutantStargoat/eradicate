@@ -39,10 +39,13 @@ if [ ! -f data/nebucol.spr -o data/src/nebucol.fnt -nt data/nebucol.spr ]; then
 	mksprite -o data/nebucol.spr -s 16x16 -conv565 data/src/nebucol.fnt
 fi
 
-if [ ! -f data/nebcobig.spr -o data/src/nebucol.fnt -nt data/nebcobig.spr ]; then
+if [ ! -f data/nebcobig.spr -o data/src/nebcobig.fnt -nt data/nebcobig.spr ]; then
 	echo 'mksprite: nebcobig'
-	#convert data/src/nebucol.fnt -filter point -resize '200%' data/src/nebcobig.fnt
 	mksprite -o data/nebcobig.spr -s 32x32 -conv565 data/src/nebcobig.fnt
+fi
+if [ ! -f data/nebcobhl.spr -o data/src/nebcobhl.fnt -nt data/nebcobhl.spr ]; then
+	echo 'mksprite: nebcobhl'
+	mksprite -o data/nebcobhl.spr -s 32x32 -conv565 data/src/nebcobhl.fnt
 fi
 
 if [ ! -f data/icons.spr -o data/src/icons.png -nt data/icons.spr ]; then

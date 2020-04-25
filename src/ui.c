@@ -10,12 +10,16 @@
 
 static void free_button(struct ui_button *w);
 static void free_bnbox(struct ui_bnbox *w);
+static void free_ckbox(struct ui_ckbox *w);
 static void free_list(struct ui_list *w);
 
 static void draw_button(struct ui_button *w);
 
 static void draw_bnbox(struct ui_bnbox *w);
 static void key_bnbox(struct ui_bnbox *w, int key);
+
+static void draw_ckbox(struct ui_ckbox *w);
+static void key_ckbox(struct ui_ckbox *w, int key);
 
 static void draw_list(struct ui_list *w);
 static void key_list(struct ui_list *w, int key);
@@ -71,6 +75,15 @@ struct ui_button *ui_button(const char *text)
 	return w;
 }
 
+
+static void free_button(struct ui_button *w)
+{
+	if(w) {
+		free_base(&w->w);
+		free(w);
+	}
+}
+
 struct ui_bnbox *ui_bnbox(const char *tx1, const char *tx2)
 {
 	int len1, len2;
@@ -108,14 +121,6 @@ struct ui_bnbox *ui_bnbox(const char *tx1, const char *tx2)
 	return w;
 }
 
-static void free_button(struct ui_button *w)
-{
-	if(w) {
-		free_base(&w->w);
-		free(w);
-	}
-}
-
 static void free_bnbox(struct ui_bnbox *w)
 {
 	if(w) {
@@ -127,7 +132,34 @@ static void free_bnbox(struct ui_bnbox *w)
 
 struct ui_ckbox *ui_ckbox(const char *text, int chk)
 {
-	return 0;
+	struct ui_ckbox *w;
+	int len = strlen(text);
+
+	if(!(w = malloc(sizeof *w))) {
+		perror("failed to allocate ui_ckbox");
+		return 0;
+	}
+	init_base(&w->w);
+
+	if(!(w->w.text = malloc(len + 1))) {
+		perror("ui_ckbox: failed to allocate text buffer");
+		free(w);
+		return 0;
+	}
+	memcpy(w->w.text, text, len + 1);
+
+	w->w.draw = draw_ckbox;
+	w->w.keypress = key_ckbox;
+	w->w.free = free_ckbox;
+	return w;
+}
+
+static void free_ckbox(struct ui_ckbox *w)
+{
+	if(w) {
+		free_base(&w->w);
+		free(w);
+	}
 }
 
 struct ui_list *ui_list(const char *text)
@@ -247,11 +279,12 @@ int ui_bnbox_getsel(struct ui_bnbox *w)
 
 int ui_ckbox_state(struct ui_ckbox *w)
 {
-	return 0;
+	return w->val;
 }
 
 void ui_ckbox_set(struct ui_ckbox *w, int val)
 {
+	w->val = val;
 }
 
 
@@ -377,6 +410,53 @@ static void key_bnbox(struct ui_bnbox *w, int key)
 	}
 }
 
+
+static void draw_ckbox(struct ui_ckbox *w)
+{
+	int x, y, fntsz, label_width;
+
+	select_font(w->w.font);
+	fntsz = fnt_height(w->w.font);
+	fnt_align(FONT_RIGHT);
+
+	label_width = fnt_strwidth(w->w.text);
+
+	x = w->w.x - 6;
+	y = w->w.y;
+	fnt_print(fb_pixels, x, y, w->w.text);
+
+	if(w->w.focus) draw_selbox(x - label_width - 3, y, 0, fntsz);
+
+	select_font(FONT_MENU);
+	fnt_align(FONT_LEFT);
+
+	x = w->w.x + 40;
+	fnt_print(fb_pixels, x, y, w->val ? "ON" : "OFF");
+}
+
+static void key_ckbox(struct ui_ckbox *w, int key)
+{
+	printf("key: %d\n", key);
+	switch(key) {
+	case '\n':
+	case '\r':
+	case ' ':
+	case KB_LEFT:
+	case KB_RIGHT:
+		w->val ^= 1;
+		break;
+
+	case 'y':
+	case 'Y':
+		w->val = 1;
+		break;
+
+	case 'n':
+	case 'N':
+		w->val = 0;
+		break;
+	}
+}
 
 static void draw_list(struct ui_list *w)
 {

@@ -139,6 +139,8 @@ void menu_draw(void)
 	draw_mesh(&logo_mesh);
 
 	for(i=0; i<NUM_MENU_ENTRIES; i++) {
+		struct ui_base *w = (struct ui_base*)menu_widget[i];
+		w->font = cur == i ? FONT_MENU_SHADEDHL_BIG : FONT_MENU_SHADED_BIG;
 		ui_draw(menu_widget[i]);
 	}
 

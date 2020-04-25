@@ -6,13 +6,14 @@
 #include "sprite.h"
 
 static struct sprites fonts[NUM_FONTS];
-static int fontsize[] = { 8, 16, 16, 32 };
+static int fontsize[] = { 8, 16, 16, 32, 32 };
 
 static const char *fontfiles[] = {
 	"data/dbgfont.spr",
 	"data/nebula.spr",
 	"data/nebucol.spr",
 	"data/nebcobig.spr",
+	"data/nebcobhl.spr",
 	0
 };
 

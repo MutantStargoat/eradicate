@@ -20,6 +20,7 @@ static int populate_mode_list(struct ui_list *widget);
 
 enum {
 	W_RESLIST,
+	W_VSYNC,
 	W_BNBOX,
 
 	NUM_WIDGETS
@@ -32,13 +33,22 @@ int options_init(void)
 {
 	struct ui_bnbox *bnbox;
 	struct ui_list *list;
+	struct ui_ckbox *ckbox;
+	int y = 100;
 
 	if(!(list = ui_list("Resolution"))) {
 		return -1;
 	}
-	ui_move(list, 300, 100);
+	ui_move(list, 300, y);
 	populate_mode_list(list);
 	widgets[W_RESLIST] = list;
+	y += 40;
+
+	if(!(ckbox = ui_ckbox("VSync", opt.vsync))) {
+		return -1;
+	}
+	ui_move(ckbox, 300, y);
+	widgets[W_VSYNC] = ckbox;
 
 	if(!(bnbox = ui_bnbox("Accept", "Cancel"))) {
 		return -1;
@@ -75,6 +85,8 @@ void options_start(void)
 			ui_list_select(wlist, i);
 		}
 	}
+
+	ui_ckbox_set(widgets[W_VSYNC], opt.vsync);
 
 	set_focus(0);
 }
@@ -122,11 +134,6 @@ void options_keyb(int key, int pressed)
 		}
 		break;
 
-	case KB_LEFT:
-	case KB_RIGHT:
-		ui_keypress(widgets[ui_focus], key);
-		break;
-
 	case '\n':
 	case '\r':
 	case ' ':
@@ -138,6 +145,11 @@ void options_keyb(int key, int pressed)
 			menu_start();
 		}
 		break;
+
+	default:
+		ui_keypress(widgets[ui_focus], key);
+		break;
+
 	}
 }
 
@@ -158,6 +170,8 @@ static void apply_options(void)
 		opt.yres = mode->height;
 		opt.bpp = mode->bpp;
 	}
+
+	opt.vsync = ui_ckbox_state(widgets[W_VSYNC]);
 
 	save_options("game.cfg");
 }
