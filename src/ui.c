@@ -351,6 +351,11 @@ void ui_list_select(struct ui_list *w, int sel)
 	w->sel = sel;
 }
 
+int ui_list_selection(struct ui_list *w)
+{
+	return w->sel;
+}
+
 void ui_list_next(struct ui_list *w)
 {
 	if(w->sel < w->num_items - 1) {
@@ -401,13 +406,13 @@ static void draw_button(struct ui_button *w)
 	int x, y, width;
 
 	select_font(w->w.font);
-	fnt_align(FONT_LEFT);
+	fnt_align(FONT_CENTER);
 
 	width = fnt_strwidth(w->w.text);
 
 	x = w->w.x;
 	y = w->w.y;
-	if(w->w.focus) draw_selbox(x - 3, y, width, fnt_height(w->w.font));
+	if(w->w.focus) draw_selbox(x - width / 2 - 3, y, width, fnt_height(w->w.font));
 	fnt_print(fb_pixels, x, y, w->w.text);
 }
 
@@ -492,10 +497,9 @@ static void key_ckbox(struct ui_ckbox *w, int key)
 	}
 }
 
-#define NUM_SLIDER_TICKS	10
 static void draw_slider(struct ui_slider *w)
 {
-	int i, x, fntsz, label_width, valticks;
+	int i, x, fntsz, label_width, nticks, valticks;
 	uint16_t *fbptr;
 
 	select_font(w->w.font);
@@ -506,13 +510,14 @@ static void draw_slider(struct ui_slider *w)
 
 	fnt_print(fb_pixels, w->w.x - 6, w->w.y, w->w.text);
 
-	if(w->w.focus) draw_selbox(w->w.x - label_width - 6, w->w.y, 0, fntsz);
+	if(w->w.focus) draw_selbox(w->w.x - label_width - 9, w->w.y, 0, fntsz);
 
 	x = w->w.x + 6;
 	fbptr = (uint16_t*)((unsigned char*)fb_pixels + w->w.y * fb_scan_size + x * fb_bpp / 8);
 
-	valticks = 10 * w->val / w->maxval;
-	for(i=0; i<NUM_SLIDER_TICKS; i++) {
+	nticks = w->maxval / w->step;
+	valticks = w->val * nticks / w->maxval;
+	for(i=0; i<nticks; i++) {
 		draw_sprite(fbptr, fb_scan_size, &spr_icons, i < valticks ? 2 : 5);
 		fbptr += 16;
 	}
@@ -520,7 +525,7 @@ static void draw_slider(struct ui_slider *w)
 	select_font(FONT_MENU);
 	fnt_align(FONT_LEFT);
 
-	x += NUM_SLIDER_TICKS * 16 + 8;
+	x += nticks * 16 + 8;
 	fnt_printf(fb_pixels, x, w->w.y, "%d", w->val);
 }
 

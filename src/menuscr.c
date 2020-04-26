@@ -54,7 +54,7 @@ int menu_init(void)
 		if(!(bn = ui_button(menu_str[i]))) {
 			return -1;
 		}
-		ui_move(bn, 50, 300 + i * 50);
+		ui_move(bn, 320, 300 + i * 50);
 		bn->w.font = FONT_MENU_SHADED_BIG;
 		menu_widget[i] = bn;
 	}

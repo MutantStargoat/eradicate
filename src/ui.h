@@ -74,6 +74,7 @@ int ui_slider_value(struct ui_slider *w);
 
 int ui_list_append(struct ui_list *w, const char *name, void *udata);
 void ui_list_select(struct ui_list *w, int sel);
+int ui_list_selection(struct ui_list *w);
 void ui_list_next(struct ui_list *w);
 void ui_list_prev(struct ui_list *w);
 

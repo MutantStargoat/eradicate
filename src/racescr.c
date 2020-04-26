@@ -162,6 +162,8 @@ void race_start(void)
 	/*g3d_enable(G3D_LIGHTING);
 	g3d_enable(G3D_LIGHT0);*/
 
+	nseg_to_draw = 2 + opt.viewdist;
+
 	if(mus) {
 		shuffle_playlist(mus);
 		if(opt.music) {

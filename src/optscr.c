@@ -6,6 +6,7 @@
 #include "screens.h"
 #include "fonts.h"
 #include "ui.h"
+#include "imago2.h"
 
 struct mode_item {
 	int idx;
@@ -21,10 +22,15 @@ static int populate_mode_list(struct ui_list *widget);
 enum {
 	W_RESLIST,
 	W_VSYNC,
+	W_VIEWDIST,
 
 	W_VOL_MASTER,
 	W_VOL_SFX,
 	W_VOL_MUSIC,
+
+	W_KEYMAP,
+	W_JSMAP,
+	W_JSCAL,
 
 	W_BNBOX,
 
@@ -34,57 +40,104 @@ enum {
 static void *widgets[NUM_WIDGETS];
 static int ui_focus;
 
+static uint16_t *bgpix;
+static int bgwidth, bgheight;
+
+#define VSEP	30
 int options_init(void)
 {
+	struct ui_button *bn;
 	struct ui_bnbox *bnbox;
 	struct ui_list *list;
 	struct ui_ckbox *ckbox;
 	struct ui_slider *slider;
-	int y = 100;
+	int x = 300;
+	int y = 80;
+
+	if(!(bgpix = img_load_pixels("data/optbg.png", &bgwidth, &bgheight, IMG_FMT_RGB565))) {
+		fprintf(stderr, "failed to load options bg image\n");
+	}
 
 	if(!(list = ui_list("Resolution"))) {
 		return -1;
 	}
-	ui_move(list, 300, y);
+	ui_move(list, x, y);
 	populate_mode_list(list);
 	widgets[W_RESLIST] = list;
-	y += 40;
+	y += VSEP;
 
 	if(!(ckbox = ui_ckbox("VSync", opt.vsync))) {
 		return -1;
 	}
-	ui_move(ckbox, 300, y);
+	ui_move(ckbox, x, y);
 	widgets[W_VSYNC] = ckbox;
-	y += 40;
+	y += VSEP;
+
+	if(!(list = ui_list("View distance"))) {
+		return -1;
+	}
+	ui_move(list, x, y);
+	ui_list_append(list, "near", 0);
+	ui_list_append(list, "medium", 0);
+	ui_list_append(list, "far", 0);
+	widgets[W_VIEWDIST] = list;
+	y += VSEP;
+
+	y += VSEP / 2;
 
 	if(!(slider = ui_slider("Master", 0, 100))) {
 		return -1;
 	}
-	ui_move(slider, 300, y);
+	ui_move(slider, x, y);
 	ui_slider_set_step(slider, 10);
 	widgets[W_VOL_MASTER] = slider;
-	y += 40;
+	y += VSEP;
 
 	if(!(slider = ui_slider("Sound FX", 0, 100))) {
 		return -1;
 	}
-	ui_move(slider, 300, y);
+	ui_move(slider, x, y);
 	ui_slider_set_step(slider, 10);
 	widgets[W_VOL_SFX] = slider;
-	y += 40;
+	y += VSEP;
 
 	if(!(slider = ui_slider("Music", 0, 100))) {
 		return -1;
 	}
-	ui_move(slider, 300, y);
+	ui_move(slider, x, y);
 	ui_slider_set_step(slider, 10);
 	widgets[W_VOL_MUSIC] = slider;
-	y += 40;
+	y += VSEP;
+
+	y += VSEP / 2;
+
+	if(!(bn = ui_button("Key mapping"))) {
+		return -1;
+	}
+	ui_move(bn, x, y);
+	widgets[W_KEYMAP] = bn;
+	y += VSEP;
+
+	if(!(bn = ui_button("Joystick mapping"))) {
+		return -1;
+	}
+	ui_move(bn, x, y);
+	widgets[W_JSMAP] = bn;
+	y += VSEP;
+
+	if(!(bn = ui_button("Calibrate joystick"))) {
+		return -1;
+	}
+	ui_move(bn, x, y);
+	widgets[W_JSCAL] = bn;
+	y += VSEP;
+
+	y += VSEP;
 
 	if(!(bnbox = ui_bnbox("Accept", "Cancel"))) {
 		return -1;
 	}
-	ui_move(bnbox, 320, 400);
+	ui_move(bnbox, 320, y);
 	widgets[W_BNBOX] = bnbox;
 
 	ui_set_focus(widgets[ui_focus], 1);
@@ -99,6 +152,7 @@ void options_cleanup(void)
 		ui_free(widgets[i]);
 	}
 	free(modelist);
+	img_free_pixels(bgpix);
 }
 
 void options_start(void)
@@ -117,6 +171,10 @@ void options_start(void)
 		}
 	}
 
+	if(opt.viewdist < 0) opt.viewdist = 0;
+	if(opt.viewdist > 2) opt.viewdist = 2;
+	ui_list_select(widgets[W_VIEWDIST], opt.viewdist);
+
 	ui_ckbox_set(widgets[W_VSYNC], opt.vsync);
 	ui_slider_set(widgets[W_VOL_MASTER], (1000 * opt.vol_master + 500) / 2550);
 	ui_slider_set(widgets[W_VOL_SFX], (1000 * opt.vol_sfx + 500) / 2550);
@@ -133,7 +191,11 @@ void options_draw(void)
 {
 	int i;
 
-	memset(fb_pixels, 0, fb_size);
+	if(bgpix) {
+		memcpy(fb_pixels, bgpix, fb_size);
+	} else {
+		memset(fb_pixels, 0, fb_size);
+	}
 
 	select_font(FONT_MENU_SHADED_BIG);
 	fnt_align(FONT_CENTER);
@@ -203,6 +265,8 @@ static void apply_options(void)
 		opt.yres = mode->height;
 		opt.bpp = mode->bpp;
 	}
+
+	opt.viewdist = ui_list_selection(widgets[W_VIEWDIST]);
 
 	opt.vsync = ui_ckbox_state(widgets[W_VSYNC]);
 
