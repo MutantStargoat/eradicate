@@ -21,6 +21,11 @@ static int populate_mode_list(struct ui_list *widget);
 enum {
 	W_RESLIST,
 	W_VSYNC,
+
+	W_VOL_MASTER,
+	W_VOL_SFX,
+	W_VOL_MUSIC,
+
 	W_BNBOX,
 
 	NUM_WIDGETS
@@ -34,6 +39,7 @@ int options_init(void)
 	struct ui_bnbox *bnbox;
 	struct ui_list *list;
 	struct ui_ckbox *ckbox;
+	struct ui_slider *slider;
 	int y = 100;
 
 	if(!(list = ui_list("Resolution"))) {
@@ -49,11 +55,36 @@ int options_init(void)
 	}
 	ui_move(ckbox, 300, y);
 	widgets[W_VSYNC] = ckbox;
+	y += 40;
+
+	if(!(slider = ui_slider("Master", 0, 100))) {
+		return -1;
+	}
+	ui_move(slider, 300, y);
+	ui_slider_set_step(slider, 10);
+	widgets[W_VOL_MASTER] = slider;
+	y += 40;
+
+	if(!(slider = ui_slider("Sound FX", 0, 100))) {
+		return -1;
+	}
+	ui_move(slider, 300, y);
+	ui_slider_set_step(slider, 10);
+	widgets[W_VOL_SFX] = slider;
+	y += 40;
+
+	if(!(slider = ui_slider("Music", 0, 100))) {
+		return -1;
+	}
+	ui_move(slider, 300, y);
+	ui_slider_set_step(slider, 10);
+	widgets[W_VOL_MUSIC] = slider;
+	y += 40;
 
 	if(!(bnbox = ui_bnbox("Accept", "Cancel"))) {
 		return -1;
 	}
-	ui_move(bnbox, 320, 250);
+	ui_move(bnbox, 320, 400);
 	widgets[W_BNBOX] = bnbox;
 
 	ui_set_focus(widgets[ui_focus], 1);
@@ -87,6 +118,9 @@ void options_start(void)
 	}
 
 	ui_ckbox_set(widgets[W_VSYNC], opt.vsync);
+	ui_slider_set(widgets[W_VOL_MASTER], (1000 * opt.vol_master + 500) / 2550);
+	ui_slider_set(widgets[W_VOL_SFX], (1000 * opt.vol_sfx + 500) / 2550);
+	ui_slider_set(widgets[W_VOL_MUSIC], (1000 * opt.vol_mus + 500) / 2550);
 
 	set_focus(0);
 }
@@ -149,7 +183,6 @@ void options_keyb(int key, int pressed)
 	default:
 		ui_keypress(widgets[ui_focus], key);
 		break;
-
 	}
 }
 
@@ -172,6 +205,10 @@ static void apply_options(void)
 	}
 
 	opt.vsync = ui_ckbox_state(widgets[W_VSYNC]);
+
+	opt.vol_master = ui_slider_value(widgets[W_VOL_MASTER]) * 255 / 100;
+	opt.vol_sfx = ui_slider_value(widgets[W_VOL_SFX]) * 255 / 100;
+	opt.vol_mus = ui_slider_value(widgets[W_VOL_MUSIC]) * 255 / 100;
 
 	save_options("game.cfg");
 }

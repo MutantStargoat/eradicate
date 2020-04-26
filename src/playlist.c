@@ -52,7 +52,7 @@ struct playlist *create_playlist(const char *plpath)
 			continue;
 		}
 
-		if(!(fname = malloc(plpath_len + strlen(dent->d_name)))) {
+		if(!(fname = malloc(plpath_len + strlen(dent->d_name) + 2))) {
 			fprintf(stderr, "create_playlist: failed to allocate file name\n");
 			break;
 		}

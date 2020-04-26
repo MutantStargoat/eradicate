@@ -8,9 +8,8 @@
 #include "sprite.h"
 #include "util.h"
 
-static void free_button(struct ui_button *w);
+static void free_widget(struct ui_base *w);
 static void free_bnbox(struct ui_bnbox *w);
-static void free_ckbox(struct ui_ckbox *w);
 static void free_list(struct ui_list *w);
 
 static void draw_button(struct ui_button *w);
@@ -20,6 +19,9 @@ static void key_bnbox(struct ui_bnbox *w, int key);
 
 static void draw_ckbox(struct ui_ckbox *w);
 static void key_ckbox(struct ui_ckbox *w, int key);
+
+static void draw_slider(struct ui_slider *w);
+static void key_slider(struct ui_slider *w, int key);
 
 static void draw_list(struct ui_list *w);
 static void key_list(struct ui_list *w, int key);
@@ -44,10 +46,18 @@ static void init_base(struct ui_base *b)
 	init_icons();
 }
 
-static void free_base(struct ui_base *b)
+static void destroy_base(struct ui_base *b)
 {
 	if(b) {
 		free(b->text);
+	}
+}
+
+static void free_widget(struct ui_base *w)
+{
+	if(w) {
+		destroy_base(w);
+		free(w);
 	}
 }
 
@@ -71,18 +81,10 @@ struct ui_button *ui_button(const char *text)
 
 	w->w.draw = draw_button;
 	w->w.keypress = 0;
-	w->w.free = free_button;
+	w->w.free = free_widget;
 	return w;
 }
 
-
-static void free_button(struct ui_button *w)
-{
-	if(w) {
-		free_base(&w->w);
-		free(w);
-	}
-}
 
 struct ui_bnbox *ui_bnbox(const char *tx1, const char *tx2)
 {
@@ -124,7 +126,7 @@ struct ui_bnbox *ui_bnbox(const char *tx1, const char *tx2)
 static void free_bnbox(struct ui_bnbox *w)
 {
 	if(w) {
-		free_base(&w->w);
+		destroy_base(&w->w);
 		free(w->text2);
 		free(w);
 	}
@@ -150,16 +152,36 @@ struct ui_ckbox *ui_ckbox(const char *text, int chk)
 
 	w->w.draw = draw_ckbox;
 	w->w.keypress = key_ckbox;
-	w->w.free = free_ckbox;
+	w->w.free = free_widget;
 	return w;
 }
 
-static void free_ckbox(struct ui_ckbox *w)
+struct ui_slider *ui_slider(const char *text, int val, int maxval)
 {
-	if(w) {
-		free_base(&w->w);
-		free(w);
+	struct ui_slider *w;
+	int len = strlen(text);
+
+	if(!(w = malloc(sizeof *w))) {
+		perror("failed to allocate ui_slider");
+		return 0;
 	}
+	init_base(&w->w);
+
+	w->val = val;
+	w->maxval = maxval;
+	w->step = 1;
+
+	if(!(w->w.text = malloc(len + 1))) {
+		perror("ui_slider: failed to allocate text buffer");
+		free(w);
+		return 0;
+	}
+	memcpy(w->w.text, text, len + 1);
+
+	w->w.draw = draw_slider;
+	w->w.keypress = key_slider;
+	w->w.free = free_widget;
+	return w;
 }
 
 struct ui_list *ui_list(const char *text)
@@ -191,7 +213,7 @@ static void free_list(struct ui_list *w)
 	int i;
 
 	if(w) {
-		free_base(&w->w);
+		destroy_base(&w->w);
 		for(i=0; i<w->num_items; i++) {
 			free(w->items[i].name);
 		}
@@ -287,7 +309,20 @@ void ui_ckbox_set(struct ui_ckbox *w, int val)
 	w->val = val;
 }
 
+void ui_slider_set_step(struct ui_slider *w, int step)
+{
+	w->step = step;
+}
 
+void ui_slider_set(struct ui_slider *w, int val)
+{
+	w->val = val;
+}
+
+int ui_slider_value(struct ui_slider *w)
+{
+	return w->val;
+}
 
 int ui_list_append(struct ui_list *w, const char *name, void *udata)
 {
@@ -436,7 +471,6 @@ static void draw_ckbox(struct ui_ckbox *w)
 
 static void key_ckbox(struct ui_ckbox *w, int key)
 {
-	printf("key: %d\n", key);
 	switch(key) {
 	case '\n':
 	case '\r':
@@ -454,6 +488,56 @@ static void key_ckbox(struct ui_ckbox *w, int key)
 	case 'n':
 	case 'N':
 		w->val = 0;
+		break;
+	}
+}
+
+#define NUM_SLIDER_TICKS	10
+static void draw_slider(struct ui_slider *w)
+{
+	int i, x, fntsz, label_width, valticks;
+	uint16_t *fbptr;
+
+	select_font(w->w.font);
+	fntsz = fnt_height(w->w.font);
+	fnt_align(FONT_RIGHT);
+
+	label_width = fnt_strwidth(w->w.text);
+
+	fnt_print(fb_pixels, w->w.x - 6, w->w.y, w->w.text);
+
+	if(w->w.focus) draw_selbox(w->w.x - label_width - 6, w->w.y, 0, fntsz);
+
+	x = w->w.x + 6;
+	fbptr = (uint16_t*)((unsigned char*)fb_pixels + w->w.y * fb_scan_size + x * fb_bpp / 8);
+
+	valticks = 10 * w->val / w->maxval;
+	for(i=0; i<NUM_SLIDER_TICKS; i++) {
+		draw_sprite(fbptr, fb_scan_size, &spr_icons, i < valticks ? 2 : 5);
+		fbptr += 16;
+	}
+
+	select_font(FONT_MENU);
+	fnt_align(FONT_LEFT);
+
+	x += NUM_SLIDER_TICKS * 16 + 8;
+	fnt_printf(fb_pixels, x, w->w.y, "%d", w->val);
+}
+
+static void key_slider(struct ui_slider *w, int key)
+{
+	switch(key) {
+	case KB_LEFT:
+		w->val -= w->step;
+		if(w->val < 0) w->val = 0;
+		break;
+
+	case KB_RIGHT:
+		w->val += w->step;
+		if(w->val > w->maxval) w->val = w->maxval;
+		break;
+
+	default:
 		break;
 	}
 }
