@@ -108,17 +108,11 @@ void race_start(void)
 	fnt_print(fb_pixels, 320, 220, "Loading track...");
 	blit_frame(fb_pixels, 0);
 
-	if(!(path = load_curve("data/track1.trk"))) {
-		fprintf(stderr, "failed to load track path\n");
-		return;
-	}
-	path->mode = CURVE_REPEAT;
-	path->proj_refine_thres = 1e-5;
-
-	if(create_track(&trk, path) == -1) {
+	if(load_track(&trk, "data/track1.trk") == -1) {
 		fprintf(stderr, "failed to load track\n");
 		return;
 	}
+	path = trk.path;
 	if(gen_track_mesh(&trk, TRK_SUBDIV, TRK_TWIST) == -1) {
 		fprintf(stderr, "failed to generate track mesh\n");
 		destroy_track(&trk);
@@ -455,6 +449,11 @@ void race_keyb(int key, int pressed)
 				stop_playlist(mus);
 			}
 		}
+		break;
+
+	case KB_F9:
+		printf("dumping track to \"track.obj\"\n");
+		dump_track_mesh(&trk, "track.obj");
 		break;
 
 	default:

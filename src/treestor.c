@@ -686,6 +686,24 @@ static const char *pathtok(const char *path, char *tok)
 	return dot + 1;
 }
 
+struct ts_node *ts_lookup_node(struct ts_node *node, const char *path)
+{
+	char *name = alloca(strlen(path) + 1);
+
+	if(!node) return 0;
+
+	if(!(path = pathtok(path, name)) || strcmp(name, node->name) != 0) {
+		return 0;
+	}
+
+	do {
+		path = pathtok(path, name);
+	} while((node = ts_get_child(node, name)) && path);
+
+	if(path || !node) return 0;
+	return node;
+}
+
 struct ts_attr *ts_lookup(struct ts_node *node, const char *path)
 {
 	char *name = alloca(strlen(path) + 1);

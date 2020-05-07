@@ -11,22 +11,32 @@
 
 struct curve *load_curve(const char *fname)
 {
+	struct ts_node *root;
 	struct curve *curve;
-	struct ts_node *root, *node;
-	float *vec;
-	int max_cp = 0;
 
 	if(!(root = ts_load(fname))) {
 		return 0;
 	}
 	if(strcmp(root->name, "bezcurve") != 0) {
 		fprintf(stderr, "invalid curve file %s: missing \"bezcurve\" root node\n", fname);
+		ts_free_tree(root);
 		return 0;
 	}
 
+	curve = read_curve(root);
+	ts_free_tree(root);
+	return curve;
+}
+
+struct curve *read_curve(struct ts_node *root)
+{
+	struct curve *curve;
+	struct ts_node *node;
+	float *vec;
+	int max_cp = 0;
+
 	if(!(curve = calloc(1, sizeof *curve))) {
 		perror("failed to allocate curve");
-		ts_free_tree(root);
 		return 0;
 	}
 	curve->proj_refine_thres = DEF_PROJ_REFINE_THRES;
@@ -53,7 +63,6 @@ struct curve *load_curve(const char *fname)
 				fprintf(stderr, "failed to ralloc curve cp array to size %d\n", max_cp);
 				free(curve->cp);
 				free(curve);
-				ts_free_tree(root);
 				return 0;
 			}
 			curve->cp = tmp;
@@ -88,7 +97,6 @@ cont:
 		node = node->next;
 	}
 
-	ts_free_tree(root);
 	return curve;
 }
 

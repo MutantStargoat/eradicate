@@ -4,6 +4,7 @@
 #include "curve.h"
 #include "3dgfx/3dgfx.h"
 #include "3dgfx/mesh.h"
+#include "scene.h"
 
 struct track_segment {
 	struct track *trk;
@@ -12,6 +13,7 @@ struct track_segment {
 	int path_seg;
 
 	struct g3d_mesh mesh;
+	struct scene scn;
 };
 
 struct track {
@@ -22,10 +24,11 @@ struct track {
 };
 
 
-int create_track(struct track *trk, struct curve *curve);
+int load_track(struct track *trk, const char *fname);
 void destroy_track(struct track *trk);
 
 int gen_track_mesh(struct track *trk, int subdiv, float twist);
+int dump_track_mesh(struct track *trk, const char *fname);
 int gen_track_seg_mesh(struct track *trk, int segidx, int subdiv, float twist);
 
 float eval_track_roll(struct track *trk, float t);

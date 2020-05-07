@@ -1,10 +1,35 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <errno.h>
 #include "track.h"
+#include "treestor.h"
 
-int create_track(struct track *trk, struct curve *curve)
+int load_track(struct track *trk, const char *fname)
 {
 	int i;
+	struct curve *curve;
+	struct ts_node *root, *node;
+
+	if(!(root = ts_load(fname))) {
+		return -1;
+	}
+	if(strcmp(root->name, "track") != 0) {
+		fprintf(stderr, "invalid track file %s: root node should be \"track\"\n", fname);
+		ts_free_tree(root);
+		return -1;
+	}
+	if(!(node = ts_lookup_node(root, "track.path"))) {
+		fprintf(stderr, "invalid track file %s: path node not found\n", fname);
+		ts_free_tree(root);
+		return -1;
+	}
+	if(!(curve = read_curve(node))) {
+		ts_free_tree(root);
+		return -1;
+	}
+	curve->mode = CURVE_REPEAT;
+	curve->proj_refine_thres = 1e-5;
 
 	trk->path = curve;
 	trk->num_tseg = curve->num_cp - 1;
@@ -20,6 +45,37 @@ int create_track(struct track *trk, struct curve *curve)
 		tseg->path_t[0] = (float)i / (float)trk->num_tseg;
 		tseg->path_t[1] = (float)(i + 1) / (float)trk->num_tseg;
 		tseg->path_seg = i;
+	}
+
+	/* load detail scenes for the track segments */
+	node = root->child_list;
+	while(node) {
+		int tidx;
+		const char *scn_fname;
+		struct ts_node *tnode = node;
+		node = node->next;
+
+		if(strcmp(tnode->name, "segment") != 0) {
+			continue;
+		}
+		tidx = ts_get_attr_int(tnode, "index", -1);
+		if(tidx < 0 || tidx >= trk->num_tseg) {
+			fprintf(stderr, "%s: ignoring segment block with invalid index (%d)\n", fname, tidx);
+			continue;
+		}
+		if(!(scn_fname = ts_get_attr_str(tnode, "scene", 0))) {
+			continue;
+		}
+		if(trk->tseg[tidx].scn.num_objects) {
+			fprintf(stderr, "%s: ignoring multiple blocks defining scenes for segment %d\n", fname, tidx);
+			continue;
+		}
+
+		if(load_scene(&trk->tseg[tidx].scn, scn_fname) == -1) {
+#ifndef NDEBUG
+			return -1;
+#endif
+		}
 	}
 
 	return 0;
@@ -50,6 +106,48 @@ int gen_track_mesh(struct track *trk, int subdiv, float twist)
 			return -1;
 		}
 	}
+	return 0;
+}
+
+int dump_track_mesh(struct track *trk, const char *fname)
+{
+	int i, j, voffs;
+	FILE *fp;
+	struct g3d_mesh *m;
+
+	if(!(fp = fopen(fname, "wb"))) {
+		fprintf(stderr, "dump_track_mesh: failed to open %s: %s\n", fname, strerror(errno));
+		return -1;
+	}
+
+	voffs = 0;
+	for(i=0; i<trk->num_tseg; i++) {
+		m = &trk->tseg[i].mesh;
+
+		fprintf(fp, "o trkseg%02d\n", i);
+
+		for(j=0; j<m->vcount; j++) {
+			fprintf(fp, "v %f %f %f\n", m->varr[j].x, m->varr[j].y, m->varr[j].z);
+		}
+		for(j=0; j<m->vcount; j++) {
+			fprintf(fp, "vn %f %f %f\n", m->varr[j].nx, m->varr[j].ny, m->varr[j].nz);
+		}
+		for(j=0; j<m->vcount; j++) {
+			fprintf(fp, "vt %f %f\n", m->varr[j].u, m->varr[j].v);
+		}
+		for(j=0; j<m->icount; j++) {
+			int idx = m->iarr[j] + voffs + 1;
+			if(j % m->prim == 0) {
+				if(j) fputc('\n', fp);
+				fprintf(fp, "f");
+			}
+			fprintf(fp, " %d/%d/%d", idx, idx, idx);
+		}
+		fputc('\n', fp);
+		voffs += m->vcount;
+	}
+
+	fclose(fp);
 	return 0;
 }
 

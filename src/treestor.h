@@ -125,6 +125,8 @@ struct ts_node *ts_get_child(struct ts_node *node, const char *name);
 struct ts_node *ts_load(const char *fname);
 int ts_save(struct ts_node *tree, const char *fname);
 
+struct ts_node *ts_lookup_node(struct ts_node *root, const char *path);
+
 struct ts_attr *ts_lookup(struct ts_node *root, const char *path);
 const char *ts_lookup_str(struct ts_node *root, const char *path,
 		const char *def_val TS_DEFVAL(0));

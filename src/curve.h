@@ -20,7 +20,10 @@ struct curve {
 	float proj_refine_thres;
 };
 
+struct ts_node;
+
 struct curve *load_curve(const char *fname);
+struct curve *read_curve(struct ts_node *root);
 void free_curve(struct curve *c);
 
 void curve_bounds(struct curve *c, cgm_vec3 *bbmin, cgm_vec3 *bbmax);
