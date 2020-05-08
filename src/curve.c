@@ -7,7 +7,7 @@
 #include "curve.h"
 #include "util.h"
 
-#define DEF_PROJ_REFINE_THRES	1e-5f
+#define DEF_PROJ_REFINE_THRES	1e-3f
 
 struct curve *load_curve(const char *fname)
 {

@@ -62,7 +62,6 @@ static long prev_upd;
 static int cur_seg;
 static int nseg_to_draw = 2;
 static int wrong_way;
-static int col_side;
 
 static struct playlist *mus;
 
@@ -246,9 +245,6 @@ static void update(void)
 		ppos.z = proj_pos.z + offs_dir.z * s;
 		pspeed -= pspeed * COL_BRK * dt;
 		if(pspeed < 0.0f) pspeed = 0.0f;
-		col_side = 1;
-	} else {
-		col_side = 0;
 	}
 
 	/* adjust the nose up/down to match the path slope */
@@ -337,8 +333,6 @@ void race_draw(void)
 	if(mus) proc_playlist(mus);
 
 	blit_frame(fb_pixels, opt.vsync);
-
-	usleep(50000);
 }
 
 static void draw_skybox(void)
@@ -350,6 +344,8 @@ static void draw_skybox(void)
 
 	g3d_matrix_mode(G3D_MODELVIEW);
 	g3d_load_matrix(matrix);
+	g3d_rotate(5, 1, 0, 0);
+	g3d_rotate(5, 0, 0, 1);
 
 	g3d_enable(G3D_TEXTURE_2D);
 
@@ -416,9 +412,6 @@ static void draw_ui(void)
 
 	select_font(FONT_VGA);
 	fnt_align(FONT_LEFT);
-	if(col_side) {
-		fnt_print(fb_pixels, 250, 0, "col");
-	}
 
 	fnt_printf(fb_pixels, 0, 20, "t:%.3f", projt);
 
