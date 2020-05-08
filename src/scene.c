@@ -3,12 +3,19 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
-#include "cgmath/cgmath.h"
+#include "cgmath.h"
 #include "3dgfx/3dgfx.h"
 #include "scene.h"
 #include "image.h"
 #include "rbtree.h"
 #include "resman.h"
+
+#if defined(__WATCOMC__) || defined(_MSC_VER) || defined(__DJGPP__)
+#include <malloc.h>
+#else
+#include <alloca.h>
+#endif
+
 
 void init_scene(struct scene *scn)
 {
