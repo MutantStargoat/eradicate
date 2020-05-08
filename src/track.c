@@ -31,6 +31,8 @@ int load_track(struct track *trk, const char *fname)
 	curve->mode = CURVE_REPEAT;
 	curve->proj_refine_thres = 1e-5;
 
+	trk->start_pos = ts_lookup_num(root, "track.start", 0.0f);
+
 	trk->path = curve;
 	trk->num_tseg = curve->num_cp - 1;
 	if(!(trk->tseg = calloc(trk->num_tseg, sizeof *trk->tseg))) {

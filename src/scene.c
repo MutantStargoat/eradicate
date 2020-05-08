@@ -72,8 +72,8 @@ int load_scene(struct scene *scn, const char *fname)
 	int gvarr_size = 0, gvarr_max = 0;
 	int iarr_size = 0, iarr_max = 0;
 	int i, num, line_num = 0, result = -1, found_quad = 0;
-	unsigned int idx, newidx;
-	char *line, *ptr;
+	unsigned int idx, newidx, vstart = 0;
+	char *line, *ptr, *oname = 0;
 	char buf[128];
 	struct facevertex fv, *newfv;
 	struct object obj;
@@ -180,11 +180,13 @@ int load_scene(struct scene *scn, const char *fname)
 
 		case 'o':
 			if(iarr_size) {
+				obj.name = oname;
 				obj.mesh.varr = gvarr;
 				obj.mesh.iarr = iarr;
 				obj.mesh.vcount = gvarr_size;
 				obj.mesh.icount = iarr_size;
 				obj.mesh.prim = found_quad ? 4 : 3;
+				calc_mesh_centroid(&obj.mesh, &obj.centroid.x);
 				obj.tex = 0;
 				gvarr = 0;
 				gvarr_size = gvarr_max = 0;
@@ -196,6 +198,9 @@ int load_scene(struct scene *scn, const char *fname)
 					goto err;
 				}
 			}
+			if((oname = malloc(strlen(line + 2) + 1))) {
+				strcpy(oname, line + 2);
+			}
 			break;
 
 		default:
@@ -204,16 +209,21 @@ int load_scene(struct scene *scn, const char *fname)
 	}
 
 	if(iarr_size) {
+		obj.name = oname;
 		obj.mesh.varr = gvarr;
 		obj.mesh.iarr = iarr;
 		obj.mesh.vcount = gvarr_size;
 		obj.mesh.icount = iarr_size;
 		obj.mesh.prim = found_quad ? 4 : 3;
 		obj.tex = 0;
+		gvarr = 0;
+		iarr = 0;
+		calc_mesh_centroid(&obj.mesh, &obj.centroid.x);
 		if(add_scene_object(scn, &obj) == -1) {
 			fprintf(stderr, "load_scene: failed to add object\n");
 			goto err;
 		}
+		oname = 0;
 	}
 
 	result = 0;
@@ -222,6 +232,7 @@ int load_scene(struct scene *scn, const char *fname)
 
 err:
 	if(fp) fclose(fp);
+	free(oname);
 	free(varr);
 	free(narr);
 	free(tarr);
@@ -246,6 +257,64 @@ int add_scene_object(struct scene *scn, struct object *obj)
 	}
 	scn->objects[scn->num_objects++] = *obj;
 	return 0;
+}
+
+static struct {
+	struct scene *scn;
+	const float *xform;
+} zsort_cls;
+
+static int zsort_cmp(const void *aptr, const void *bptr)
+{
+	int aidx = *(int*)aptr;
+	int bidx = *(int*)bptr;
+	cgm_vec3 *ca = &zsort_cls.scn->objects[aidx].centroid;
+	cgm_vec3 *cb = &zsort_cls.scn->objects[bidx].centroid;
+	const float *m = zsort_cls.xform;
+	float za, zb;
+
+	za = m[2] * ca->x + m[6] * ca->y + m[10] * ca->z + m[14];
+	zb = m[2] * cb->x + m[6] * cb->y + m[10] * cb->z + m[14];
+
+	za -= zb;
+	return *(int*)&za;
+}
+
+void zsort_scene(struct scene *scn)
+{
+	int i;
+
+	if(!scn->num_objects) return;
+
+	if(!scn->objorder) {
+		if(!(scn->objorder = malloc(scn->num_objects * sizeof *scn->objorder))) {
+			return;
+		}
+		for(i=0; i<scn->num_objects; i++) {
+			scn->objorder[i] = i;
+		}
+	}
+
+	zsort_cls.scn = scn;
+	zsort_cls.xform = g3d_get_matrix(G3D_MODELVIEW, 0);
+
+	qsort(scn->objorder, scn->num_objects, sizeof *scn->objorder, zsort_cmp);
+}
+
+void draw_scene(struct scene *scn)
+{
+	int i;
+
+	if(scn->objorder) {
+		for(i=0; i<scn->num_objects; i++) {
+			int idx = scn->objorder[i];
+			draw_mesh(&scn->objects[idx].mesh);
+		}
+	} else {
+		for(i=0; i<scn->num_objects; i++) {
+			draw_mesh(&scn->objects[i].mesh);
+		}
+	}
 }
 
 static char *clean_line(char *s)

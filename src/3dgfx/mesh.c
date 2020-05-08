@@ -60,7 +60,9 @@ static int zsort_cmp(const void *aptr, const void *bptr)
 		++va;
 		++vb;
 	}
-	return za - zb;
+
+	za -= zb;
+	return *(int*)&za;
 }
 
 static int zsort_indexed_cmp(const void *aptr, const void *bptr)
@@ -80,7 +82,9 @@ static int zsort_indexed_cmp(const void *aptr, const void *bptr)
 		za += m[2] * va->x + m[6] * va->y + m[10] * va->z + m[14];
 		zb += m[2] * vb->x + m[6] * vb->y + m[10] * vb->z + m[14];
 	}
-	return za - zb;
+
+	za -= zb;
+	return *(int*)&za;
 }
 
 
@@ -257,6 +261,22 @@ void normalize_mesh_normals(struct g3d_mesh *mesh)
 	}
 }
 
+
+void calc_mesh_centroid(struct g3d_mesh *mesh, float *cent)
+{
+	int i;
+	float s = 1.0f / (float)mesh->vcount;
+	cent[0] = cent[1] = cent[2] = 0.0f;
+
+	for(i=0; i<mesh->vcount; i++) {
+		cent[0] += mesh->varr[i].x;
+		cent[1] += mesh->varr[i].y;
+		cent[2] += mesh->varr[i].z;
+	}
+	cent[0] *= s;
+	cent[1] *= s;
+	cent[2] *= s;
+}
 
 static void sphvec(float *res, float theta, float phi, float rad)
 {

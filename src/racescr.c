@@ -125,9 +125,9 @@ void race_start(void)
 	}
 
 	pspeed = 0;
-	projt = 0;
-	eval_curve(path, 0, &ppos);
-	eval_tangent(path, 0, &pdir);
+	projt = trk.start_pos;
+	eval_curve(path, projt, &ppos);
+	eval_tangent(path, projt, &pdir);
 	cgm_vcons(&pvel, 0, 0, 0);
 	cur_seg = 0;
 
@@ -292,6 +292,11 @@ void race_draw(void)
 		seg -= trk.num_tseg;
 	}
 	for(i=0; i<nseg_to_draw + 1; i++) {
+		/* draw detail meshes before drawing the road */
+		if(trk.tseg[seg].scn.num_objects > 0) {
+			zsort_scene(&trk.tseg[seg].scn);
+			draw_scene(&trk.tseg[seg].scn);
+		}
 		draw_mesh(&trk.tseg[seg].mesh);
 		seg -= inc;
 		if(seg < 0) {

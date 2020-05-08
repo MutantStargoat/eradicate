@@ -21,6 +21,8 @@ struct track {
 
 	struct track_segment *tseg;
 	int num_tseg;
+
+	float start_pos;
 };
 
 
