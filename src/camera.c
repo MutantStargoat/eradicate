@@ -22,13 +22,13 @@ void cam_follow(struct camera *cam, cgm_vec3 *targ_pos, cgm_vec3 *targ_dir, floa
 void cam_follow_step(struct camera *cam, cgm_vec3 *targ_pos, cgm_vec3 *targ_dir, float height, float delta)
 {
 	cgm_vec3 targ, dir;
-	float t, thard;
+	float t, t_hard;
 
 	t = CLAMP(delta, 0.0f, 1.0f);
 	delta *= 3.0f;
-	thard = CLAMP(delta, 0.0f, 1.0f);
+	t_hard = CLAMP(delta, 0.0f, 1.0f);
 
-	cgm_vlerp(&targ, &cam->targ, targ_pos, thard);// * 3.0f);
+	cgm_vlerp(&targ, &cam->targ, targ_pos, t_hard);
 	cgm_vlerp(&dir, &cam->dir, targ_dir, t);
 	cam_follow(cam, &targ, &dir, height);/*cgm_lerp(cam->height, height, delta));*/
 }

@@ -15,6 +15,8 @@
 #include "joy.h"
 #include "playlist.h"
 
+#define NUM_LAPS	3
+
 #define SKY_SUBDIV	3
 #define SKY_FACE_QUADS	(SKY_SUBDIV * SKY_SUBDIV)
 
@@ -64,6 +66,10 @@ static int nseg_to_draw = 2;
 static int wrong_way;
 
 static struct playlist *mus;
+
+static int hold;
+static int laps;
+static long race_time;
 
 int race_init(void)
 {
@@ -132,7 +138,14 @@ void race_start(void)
 
 	cam[0].dist = CAM_DIST;
 	cam[0].roll = 0;
-	cam_follow(cam, &ppos, &pdir, CAM_HEIGHT);
+	/*cam_follow(cam, &ppos, &pdir, CAM_HEIGHT);*/
+
+	cam->pos = ppos;
+	cam->targ = ppos;
+	cam->dir = pdir;
+	cam->dir.x += 5.0f;
+	cam->dir.y -= 3.0f;
+	cam->dir.z += 5.0f;
 
 	/* loading done */
 	draw = race_draw;
@@ -157,12 +170,17 @@ void race_start(void)
 
 	nseg_to_draw = 2 + opt.viewdist;
 
+	hold = 1;
+	laps = 0;
+
 	if(mus) {
 		shuffle_playlist(mus);
 		if(opt.music) {
 			start_playlist(mus);
 		}
 	}
+
+	race_time = -3000;
 	prev_upd = time_msec;
 }
 
@@ -200,30 +218,41 @@ static void update(void)
 	prev_upd = time_msec;
 
 	dt = dt_ms / 1000.0f;
+	race_time += dt_ms;
+
+	hold = 0;
+	if(race_time < 0) {
+		hold = 1;
+	}
+	if(laps >= NUM_LAPS) {
+		hold = 1;
+	}
 
 	pspeed -= DRAG * dt;
 
-	if(inpstate & INP_FWD_BIT) {
-		pspeed += ACCEL * dt;
-	}
-	if(inpstate & INP_BRK_BIT) {
-		pspeed -= BRK * dt;
-	}
+	if(!hold) {
+		if(inpstate & INP_FWD_BIT) {
+			pspeed += ACCEL * dt;
+		}
+		if(inpstate & INP_BRK_BIT) {
+			pspeed -= BRK * dt;
+		}
 
-	if(pspeed < 0) pspeed = 0;
-	if(pspeed > MAX_SPEED) pspeed = MAX_SPEED;
-	cgm_vadd_scaled(&ppos, &pdir, pspeed * dt);
+		if(pspeed < 0) pspeed = 0;
+		if(pspeed > MAX_SPEED) pspeed = MAX_SPEED;
+		cgm_vadd_scaled(&ppos, &pdir, pspeed * dt);
 
-	if(inpstate & INP_LTURN_BIT) {
-		TURN_MORE(128.0f);
-		cgm_vrotate(&pdir, dt * turn_rate, 0, 1, 0);
-	} else if(inpstate & INP_RTURN_BIT) {
-		TURN_MORE(-128.0f);
-		cgm_vrotate(&pdir, dt * turn_rate, 0, 1, 0);
-	} else {
-		proll -= proll * 4.0f * dt;
-		if(fabs(proll) < 0.01f) proll = 0.0f;
-		turn_rate = 0;
+		if(inpstate & INP_LTURN_BIT) {
+			TURN_MORE(128.0f);
+			cgm_vrotate(&pdir, dt * turn_rate, 0, 1, 0);
+		} else if(inpstate & INP_RTURN_BIT) {
+			TURN_MORE(-128.0f);
+			cgm_vrotate(&pdir, dt * turn_rate, 0, 1, 0);
+		} else {
+			proll -= proll * 4.0f * dt;
+			if(fabs(proll) < 0.01f) proll = 0.0f;
+			turn_rate = 0;
+		}
 	}
 
 	projt = curve_proj_guess(path, &ppos, projt, &proj_pos);
@@ -255,8 +284,8 @@ static void update(void)
 	cgm_mlookat(pxform, &ppos, &targ, &up);
 
 	cgm_vadd_scaled(&targ, &up, 1.0f);
-	cam_follow_step(cam, &targ, &pdir, CAM_HEIGHT, 5.0f * dt);
-	//cam_follow(cam, &targ, &pdir, CAM_HEIGHT);
+	cam_follow_step(cam, &targ, &pdir, CAM_HEIGHT, (hold ? 2.5f : 5.0f) * dt);
+	/*cam_follow(cam, &targ, &pdir, CAM_HEIGHT);*/
 }
 
 
@@ -344,8 +373,6 @@ static void draw_skybox(void)
 
 	g3d_matrix_mode(G3D_MODELVIEW);
 	g3d_load_matrix(matrix);
-	g3d_rotate(5, 1, 0, 0);
-	g3d_rotate(5, 0, 0, 1);
 
 	g3d_enable(G3D_TEXTURE_2D);
 
