@@ -266,7 +266,7 @@ static void update(void)
 
 void race_draw(void)
 {
-	int i, seg, inc;
+	int i, j, seg, inc;
 
 	update();
 	memset(fb_pixels, 0, fb_size);
@@ -277,9 +277,6 @@ void race_draw(void)
 	draw_skybox();
 
 	g3d_load_matrix(cam[act_cam].matrix);
-
-	g3d_set_texture(road_tex.width, road_tex.height, road_tex.pixels);
-	g3d_enable(G3D_TEXTURE_2D);
 
 	/* draw nseg_to_draw segments in front in back to front order
 	 * and one segment back (nseg_to_draw + 1 and keep decrementing)
@@ -293,10 +290,16 @@ void race_draw(void)
 	}
 	for(i=0; i<nseg_to_draw + 1; i++) {
 		/* draw detail meshes before drawing the road */
-		if(trk.tseg[seg].scn.num_objects > 0) {
-			zsort_scene(&trk.tseg[seg].scn);
-			draw_scene(&trk.tseg[seg].scn);
+		for(j=0; j<NUM_TSEG_SCENE_LAYERS; j++) {
+			struct scene *scn = trk.tseg[seg].scn + j;
+			if(scn->num_objects > 0) {
+				zsort_scene(scn);
+				draw_scene(scn);
+			}
 		}
+
+		g3d_set_texture(road_tex.width, road_tex.height, road_tex.pixels);
+		g3d_enable(G3D_TEXTURE_2D);
 		draw_mesh(&trk.tseg[seg].mesh);
 		seg -= inc;
 		if(seg < 0) {
@@ -310,6 +313,7 @@ void race_draw(void)
 	g3d_mult_matrix(pxform);
 	g3d_rotate(proll, 0, 0, 1);
 
+	g3d_enable(G3D_TEXTURE_2D);
 	g3d_set_texture(ship_tex.width, ship_tex.height, ship_tex.pixels);
 	zsort_mesh(&ship_mesh);
 	draw_mesh(&ship_mesh);

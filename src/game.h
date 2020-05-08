@@ -65,6 +65,7 @@ void draw_volume_bar(void *fb, int x, int y);
 void dbg_print(void *fb, int x, int y, const char *str);
 void dbg_printf(void *fb, int x, int y, const char *fmt, ...);
 void dbg_fps(void *fb);
+void dbg_fbdump(void);
 
 int kb_isdown(int key);
 

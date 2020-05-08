@@ -5,6 +5,9 @@
 #include "3dgfx/3dgfx.h"
 #include "3dgfx/mesh.h"
 #include "scene.h"
+#include "resman.h"
+
+#define NUM_TSEG_SCENE_LAYERS	4
 
 struct track_segment {
 	struct track *trk;
@@ -13,7 +16,7 @@ struct track_segment {
 	int path_seg;
 
 	struct g3d_mesh mesh;
-	struct scene scn;
+	struct scene scn[NUM_TSEG_SCENE_LAYERS];
 };
 
 struct track {
@@ -23,6 +26,8 @@ struct track {
 	int num_tseg;
 
 	float start_pos;
+
+	void *imgset;
 };
 
 

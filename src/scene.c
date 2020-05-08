@@ -6,7 +6,9 @@
 #include "cgmath/cgmath.h"
 #include "3dgfx/3dgfx.h"
 #include "scene.h"
+#include "image.h"
 #include "rbtree.h"
+#include "resman.h"
 
 void init_scene(struct scene *scn)
 {
@@ -17,7 +19,9 @@ void destroy_scene(struct scene *scn)
 {
 	if(!scn) return;
 	free(scn->objects);
-	free(scn->textures);
+	if(scn->own_texset) {
+		free_imgset(scn->texset);
+	}
 	memset(scn, 0, sizeof *scn);
 }
 
@@ -25,10 +29,24 @@ struct facevertex {
 	int vidx, tidx, nidx;
 };
 
+struct objmtl {
+	char *name;
+	float color[3];
+	float alpha;
+	char *tex;
+	struct objmtl *next;
+};
+
+static struct objmtl *load_materials(const char *fname, const char *dir);
+static struct objmtl *find_material(struct objmtl *list, const char *name);
+static void free_materials(struct objmtl *list);
 static char *clean_line(char *s);
 static char *parse_face_vert(char *ptr, struct facevertex *fv, int numv, int numt, int numn);
 static int cmp_facevert(const void *ap, const void *bp);
 static void free_rbnode_key(struct rbnode *n, void *cls);
+static struct image *get_texture(struct scene *scn, const char *name);
+
+static char buf[256];
 
 #define APPEND(xarr, x) \
 	do { \
@@ -72,11 +90,12 @@ int load_scene(struct scene *scn, const char *fname)
 	int gvarr_size = 0, gvarr_max = 0;
 	int iarr_size = 0, iarr_max = 0;
 	int i, num, line_num = 0, result = -1, found_quad = 0;
-	unsigned int idx, newidx, vstart = 0;
+	unsigned int idx, newidx;
 	char *line, *ptr, *oname = 0;
-	char buf[128];
 	struct facevertex fv, *newfv;
 	struct object obj;
+	struct objmtl *mtl, *mtllist = 0;
+	static char mtl_path[256];
 
 	if(!(fp = fopen(fname, "rb"))) {
 		fprintf(stderr, "load_scene: failed to open scene file: %s: %s\n", fname, strerror(errno));
@@ -91,9 +110,36 @@ int load_scene(struct scene *scn, const char *fname)
 
 	while(fgets(buf, sizeof buf, fp)) {
 		++line_num;
-		if(!*(line = clean_line(buf))) continue;
+		if(!(line = clean_line(buf))) continue;
 
 		switch(line[0]) {
+		case 'm':
+			if(memcmp(line, "mtllib", 6) == 0) {
+				if(!(line = clean_line(line + 6))) {
+					continue;
+				}
+				strcpy(mtl_path, fname);
+				if((ptr = strrchr(mtl_path, '/'))) {
+					*ptr = 0;
+				} else {
+					mtl_path[0] = 0;
+				}
+				if((mtl = load_materials(line, mtl_path))) {
+					if(mtllist) free_materials(mtllist);
+					mtllist = mtl;
+				}
+			}
+			break;
+
+		case 'u':
+			if(memcmp(line, "usemtl", 6) == 0) {
+				if(!(line = clean_line(line + 6))) {
+					continue;
+				}
+				mtl = find_material(mtllist, line);
+			}
+			break;
+
 		case 'v':
 			if(isspace(line[1])) {
 				/* vertex */
@@ -156,7 +202,7 @@ int load_scene(struct scene *scn, const char *fname)
 						}
 						if(fv.tidx >= 0) {
 							gv.u = tarr[fv.tidx].x;
-							gv.v = tarr[fv.tidx].y;
+							gv.v = 1.0f - tarr[fv.tidx].y;
 						} else {
 							gv.u = gv.v = 0;
 						}
@@ -187,12 +233,16 @@ int load_scene(struct scene *scn, const char *fname)
 				obj.mesh.icount = iarr_size;
 				obj.mesh.prim = found_quad ? 4 : 3;
 				calc_mesh_centroid(&obj.mesh, &obj.centroid.x);
-				obj.tex = 0;
+				obj.tex = mtl && mtl->tex ? get_texture(scn, mtl->tex) : 0;
+				obj.alpha = mtl ? mtl->alpha : 1.0f;
+				obj.flags = OBJFLAG_DEFAULT;
+				if(obj.alpha < 1.0f) obj.flags |= OBJFLAG_BLEND_ALPHA;
 				gvarr = 0;
 				gvarr_size = gvarr_max = 0;
 				iarr = 0;
 				iarr_size = iarr_max = 0;
 				found_quad = 0;
+				mtl = 0;
 				if(add_scene_object(scn, &obj) == -1) {
 					fprintf(stderr, "load_scene: failed to add object\n");
 					goto err;
@@ -215,7 +265,10 @@ int load_scene(struct scene *scn, const char *fname)
 		obj.mesh.vcount = gvarr_size;
 		obj.mesh.icount = iarr_size;
 		obj.mesh.prim = found_quad ? 4 : 3;
-		obj.tex = 0;
+		obj.tex = mtl && mtl->tex ? get_texture(scn, mtl->tex) : 0;
+		obj.alpha = mtl ? mtl->alpha : 1.0f;
+		obj.flags = OBJFLAG_DEFAULT;
+		if(obj.alpha < 1.0f) obj.flags |= OBJFLAG_BLEND_ALPHA;
 		gvarr = 0;
 		iarr = 0;
 		calc_mesh_centroid(&obj.mesh, &obj.centroid.x);
@@ -239,7 +292,104 @@ err:
 	free(gvarr);
 	free(iarr);
 	rb_free(rbtree);
+	free_materials(mtllist);
 	return result;
+}
+
+static struct objmtl *load_materials(const char *fname, const char *dir)
+{
+	FILE *fp;
+	struct objmtl *mtl = 0, *list = 0;
+	char *line;
+	char *path = alloca(strlen(fname) + strlen(dir) + 2);
+
+	if(dir) {
+		sprintf(path, "%s/%s", dir, fname);
+	} else {
+		strcpy(path, fname);
+	}
+
+	if(!(fp = fopen(path, "rb"))) {
+		return 0;
+	}
+
+	while(fgets(buf, sizeof buf, fp)) {
+		if(!(line = clean_line(buf))) {
+			continue;
+		}
+
+		if(memcmp(line, "newmtl", 6) == 0) {
+			if(!(line = clean_line(line + 6))) {
+				continue;
+			}
+			if(!(mtl = malloc(sizeof *mtl))) {
+				fprintf(stderr, "failed to allocate material\n");
+				continue;
+			}
+			if(!(mtl->name = malloc(strlen(line) + 1))) {
+				fprintf(stderr, "failed to allocate material name\n");
+				free(mtl);
+				continue;
+			}
+			strcpy(mtl->name, line);
+
+			mtl->color[0] = mtl->color[1] = mtl->color[2] = 1.0f;
+			mtl->tex = 0;
+			mtl->alpha = 1.0f;
+
+			mtl->next = list;
+			list = mtl;
+
+		} else if(mtl && memcmp(line, "Kd", 2) == 0) {
+			sscanf(line + 3, "%f %f %f", mtl->color, mtl->color + 1, mtl->color + 2);
+
+		} else if(mtl && memcmp(line, "map_Kd", 6) == 0) {
+			if(!(line = clean_line(line + 6))) {
+				continue;
+			}
+			if(!(mtl->tex = malloc(strlen(dir) + strlen(line) + 2))) {
+				fprintf(stderr, "failed to allocate texutre name buffer\n");
+				continue;
+			}
+			if(dir) {
+				sprintf(mtl->tex, "%s/%s", dir, line);
+			} else {
+				strcpy(mtl->tex, line);
+			}
+
+		} else if(mtl && line[0] == 'd') {
+			if(!(line = clean_line(line + 1))) {
+				continue;
+			}
+			mtl->alpha = atof(line);
+		}
+	}
+
+	fclose(fp);
+	return list;
+}
+
+static struct objmtl *find_material(struct objmtl *list, const char *name)
+{
+	while(list) {
+		if(strcmp(list->name, name) == 0) {
+			return list;
+		}
+		list = list->next;
+	}
+	return 0;
+}
+
+static void free_materials(struct objmtl *list)
+{
+	struct objmtl *mtl;
+
+	while(list) {
+		mtl = list;
+		list = list->next;
+		free(mtl->tex);
+		free(mtl);
+	}
 }
 
 int add_scene_object(struct scene *scn, struct object *obj)
@@ -256,6 +406,17 @@ int add_scene_object(struct scene *scn, struct object *obj)
 		scn->max_objects = newsz;
 	}
 	scn->objects[scn->num_objects++] = *obj;
+	return 0;
+}
+
+struct object *find_scene_object(struct scene *scn, const char *name)
+{
+	int i;
+	for(i=0; i<scn->num_objects; i++) {
+		if(strcmp(scn->objects[i].name, name) == 0) {
+			return scn->objects + i;
+		}
+	}
 	return 0;
 }
 
@@ -276,8 +437,8 @@ static int zsort_cmp(const void *aptr, const void *bptr)
 	za = m[2] * ca->x + m[6] * ca->y + m[10] * ca->z + m[14];
 	zb = m[2] * cb->x + m[6] * cb->y + m[10] * cb->z + m[14];
 
-	za -= zb;
-	return *(int*)&za;
+	//za -= zb;
+	return za < zb ? -1 : (za > zb ? 1 : 0);//*(int*)&za;
 }
 
 void zsort_scene(struct scene *scn)
@@ -304,15 +465,27 @@ void zsort_scene(struct scene *scn)
 void draw_scene(struct scene *scn)
 {
 	int i;
+	struct object *obj;
 
-	if(scn->objorder) {
-		for(i=0; i<scn->num_objects; i++) {
-			int idx = scn->objorder[i];
-			draw_mesh(&scn->objects[idx].mesh);
+	for(i=0; i<scn->num_objects; i++) {
+		obj = scn->objects + (scn->objorder ? scn->objorder[i] : i);
+		if(!(obj->flags & OBJFLAG_VISIBLE)) {
+			continue;
 		}
-	} else {
-		for(i=0; i<scn->num_objects; i++) {
-			draw_mesh(&scn->objects[i].mesh);
+		if(obj->flags & OBJFLAG_BLEND_ALPHA) {
+			g3d_enable(G3D_BLEND);
+		}
+
+		if(obj->tex) {
+			g3d_enable(G3D_TEXTURE_2D);
+			g3d_set_texture(obj->tex->width, obj->tex->height, obj->tex->pixels);
+		} else {
+			g3d_disable(G3D_TEXTURE_2D);
+		}
+		draw_mesh(&obj->mesh);
+
+		if(obj->flags & OBJFLAG_BLEND_ALPHA) {
+			g3d_disable(G3D_BLEND);
 		}
 	}
 }
@@ -332,7 +505,7 @@ static char *clean_line(char *s)
 		*end-- = 0;
 	}
 
-	return s;
+	return *s ? s : 0;
 }
 
 static char *parse_idx(char *ptr, int *idx, int arrsz)
@@ -393,4 +566,17 @@ static int cmp_facevert(const void *ap, const void *bp)
 static void free_rbnode_key(struct rbnode *n, void *cls)
 {
 	free(n->key);
+}
+
+static struct image *get_texture(struct scene *scn, const char *name)
+{
+	if(!scn->texset) {
+		if(!(scn->texset = create_imgset())) {
+			fprintf(stderr, "failed to create image-set for the scene\n");
+			return 0;
+		}
+		scn->own_texset = 1;
+	}
+
+	return imgset_get(scn->texset, name);
 }

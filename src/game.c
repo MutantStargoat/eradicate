@@ -283,3 +283,28 @@ void dbg_fps(void *fb)
 
 	dbg_print(fb, 2, 2, fpsbuf);
 }
+
+void dbg_fbdump(void)
+{
+	FILE *fp;
+	int i, num_pixels = fb_width * fb_height;
+	uint16_t *fbptr = fb_pixels;
+
+	if(!(fp = fopen("fbdump.ppm", "wb"))) {
+		perror("dbg_fbdump: failed to open fbdump.ppm");
+		return;
+	}
+	fprintf(fp, "P6\n%d %d\n255\n", fb_width, fb_height);
+
+	for(i=0; i<num_pixels; i++) {
+		int r = UNPACK_R16(*fbptr);
+		int g = UNPACK_G16(*fbptr);
+		int b = UNPACK_B16(*fbptr);
+		fbptr++;
+		fputc(r, fp);
+		fputc(g, fp);
+		fputc(b, fp);
+	}
+
+	fclose(fp);
+}

@@ -49,6 +49,12 @@ int load_track(struct track *trk, const char *fname)
 		tseg->path_seg = i;
 	}
 
+	if(!(trk->imgset = create_imgset())) {
+		fprintf(stderr, "failed to allocate image set for the track\n");
+		ts_free_tree(root);
+		return -1;
+	}
+
 	/* load detail scenes for the track segments */
 	node = root->child_list;
 	while(node) {
@@ -65,18 +71,25 @@ int load_track(struct track *trk, const char *fname)
 			fprintf(stderr, "%s: ignoring segment block with invalid index (%d)\n", fname, tidx);
 			continue;
 		}
-		if(!(scn_fname = ts_get_attr_str(tnode, "scene", 0))) {
-			continue;
-		}
-		if(trk->tseg[tidx].scn.num_objects) {
-			fprintf(stderr, "%s: ignoring multiple blocks defining scenes for segment %d\n", fname, tidx);
-			continue;
-		}
 
-		if(load_scene(&trk->tseg[tidx].scn, scn_fname) == -1) {
+		for(i=0; i<NUM_TSEG_SCENE_LAYERS; i++) {
+			char attr[8];
+			sprintf(attr, "scene%d", i);
+			if(!(scn_fname = ts_get_attr_str(tnode, attr, 0))) {
+				continue;
+			}
+			if(trk->tseg[tidx].scn[i].num_objects) {
+				fprintf(stderr, "%s: ignoring multiple blocks defining scenes for segment %d\n", fname, tidx);
+				continue;
+			}
+
+			trk->tseg[tidx].scn[i].texset = trk->imgset;
+			trk->tseg[tidx].scn[i].own_texset = 0;
+			if(load_scene(trk->tseg[tidx].scn + i, scn_fname) == -1) {
 #ifndef NDEBUG
-			return -1;
+				return -1;
 #endif
+			}
 		}
 	}
 
@@ -96,6 +109,7 @@ void destroy_track(struct track *trk)
 	}
 
 	free(trk->tseg);
+	free(trk->imgset);
 }
 
 int gen_track_mesh(struct track *trk, int subdiv, float twist)
