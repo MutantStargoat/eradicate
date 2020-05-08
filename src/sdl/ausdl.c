@@ -20,7 +20,8 @@ int au_init(void)
 	curmod = 0;
 	vol_master = vol_mus = vol_sfx = 255;
 
-	MikMod_RegisterDriver(&drv_sdl);
+	//MikMod_RegisterDriver(&drv_sdl);
+	MikMod_RegisterDriver(&drv_nos);
 
 	MikMod_RegisterLoader(&load_it);
 	MikMod_RegisterLoader(&load_mod);

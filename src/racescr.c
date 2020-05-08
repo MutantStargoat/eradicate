@@ -227,7 +227,7 @@ static void update(void)
 		turn_rate = 0;
 	}
 
-	projt = curve_proj_guess(path, &ppos, projt, 0.002, &proj_pos);
+	projt = curve_proj_guess(path, &ppos, projt, &proj_pos);
 	cur_seg = projt * trk.num_tseg;
 	if(cur_seg >= trk.num_tseg) cur_seg -= trk.num_tseg;
 	ppos.y = proj_pos.y;
@@ -260,7 +260,7 @@ static void update(void)
 
 	cgm_vadd_scaled(&targ, &up, 1.0f);
 	cam_follow_step(cam, &targ, &pdir, CAM_HEIGHT, 5.0f * dt);
-	/*cam_follow(cam, &targ, &pdir, CAM_HEIGHT);*/
+	//cam_follow(cam, &targ, &pdir, CAM_HEIGHT);
 }
 
 
@@ -337,6 +337,8 @@ void race_draw(void)
 	if(mus) proc_playlist(mus);
 
 	blit_frame(fb_pixels, opt.vsync);
+
+	usleep(50000);
 }
 
 static void draw_skybox(void)

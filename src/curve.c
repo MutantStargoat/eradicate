@@ -7,7 +7,7 @@
 #include "curve.h"
 #include "util.h"
 
-#define DEF_PROJ_REFINE_THRES	1e-3f
+#define DEF_PROJ_REFINE_THRES	1e-5f
 
 struct curve *load_curve(const char *fname)
 {
@@ -199,39 +199,62 @@ void eval_tangent(struct curve *c, float t, cgm_vec3 *ret)
 	cgm_vnormalize(ret);
 }
 
-float curve_proj_guess(struct curve *c, const cgm_vec3 *pos, float tguess, float sinterv, cgm_vec3 *res)
+/*
+float curve_proj(struct curve *c, const cgm_vec3 *p, cgm_vec3 *res)
 {
-	cgm_vec3 p, pp, pn;
-	float t, tp, tn;
-	float dist, dp, dn;
+}
+*/
 
-	sinterv *= 0.5f;
+float curve_proj_guess(struct curve *c, const cgm_vec3 *pos, float tguess, cgm_vec3 *res)
+{
+	float step = 0.1f / c->num_cp;
+	float tp, tn, t, dsqp, dsqn, dsq;
+	cgm_vec3 pp, pn, p;
 
-	tp = tguess - sinterv;
-	tn = tguess + sinterv;
+	/* tiny step fwd and back to determine direction */
+	tp = tguess - step * 0.25f;
+	tn = tguess + step * 0.25f;
+
 	eval_curve(c, tp, &pp);
 	eval_curve(c, tn, &pn);
-	dp = cgm_vdist_sq(pos, &pp);
-	dn = cgm_vdist_sq(pos, &pn);
 
-	while(sinterv > c->proj_refine_thres) {
+	dsqp = cgm_vdist_sq(pos, &pp);
+	dsqn = cgm_vdist_sq(pos, &pn);
+
+	if(dsqp < dsqn) {
+		step = -step;
+	}
+	t = tguess;
+	eval_curve(c, t, &p);
+	dsq = cgm_vdist_sq(pos, &p);
+
+	do {
+		tp = t;
+		pp = p;
+		dsqp = dsq;
+
+		t += step;
+		eval_curve(c, t, &p);
+		dsq = cgm_vdist_sq(pos, &p);
+	} while(dsq < dsqp);
+
+	tn = t;
+	dsqn = dsq;
+
+	while(fabs(tn - tp) > c->proj_refine_thres) {
 		t = (tp + tn) * 0.5f;
 		eval_curve(c, t, &p);
-		dist = cgm_vdist_sq(pos, &p);
+		dsq = cgm_vdist_sq(pos, &p);
 
-		if(dp < dn) {
+		if(dsqp < dsqn) {
 			tn = t;
-			dn = dist;
+			dsqn = dsq;
 		} else {
 			tp = t;
-			dp = dist;
+			dsqp = dsq;
 		}
-		sinterv *= 0.5f;
 	}
 
-	if(res) *res = p;
-
-	t = fmod(t, 1.0f);
-	if(t < 0.0f) t += 1.0f;
+	*res = p;
 	return t;
 }
