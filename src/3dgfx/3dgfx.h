@@ -45,7 +45,7 @@ enum {
 	G3D_LIGHT2		= 0x000020,
 	G3D_LIGHT3		= 0x000040,
 	G3D_TEXTURE_2D	= 0x000080,
-	G3D_BLEND		= 0x000100,
+	G3D_ALPHA_BLEND	= 0x000100,
 	G3D_TEXTURE_GEN	= 0x000200,
 	G3D_CLIP_FRUSTUM = 0x000800,/* when disabled, don't clip against the frustum */
 	G3D_CLIP_PLANE0 = 0x001000,	/* user-defined 3D clipping planes XXX not impl. */
@@ -55,6 +55,8 @@ enum {
 
 	G3D_TEXTURE_MAT	= 0x010000,
 	G3D_SPECULAR	= 0x020000,
+
+	G3D_ADD_BLEND	= 0x040000,
 
 	G3D_ALL = 0x7fffffff
 };

@@ -14,7 +14,7 @@
 
 /* mode bits: 00-wire 01-flat 10-gouraud 11-reserved
  *     bit 2: texture
- *     bit 3: blend
+ *     bit 3-4: blend mode: 00-none 01-alpha 10-additive 11-reserved
  */
 void (*fillfunc[])(struct pvertex*, int) = {
 	polyfill_wire,
@@ -25,14 +25,22 @@ void (*fillfunc[])(struct pvertex*, int) = {
 	polyfill_tex_flat,
 	polyfill_tex_gouraud,
 	0,
-	polyfill_blend_wire,
-	polyfill_blend_flat,
-	polyfill_blend_gouraud,
+	polyfill_alpha_wire,
+	polyfill_alpha_flat,
+	polyfill_alpha_gouraud,
 	0,
-	polyfill_blend_tex_wire,
-	polyfill_blend_tex_flat,
-	polyfill_blend_tex_gouraud,
-	0
+	polyfill_alpha_tex_wire,
+	polyfill_alpha_tex_flat,
+	polyfill_alpha_tex_gouraud,
+	0,
+	polyfill_add_wire,
+	polyfill_add_flat,
+	polyfill_add_gouraud,
+	0,
+	polyfill_add_tex_wire,
+	polyfill_add_tex_flat,
+	polyfill_add_tex_gouraud,
+	0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
 struct pimage pfill_fb, pfill_tex;
@@ -119,12 +127,22 @@ void polyfill_tex_wire(struct pvertex *verts, int nverts)
 	polyfill_wire(verts, nverts);	/* TODO */
 }
 
-void polyfill_blend_wire(struct pvertex *verts, int nverts)
+void polyfill_alpha_wire(struct pvertex *verts, int nverts)
 {
 	polyfill_wire(verts, nverts);	/* TODO */
 }
 
-void polyfill_blend_tex_wire(struct pvertex *verts, int nverts)
+void polyfill_alpha_tex_wire(struct pvertex *verts, int nverts)
+{
+	polyfill_wire(verts, nverts);	/* TODO */
+}
+
+void polyfill_add_wire(struct pvertex *verts, int nverts)
+{
+	polyfill_wire(verts, nverts);	/* TODO */
+}
+
+void polyfill_add_tex_wire(struct pvertex *verts, int nverts)
 {
 	polyfill_wire(verts, nverts);	/* TODO */
 }
@@ -151,7 +169,8 @@ void polyfill_blend_tex_wire(struct pvertex *verts, int nverts)
 #define SCANEDGE scanedge_flat
 #undef GOURAUD
 #undef TEXMAP
-#undef BLEND
+#undef BLEND_ALPHA
+#undef BLEND_ADD
 #include "polytmpl.h"
 #undef POLYFILL
 #undef SCANEDGE
@@ -160,7 +179,8 @@ void polyfill_blend_tex_wire(struct pvertex *verts, int nverts)
 #define SCANEDGE scanedge_gouraud
 #define GOURAUD
 #undef TEXMAP
-#undef BLEND
+#undef BLEND_ALPHA
+#undef BLEND_ADD
 #include "polytmpl.h"
 #undef POLYFILL
 #undef SCANEDGE
@@ -169,7 +189,8 @@ void polyfill_blend_tex_wire(struct pvertex *verts, int nverts)
 #define SCANEDGE scanedge_tex_flat
 #undef GOURAUD
 #define TEXMAP
-#undef BLEND
+#undef BLEND_ALPHA
+#undef BLEND_ADD
 #include "polytmpl.h"
 #undef POLYFILL
 #undef SCANEDGE
@@ -178,43 +199,88 @@ void polyfill_blend_tex_wire(struct pvertex *verts, int nverts)
 #define SCANEDGE scanedge_tex_gouraud
 #define GOURAUD
 #define TEXMAP
-#undef BLEND
+#undef BLEND_ALPHA
+#undef BLEND_ADD
 #include "polytmpl.h"
 #undef POLYFILL
 #undef SCANEDGE
 
-#define POLYFILL polyfill_blend_flat
-#define SCANEDGE scanedge_blend_flat
+#define POLYFILL polyfill_alpha_flat
+#define SCANEDGE scanedge_alpha_flat
 #undef GOURAUD
 #undef TEXMAP
-#define BLEND
+#define BLEND_ALPHA
+#undef BLEND_ADD
 #include "polytmpl.h"
 #undef POLYFILL
 #undef SCANEDGE
 
-#define POLYFILL polyfill_blend_gouraud
-#define SCANEDGE scanedge_blend_gouraud
+#define POLYFILL polyfill_alpha_gouraud
+#define SCANEDGE scanedge_alpha_gouraud
 #define GOURAUD
 #undef TEXMAP
-#define BLEND
+#define BLEND_ALPHA
+#undef BLEND_ADD
 #include "polytmpl.h"
 #undef POLYFILL
 #undef SCANEDGE
 
-#define POLYFILL polyfill_blend_tex_flat
-#define SCANEDGE scanedge_blend_tex_flat
+#define POLYFILL polyfill_alpha_tex_flat
+#define SCANEDGE scanedge_alpha_tex_flat
 #undef GOURAUD
 #define TEXMAP
-#define BLEND
+#define BLEND_ALPHA
+#undef BLEND_ADD
 #include "polytmpl.h"
 #undef POLYFILL
 #undef SCANEDGE
 
-#define POLYFILL polyfill_blend_tex_gouraud
-#define SCANEDGE scanedge_blend_tex_gouraud
+#define POLYFILL polyfill_alpha_tex_gouraud
+#define SCANEDGE scanedge_alpha_tex_gouraud
 #define GOURAUD
 #define TEXMAP
-#define BLEND
+#define BLEND_ALPHA
+#undef BLEND_ADD
+#include "polytmpl.h"
+#undef POLYFILL
+#undef SCANEDGE
+
+#define POLYFILL polyfill_add_flat
+#define SCANEDGE scanedge_add_flat
+#undef GOURAUD
+#undef TEXMAP
+#undef BLEND_ALPHA
+#define BLEND_ADD
+#include "polytmpl.h"
+#undef POLYFILL
+#undef SCANEDGE
+
+#define POLYFILL polyfill_add_gouraud
+#define SCANEDGE scanedge_add_gouraud
+#define GOURAUD
+#undef TEXMAP
+#undef BLEND_ALPHA
+#define BLEND_ADD
+#include "polytmpl.h"
+#undef POLYFILL
+#undef SCANEDGE
+
+#define POLYFILL polyfill_add_tex_flat
+#define SCANEDGE scanedge_add_tex_flat
+#undef GOURAUD
+#define TEXMAP
+#undef BLEND_ALPHA
+#define BLEND_ADD
+#include "polytmpl.h"
+#undef POLYFILL
+#undef SCANEDGE
+
+#define POLYFILL polyfill_add_tex_gouraud
+#define SCANEDGE scanedge_add_tex_gouraud
+#define GOURAUD
+#define TEXMAP
+#undef BLEND_ALPHA
+#define BLEND_ADD
 #include "polytmpl.h"
 #undef POLYFILL
 #undef SCANEDGE

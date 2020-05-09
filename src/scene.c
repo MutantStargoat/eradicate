@@ -36,10 +36,13 @@ struct facevertex {
 	int vidx, tidx, nidx;
 };
 
+enum {BLEND_MODE_ALPHA, BLEND_MODE_ADD};
+
 struct objmtl {
 	char *name;
 	float color[3];
 	float alpha;
+	int blend_mode;
 	char *tex;
 	struct objmtl *next;
 };
@@ -240,10 +243,19 @@ int load_scene(struct scene *scn, const char *fname)
 				obj.mesh.icount = iarr_size;
 				obj.mesh.prim = found_quad ? 4 : 3;
 				calc_mesh_centroid(&obj.mesh, &obj.centroid.x);
-				obj.tex = mtl && mtl->tex ? get_texture(scn, mtl->tex) : 0;
-				obj.alpha = mtl ? mtl->alpha : 1.0f;
 				obj.flags = OBJFLAG_DEFAULT;
-				if(obj.alpha < 1.0f) obj.flags |= OBJFLAG_BLEND_ALPHA;
+				if(mtl) {
+					obj.tex = mtl->tex ? get_texture(scn, mtl->tex) : 0;
+					obj.alpha = mtl->alpha;
+					if(mtl->blend_mode == BLEND_MODE_ADD) {
+						obj.flags |= OBJFLAG_BLEND_ADD;
+					} else if(obj.alpha < 1.0f) {
+						obj.flags |= OBJFLAG_BLEND_ALPHA;
+					}
+				} else {
+					obj.tex = 0;
+					obj.alpha = 1.0f;
+				}
 				gvarr = 0;
 				gvarr_size = gvarr_max = 0;
 				iarr = 0;
@@ -272,10 +284,19 @@ int load_scene(struct scene *scn, const char *fname)
 		obj.mesh.vcount = gvarr_size;
 		obj.mesh.icount = iarr_size;
 		obj.mesh.prim = found_quad ? 4 : 3;
-		obj.tex = mtl && mtl->tex ? get_texture(scn, mtl->tex) : 0;
-		obj.alpha = mtl ? mtl->alpha : 1.0f;
 		obj.flags = OBJFLAG_DEFAULT;
-		if(obj.alpha < 1.0f) obj.flags |= OBJFLAG_BLEND_ALPHA;
+		if(mtl) {
+			obj.tex = mtl->tex ? get_texture(scn, mtl->tex) : 0;
+			obj.alpha = mtl->alpha;
+			if(mtl->blend_mode == BLEND_MODE_ADD) {
+				obj.flags |= OBJFLAG_BLEND_ADD;
+			} else if(obj.alpha < 1.0f) {
+				obj.flags |= OBJFLAG_BLEND_ALPHA;
+			}
+		} else {
+			obj.tex = 0;
+			obj.alpha = 1.0f;
+		}
 		gvarr = 0;
 		iarr = 0;
 		calc_mesh_centroid(&obj.mesh, &obj.centroid.x);
@@ -343,6 +364,7 @@ static struct objmtl *load_materials(const char *fname, const char *dir)
 			mtl->color[0] = mtl->color[1] = mtl->color[2] = 1.0f;
 			mtl->tex = 0;
 			mtl->alpha = 1.0f;
+			mtl->blend_mode = BLEND_MODE_ALPHA;
 
 			mtl->next = list;
 			list = mtl;
@@ -369,6 +391,16 @@ static struct objmtl *load_materials(const char *fname, const char *dir)
 				continue;
 			}
 			mtl->alpha = atof(line);
+
+		} else if(mtl && memcmp(line, "blend", 5) == 0) {
+			if(!(line = clean_line(line + 5))) {
+				continue;
+			}
+			if(strcmp(line, "alpha") == 0) {
+				mtl->blend_mode = BLEND_MODE_ALPHA;
+			} else if(strcmp(line, "add") == 0) {
+				mtl->blend_mode = BLEND_MODE_ADD;
+			}
 		}
 	}
 
@@ -473,14 +505,19 @@ void draw_scene(struct scene *scn)
 {
 	int i;
 	struct object *obj;
+	unsigned int prevopt;
 
 	for(i=0; i<scn->num_objects; i++) {
+		prevopt = g3d_getopt(G3D_ALPHA_BLEND | G3D_ADD_BLEND);
+
 		obj = scn->objects + (scn->objorder ? scn->objorder[i] : i);
 		if(!(obj->flags & OBJFLAG_VISIBLE)) {
 			continue;
 		}
 		if(obj->flags & OBJFLAG_BLEND_ALPHA) {
-			g3d_enable(G3D_BLEND);
+			g3d_enable(G3D_ALPHA_BLEND);
+		} else if(obj->flags & OBJFLAG_BLEND_ADD) {
+			g3d_enable(G3D_ADD_BLEND);
 		}
 
 		if(obj->tex) {
@@ -491,9 +528,7 @@ void draw_scene(struct scene *scn)
 		}
 		draw_mesh(&obj->mesh);
 
-		if(obj->flags & OBJFLAG_BLEND_ALPHA) {
-			g3d_disable(G3D_BLEND);
-		}
+		g3d_setopt(prevopt, G3D_ALPHA_BLEND | G3D_ADD_BLEND);
 	}
 }
 

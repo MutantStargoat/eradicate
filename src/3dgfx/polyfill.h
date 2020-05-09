@@ -6,7 +6,8 @@
 
 #define POLYFILL_MODE_MASK	0x03
 #define POLYFILL_TEX_BIT	0x04
-#define POLYFILL_BLEND_BIT	0x08
+#define POLYFILL_ALPHA_BIT	0x08
+#define POLYFILL_ADD_BIT	0x10
 
 enum {
 	POLYFILL_WIRE			= 0,
@@ -17,13 +18,21 @@ enum {
 	POLYFILL_TEX_FLAT,
 	POLYFILL_TEX_GOURAUD,
 
-	POLYFILL_BLEND_WIRE		= 8,
-	POLYFILL_BLEND_FLAT,
-	POLYFILL_BLEND_GOURAUD,
+	POLYFILL_ALPHA_WIRE		= 8,
+	POLYFILL_ALPHA_FLAT,
+	POLYFILL_ALPHA_GOURAUD,
 
-	POLYFILL_BLEND_TEX_WIRE	= 12,
-	POLYFILL_BLEND_TEX_FLAT,
-	POLYFILL_BLEND_TEX_GOURAUD
+	POLYFILL_ALPHA_TEX_WIRE	= 12,
+	POLYFILL_ALPHA_TEX_FLAT,
+	POLYFILL_ALPHA_TEX_GOURAUD,
+
+	POLYFILL_ADD_WIRE		= 16,
+	POLYFILL_ADD_FLAT,
+	POLYFILL_ADD_GOURAUD,
+
+	POLYFILL_ADD_TEX_WIRE	= 20,
+	POLYFILL_ADD_TEX_FLAT,
+	POLYFILL_ADD_TEX_GOURAUD
 };
 
 /* projected vertices for the rasterizer */
@@ -54,11 +63,17 @@ void polyfill_gouraud(struct pvertex *verts, int nverts);
 void polyfill_tex_wire(struct pvertex *verts, int nverts);
 void polyfill_tex_flat(struct pvertex *verts, int nverts);
 void polyfill_tex_gouraud(struct pvertex *verts, int nverts);
-void polyfill_blend_wire(struct pvertex *verts, int nverts);
-void polyfill_blend_flat(struct pvertex *verts, int nverts);
-void polyfill_blend_gouraud(struct pvertex *verts, int nverts);
-void polyfill_blend_tex_wire(struct pvertex *verts, int nverts);
-void polyfill_blend_tex_flat(struct pvertex *verts, int nverts);
-void polyfill_blend_tex_gouraud(struct pvertex *verts, int nverts);
+void polyfill_alpha_wire(struct pvertex *verts, int nverts);
+void polyfill_alpha_flat(struct pvertex *verts, int nverts);
+void polyfill_alpha_gouraud(struct pvertex *verts, int nverts);
+void polyfill_alpha_tex_wire(struct pvertex *verts, int nverts);
+void polyfill_alpha_tex_flat(struct pvertex *verts, int nverts);
+void polyfill_alpha_tex_gouraud(struct pvertex *verts, int nverts);
+void polyfill_add_wire(struct pvertex *verts, int nverts);
+void polyfill_add_flat(struct pvertex *verts, int nverts);
+void polyfill_add_gouraud(struct pvertex *verts, int nverts);
+void polyfill_add_tex_wire(struct pvertex *verts, int nverts);
+void polyfill_add_tex_flat(struct pvertex *verts, int nverts);
+void polyfill_add_tex_gouraud(struct pvertex *verts, int nverts);
 
 #endif	/* POLYFILL_H_ */
