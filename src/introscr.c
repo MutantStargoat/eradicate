@@ -58,7 +58,6 @@ void intro_draw(void)
 	}
 
 	tm = time_msec - start_time;
-	printf("lalala %ld\n", tm);
 	if(tm < FADE_DUR) {
 		fade = tm * 256 / FADE_DUR;
 	} else if(tm < FADE_DUR * 2) {
