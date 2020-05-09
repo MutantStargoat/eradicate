@@ -48,7 +48,7 @@ Supported formats are:
   - Fast tracker extended modules (`.xm`).
   - Pro tracker 4-channel modules (`.mod`).
   - Scream tracker 3 modules (`.s3m`).
-  - Impulse tracker modules (`.it).
+  - Impulse tracker modules (`.it`).
 
 See https://modarchive.org for a wide selection of compatible music files.
 
