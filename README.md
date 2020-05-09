@@ -3,6 +3,8 @@ Eradicate
 Futuristic arcade racing game for DOS.
 Written for the MS-DOS game jam: https://itch.io/jam/dos-game-jam-2
 
+![screenshot](http://nuclear.mutantstargoat.com/sw/games/eradicate/shots/shot1-game-thumb.jpg)
+
 Release v0.1 (jam release, includes source and binaries for DOS, GNU/Linux and Windows):
   - http://nuclear.mutantstargoat.com/sw/games/eradicate/releases/eradicate-0.1.tar.gz
   - http://nuclear.mutantstargoat.com/sw/games/eradicate/releases/eradicate-0.1.zip
@@ -43,6 +45,12 @@ The GNU/Linux and Windows versions support framebuffer scaling. Use the FBSCALE
 environment variable to set the scaling factor. For example: `export FBSCALE=2`
 will result in 2x scaling. Also you can toggle between fullscreen and windowed
 modes with alt-enter.
+
+Controls
+--------
+  - Arrow keys or WASD: accelerate/break and turn
+  - `tab`: skip to the next music track
+  - `+`/`-`: change sound volume
 
 License
 -------

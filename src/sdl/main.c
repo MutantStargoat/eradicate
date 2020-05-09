@@ -60,7 +60,6 @@ int main(int argc, char **argv)
 	if(!set_video_mode(match_video_mode(FB_WIDTH, FB_HEIGHT, FB_BPP), 1)) {
 		return 1;
 	}
-	toggle_fullscreen();
 
 	SDL_WM_SetCaption("eradicate/SDL", 0);
 	SDL_ShowCursor(0);
