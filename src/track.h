@@ -25,6 +25,7 @@ struct track {
 	struct track_segment *tseg;
 	int num_tseg;
 
+	float finish_pos, half_pos;
 	float start_pos;
 
 	void *imgset;

@@ -223,7 +223,7 @@ static void update(void)
 	int i, j, seg;
 	cgm_vec3 targ, up = {0, 1, 0};
 	cgm_vec3 offs_dir, path_dir;
-	float dt, s, lensq;
+	float dt, s, lensq, prev_t;
 	long dt_ms = time_msec - prev_upd;
 	prev_upd = time_msec;
 
@@ -243,7 +243,7 @@ static void update(void)
 
 	if(laps >= NUM_LAPS) {
 		hold = 1;
-		pspeed -= 2.0 * BRK * dt;
+		pspeed -= BRK * dt;
 	} else {
 		race_time += dt_ms;
 	}
@@ -275,6 +275,7 @@ static void update(void)
 		turn_rate = 0;
 	}
 
+	prev_t = projt;
 	projt = curve_proj_guess(path, &ppos, projt, &proj_pos);
 	cur_seg = projt * trk.num_tseg;
 	if(cur_seg >= trk.num_tseg) cur_seg -= trk.num_tseg;
@@ -328,6 +329,16 @@ static void update(void)
 			seg = trk.num_tseg - 1;
 		} else if(seg >= trk.num_tseg) {
 			seg = 0;
+		}
+	}
+
+	/* detect crossing half-track or finish line */
+	if(!wrong_way) {
+		if(prev_t < trk.finish_pos && projt >= trk.finish_pos && laps < half_laps) {
+			laps++;
+		}
+		if(prev_t < trk.half_pos && projt >= trk.half_pos && half_laps == laps) {
+			half_laps++;
 		}
 	}
 }
@@ -498,10 +509,16 @@ static void draw_ui(void)
 		/* TODO do something resolution-independent (or just provide a few sizes of fonts) */
 	}
 
-	select_font(FONT_MENU);
-	fnt_align(FONT_RIGHT);
-	fnt_printf(fb_pixels, fb_width - 10, 5, "%02d:%02d:%02d", race_time_min, race_time_sec, race_time_ms / 10);
-	fnt_printf(fb_pixels, fb_width - 10, 25, "LAP %d/%d", laps + 1, NUM_LAPS);
+	if(hold && laps >= NUM_LAPS) {
+		select_font(FONT_MENU_SHADEDHL_BIG);
+		fnt_align(FONT_CENTER);
+		fnt_printf(fb_pixels, fb_width / 2, fb_height / 3, "%02d:%02d:%03d", race_time_min, race_time_sec, race_time_ms);
+	} else {
+		select_font(FONT_MENU);
+		fnt_align(FONT_RIGHT);
+		fnt_printf(fb_pixels, fb_width - 10, 5, "%02d:%02d:%02d", race_time_min, race_time_sec, race_time_ms / 10);
+		fnt_printf(fb_pixels, fb_width - 10, 25, "LAP %d/%d", laps + 1, NUM_LAPS);
+	}
 
 	if(race_time <= 1000 && race_time > -3000) {
 		const char *fmt = race_time <= -50 ? "%d" : "GO!";

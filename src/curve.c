@@ -256,5 +256,5 @@ float curve_proj_guess(struct curve *c, const cgm_vec3 *pos, float tguess, cgm_v
 	}
 
 	*res = p;
-	return t;
+	return fmod(t, 1.0f);
 }

@@ -32,6 +32,8 @@ int load_track(struct track *trk, const char *fname)
 	curve->proj_refine_thres = 1e-5;
 
 	trk->start_pos = ts_lookup_num(root, "track.start", 0.0f);
+	trk->finish_pos = ts_lookup_num(root, "track.finish", 0.0f);
+	trk->half_pos = fmod(trk->finish_pos + 0.5f, 1.0f);
 
 	trk->path = curve;
 	trk->num_tseg = curve->num_cp - 1;
