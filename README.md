@@ -5,22 +5,6 @@ Written for the MS-DOS game jam: https://itch.io/jam/dos-game-jam-2
 
 ![screenshot](http://nuclear.mutantstargoat.com/sw/games/eradicate/shots/shot1-game-thumb.jpg)
 
-Release v0.1 (jam release, includes source and binaries for DOS, GNU/Linux and Windows):
-  - http://nuclear.mutantstargoat.com/sw/games/eradicate/releases/eradicate-0.1.tar.gz
-  - http://nuclear.mutantstargoat.com/sw/games/eradicate/releases/eradicate-0.1.zip
-  - http://nuclear.mutantstargoat.com/sw/games/eradicate/releases/erad01.zip
-
-The third link is a minimal archive with only 8.3 filenames for DOS versions
-without FAT32 long filename support.
-
-Source code repository:
-  - https://github.com/MutantStargoat/eradicate
-
-Release archives include the data files. If you got the code from the github
-repository, either copy the data directory from a release, or get the data from
-the subversion data repository:
-    svn co svn://mutantstargoat.com/datadirs/eradicate data
-
 Minimum requirements:
   - Pentium MMX 166MHz
   - 32MB RAM
@@ -52,6 +36,41 @@ Controls
   - `tab`: skip to the next music track
   - `+`/`-`: change sound volume
 
+Music
+-----
+Eradicate plays music tracks randomly from two directories:
+  - `data/musgame` for in-game music.
+  - `data/musmenu` for music to be played while in the game menus.
+
+The release archive contains a selection of music tracks downloaded from
+*modarchive*, but you can drop your own music in the jukebox directories.
+Supported formats are:
+  - Fast tracker extended modules (`.xm`).
+  - Pro tracker 4-channel modules (`.mod`).
+  - Scream tracker 3 modules (`.s3m`).
+  - Impulse tracker modules (`.it).
+
+See https://modarchive.org for a wide selection of compatible music files.
+
+Download
+--------
+
+Release v0.1 (jam release, includes source and binaries for DOS, GNU/Linux and Windows):
+  - http://nuclear.mutantstargoat.com/sw/games/eradicate/releases/eradicate-0.1.tar.gz
+  - http://nuclear.mutantstargoat.com/sw/games/eradicate/releases/eradicate-0.1.zip
+  - http://nuclear.mutantstargoat.com/sw/games/eradicate/releases/erad01.zip
+
+The third link is a minimal archive with strictly 8.3 filenames for DOS versions
+without FAT32 long filename support.
+
+Source code repository:
+  - https://github.com/MutantStargoat/eradicate
+
+Release archives include the data files. If you got the source code from the github
+repository, either copy the data directory from a release, or get the data from
+the subversion data repository:
+  - svn co svn://mutantstargoat.com/datadirs/eradicate data
+
 License
 -------
 Copyright (C) 2020 John Tsiombikas <nuclear@mutantstargoat.org>
@@ -60,6 +79,11 @@ This program is free software. Feel free to use, modify and/or redistribute it,
 under the terms of the GNU General Public License version 3, or at your option
 any later version published by the Free Software Foundation.
 See COPYING for details.
+
+Copyright for music files bundled with the releases belong to their respective
+authors. This is not a commercial game, it's a free/open source project and
+will never be sold for profit, but if you own the copyright to some bundled
+track and would like it removed from future releases, please contact me.
 
 Build
 -----
