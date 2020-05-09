@@ -7,7 +7,7 @@ src = $(wildcard drivers/*.c) \
 obj = $(src:.c=.o)
 alib = libmikmod.a
 
-CFLAGS = -m32 -g -I. -Iinclude -DHAVE_CONFIG_H `sdl-config --cflags`
+CFLAGS = -m32 -g -I. -Iinclude -DHAVE_CONFIG_H -DMIKMOD_STATIC `sdl-config --cflags`
 
 $(alib): $(obj)
 	$(AR) rcs $@ $(obj)

@@ -13,7 +13,6 @@
 #define HAVE_RTLD_GLOBAL 1
 #define HAVE_SETENV 1
 #define HAVE_SNPRINTF 1
-#define HAVE_SRANDOM 1
 #define HAVE_STDINT_H 1
 #define HAVE_STDLIB_H 1
 #define HAVE_STRINGS_H 1

@@ -26,7 +26,9 @@ ifeq ($(sys), mingw)
 
 	bin = game_win32.exe
 
-	LDFLAGS += -lmingw32 -lSDL -lSDLmain -lwinmm -mconsole
+	def = -DMIKMOD_STATIC
+	sdl_ldflags = `sdl-config --libs`
+	LDFLAGS += -lmingw32 -lwinmm -mconsole
 else
 	def = -DUSE_MMX
 endif
