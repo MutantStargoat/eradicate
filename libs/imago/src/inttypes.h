@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef INT_TYPES_H_
 #define INT_TYPES_H_
 
-#if defined(__DOS__) || defined(__MSDOS__) || defined(WIN32)
+#if defined(__DOS__) || defined(__MSDOS__)
 typedef char int8_t;
 typedef short int16_t;
 typedef long int32_t;

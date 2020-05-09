@@ -516,8 +516,8 @@ static void draw_ui(void)
 	} else {
 		select_font(FONT_MENU);
 		fnt_align(FONT_RIGHT);
-		fnt_printf(fb_pixels, fb_width - 10, 5, "%02d:%02d:%02d", race_time_min, race_time_sec, race_time_ms / 10);
-		fnt_printf(fb_pixels, fb_width - 10, 25, "LAP %d/%d", laps + 1, NUM_LAPS);
+		fnt_printf(fb_pixels, fb_width - 10, 2, "%02d:%02d:%02d", race_time_min, race_time_sec, race_time_ms / 10);
+		fnt_printf(fb_pixels, fb_width - 10, 18, "LAP%d/%d", laps + 1, NUM_LAPS);
 	}
 
 	if(race_time <= 1000 && race_time > -3000) {

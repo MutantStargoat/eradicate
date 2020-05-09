@@ -2,7 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#if defined(__WATCOMC__) || defined(WIN32) || defined(__DJGPP__)
+#include <malloc.h>
+#else
 #include <alloca.h>
+#endif
 #include "mikmod.h"
 #include "audio.h"
 
@@ -20,8 +24,8 @@ int au_init(void)
 	curmod = 0;
 	vol_master = vol_mus = vol_sfx = 255;
 
-	//MikMod_RegisterDriver(&drv_sdl);
-	MikMod_RegisterDriver(&drv_nos);
+	MikMod_RegisterDriver(&drv_sdl);
+	/*MikMod_RegisterDriver(&drv_nos);*/
 
 	MikMod_RegisterLoader(&load_it);
 	MikMod_RegisterLoader(&load_mod);
