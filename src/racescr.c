@@ -20,7 +20,7 @@
 #define SKY_SUBDIV	3
 #define SKY_FACE_QUADS	(SKY_SUBDIV * SKY_SUBDIV)
 
-#define CAM_HEIGHT	2.0f
+#define CAM_HEIGHT	3.0f
 #define CAM_DIST	10.0f
 
 #define TRK_SUBDIV	26
@@ -73,6 +73,8 @@ static long race_time;
 
 int race_init(void)
 {
+	int i;
+
 	if(gen_sphere_mesh(&sky_mesh, -10.0f, 16, 8) == -1) {
 		fprintf(stderr, "failed to generate skybox mesh\n");
 		return -1;
@@ -81,6 +83,11 @@ int race_init(void)
 		fprintf(stderr, "failed to load ship mesh\n");
 		return -1;
 	}
+	for(i=0; i<ship_mesh.vcount; i++) {
+		ship_mesh.varr[i].r = ship_mesh.varr[i].g = ship_mesh.varr[i].b = 0;
+		ship_mesh.varr[i].a = 64;
+	}
+
 	if(load_image(&ship_tex, "data/shiptex.png") == -1) {
 		return -1;
 	}
@@ -314,8 +321,8 @@ void race_draw(void)
 		seg -= trk.num_tseg;
 	}
 	for(i=0; i<nseg_to_draw + 1; i++) {
-		/* draw detail meshes before drawing the road */
-		for(j=0; j<NUM_TSEG_SCENE_LAYERS; j++) {
+		/* draw detail meshes from the background layers (0,1) before drawing the road */
+		for(j=0; j<2; j++) {
 			struct scene *scn = trk.tseg[seg].scn + j;
 			if(scn->num_objects > 0) {
 				zsort_scene(scn);
@@ -326,6 +333,16 @@ void race_draw(void)
 		g3d_set_texture(road_tex.width, road_tex.height, road_tex.pixels);
 		g3d_enable(G3D_TEXTURE_2D);
 		draw_mesh(&trk.tseg[seg].mesh);
+
+		/* draw detail meshes from the foreground layers (2,3) before drawing the road */
+		for(j=2; j<4; j++) {
+			struct scene *scn = trk.tseg[seg].scn + j;
+			if(scn->num_objects > 0) {
+				zsort_scene(scn);
+				draw_scene(scn);
+			}
+		}
+
 		seg -= inc;
 		if(seg < 0) {
 			seg = trk.num_tseg - 1;
@@ -334,8 +351,23 @@ void race_draw(void)
 		}
 	}
 
+	/* draw shadow */
 	g3d_push_matrix();
 	g3d_mult_matrix(pxform);
+	g3d_translate(0, -0.25, 0);
+	g3d_scale(1, 0, 1);
+	g3d_rotate(proll, 0, 0, 1);
+
+	g3d_disable(G3D_TEXTURE_2D);
+	/*g3d_enable(G3D_BLEND);*/
+	draw_mesh(&ship_mesh);
+	/*g3d_disable(G3D_BLEND);*/
+	g3d_pop_matrix();
+
+	/* draw ship */
+	g3d_push_matrix();
+	g3d_mult_matrix(pxform);
+	g3d_translate(0, 0.5, 0);
 	g3d_rotate(proll, 0, 0, 1);
 
 	g3d_enable(G3D_TEXTURE_2D);
