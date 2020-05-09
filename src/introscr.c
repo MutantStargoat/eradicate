@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <limits.h>
 #include "screens.h"
 #include "imago2.h"
 #include "gfx.h"
@@ -31,7 +32,7 @@ void intro_start(void)
 	draw = intro_draw;
 	key_event = intro_keyb;
 
-	start_time = time_msec;
+	start_time = LONG_MIN;
 }
 
 void intro_stop(void)
@@ -52,7 +53,12 @@ void intro_draw(void)
 		}
 	}
 
+	if(start_time == LONG_MIN) {
+		start_time = time_msec;
+	}
+
 	tm = time_msec - start_time;
+	printf("lalala %ld\n", tm);
 	if(tm < FADE_DUR) {
 		fade = tm * 256 / FADE_DUR;
 	} else if(tm < FADE_DUR * 2) {
