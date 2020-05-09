@@ -40,6 +40,7 @@ int add_scene_object(struct scene *scn, struct object *obj);
 struct object *find_scene_object(struct scene *scn, const char *name);
 
 void zsort_scene(struct scene *scn);
+void update_scene(struct scene *scn, float dt);
 void draw_scene(struct scene *scn);
 
 #endif	/* SCENE_H_ */

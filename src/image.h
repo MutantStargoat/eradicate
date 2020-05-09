@@ -6,6 +6,11 @@
 struct image {
 	int width, height;
 	uint16_t *pixels;
+
+	/* optional animation data */
+	float cur_dur, frame_interval;
+	int cur_frame, num_frames;
+	float *uoffs, *voffs;
 };
 
 int load_image(struct image *img, const char *fname);

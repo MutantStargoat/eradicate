@@ -62,6 +62,7 @@ static cgm_vec3 proj_pos;
 static long prev_upd;
 
 static int cur_seg;
+static int vis_seg, vis_seg_inc;
 static int nseg_to_draw = 2;
 static int wrong_way;
 
@@ -218,6 +219,7 @@ void race_stop(void)
 
 static void update(void)
 {
+	int i, j, seg;
 	cgm_vec3 targ, up = {0, 1, 0};
 	cgm_vec3 offs_dir, path_dir;
 	float dt, s, lensq;
@@ -293,12 +295,36 @@ static void update(void)
 	cgm_vadd_scaled(&targ, &up, 1.0f);
 	cam_follow_step(cam, &targ, &pdir, CAM_HEIGHT, (hold ? 2.5f : 5.0f) * dt);
 	/*cam_follow(cam, &targ, &pdir, CAM_HEIGHT);*/
+
+	/* draw nseg_to_draw segments in front in back to front order
+	 * and one segment back (nseg_to_draw + 1 and keep decrementing)
+	 */
+	vis_seg_inc = wrong_way ? -1 : 1;
+	vis_seg = cur_seg + vis_seg_inc * (nseg_to_draw - 1);
+	if(vis_seg < 0) {
+		vis_seg += trk.num_tseg;
+	} else if(vis_seg >= trk.num_tseg) {
+		vis_seg -= trk.num_tseg;
+	}
+	seg = vis_seg;
+	/* update visible segments */
+	for(i=0; i<nseg_to_draw + 1; i++) {
+		for(j=0; j<NUM_TSEG_SCENE_LAYERS; j++) {
+			update_scene(trk.tseg[seg].scn + j, dt);
+		}
+		seg -= vis_seg_inc;
+		if(seg < 0) {
+			seg = trk.num_tseg - 1;
+		} else if(seg >= trk.num_tseg) {
+			seg = 0;
+		}
+	}
 }
 
 
 void race_draw(void)
 {
-	int i, j, seg, inc;
+	int i, j;
 
 	update();
 	memset(fb_pixels, 0, fb_size);
@@ -310,20 +336,10 @@ void race_draw(void)
 
 	g3d_load_matrix(cam[act_cam].matrix);
 
-	/* draw nseg_to_draw segments in front in back to front order
-	 * and one segment back (nseg_to_draw + 1 and keep decrementing)
-	 */
-	inc = wrong_way ? -1 : 1;
-	seg = cur_seg + inc * (nseg_to_draw - 1);
-	if(seg < 0) {
-		seg += trk.num_tseg;
-	} else if(seg >= trk.num_tseg) {
-		seg -= trk.num_tseg;
-	}
 	for(i=0; i<nseg_to_draw + 1; i++) {
 		/* draw detail meshes from the background layers (0,1) before drawing the road */
 		for(j=0; j<2; j++) {
-			struct scene *scn = trk.tseg[seg].scn + j;
+			struct scene *scn = trk.tseg[vis_seg].scn + j;
 			if(scn->num_objects > 0) {
 				zsort_scene(scn);
 				draw_scene(scn);
@@ -332,22 +348,22 @@ void race_draw(void)
 
 		g3d_set_texture(road_tex.width, road_tex.height, road_tex.pixels);
 		g3d_enable(G3D_TEXTURE_2D);
-		draw_mesh(&trk.tseg[seg].mesh);
+		draw_mesh(&trk.tseg[vis_seg].mesh);
 
 		/* draw detail meshes from the foreground layers (2,3) before drawing the road */
 		for(j=2; j<4; j++) {
-			struct scene *scn = trk.tseg[seg].scn + j;
+			struct scene *scn = trk.tseg[vis_seg].scn + j;
 			if(scn->num_objects > 0) {
 				zsort_scene(scn);
 				draw_scene(scn);
 			}
 		}
 
-		seg -= inc;
-		if(seg < 0) {
-			seg = trk.num_tseg - 1;
-		} else if(seg >= trk.num_tseg) {
-			seg = 0;
+		vis_seg -= vis_seg_inc;
+		if(vis_seg < 0) {
+			vis_seg = trk.num_tseg - 1;
+		} else if(vis_seg >= trk.num_tseg) {
+			vis_seg = 0;
 		}
 	}
 
@@ -377,6 +393,7 @@ void race_draw(void)
 
 	g3d_pop_matrix();
 
+	/*
 	g3d_disable(G3D_TEXTURE_2D);
 	g3d_begin(G3D_LINES);
 	g3d_color3b(255, 92, 92);
@@ -389,6 +406,7 @@ void race_draw(void)
 	g3d_vertex(proj_pos.x, proj_pos.y, proj_pos.z);
 	g3d_vertex(proj_pos.x, proj_pos.y, proj_pos.z + 0.5);
 	g3d_end();
+	*/
 
 	draw_ui();
 	if(mus) proc_playlist(mus);
@@ -472,7 +490,9 @@ static void draw_ui(void)
 	select_font(FONT_VGA);
 	fnt_align(FONT_LEFT);
 
+	/*
 	fnt_printf(fb_pixels, 0, 20, "t:%.3f", projt);
+	*/
 
 	/*
 	fnt_printf(fb_pixels, 0, 40, "s:%04x", inpstate);

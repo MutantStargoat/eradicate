@@ -501,10 +501,35 @@ void zsort_scene(struct scene *scn)
 	qsort(scn->objorder, scn->num_objects, sizeof *scn->objorder, zsort_cmp);
 }
 
+void update_scene(struct scene *scn, float dt)
+{
+	int i;
+	struct object *obj;
+	struct image *tex;
+
+	for(i=0; i<scn->num_objects; i++) {
+		obj = scn->objects + i;
+		if(!(obj->flags & OBJFLAG_VISIBLE)) {
+			continue;
+		}
+		tex = obj->tex;
+		if(tex && tex->num_frames > 1) {
+			tex->cur_dur += dt;
+			if(tex->cur_dur >= tex->frame_interval) {
+				tex->cur_dur -= tex->frame_interval;
+				if(++tex->cur_frame >= tex->num_frames) {
+					tex->cur_frame = 0;
+				}
+			}
+		}
+	}
+}
+
 void draw_scene(struct scene *scn)
 {
 	int i;
 	struct object *obj;
+	struct image *tex;
 	unsigned int prevopt;
 
 	for(i=0; i<scn->num_objects; i++) {
@@ -520,13 +545,28 @@ void draw_scene(struct scene *scn)
 			g3d_enable(G3D_ADD_BLEND);
 		}
 
-		if(obj->tex) {
+		tex = obj->tex;
+		if(tex) {
 			g3d_enable(G3D_TEXTURE_2D);
-			g3d_set_texture(obj->tex->width, obj->tex->height, obj->tex->pixels);
+			g3d_set_texture(tex->width, tex->height, tex->pixels);
+
+			if(tex->num_frames > 1) {
+				int cur = tex->cur_frame;
+				g3d_enable(G3D_TEXTURE_MAT);
+				g3d_matrix_mode(G3D_TEXTURE);
+				g3d_load_identity();
+				g3d_translate(tex->uoffs[cur], tex->voffs[cur], 0);
+			}
 		} else {
 			g3d_disable(G3D_TEXTURE_2D);
 		}
 		draw_mesh(&obj->mesh);
+
+		if(tex && tex->num_frames > 1) {
+			g3d_load_identity();
+			g3d_matrix_mode(G3D_MODELVIEW);
+			g3d_disable(G3D_TEXTURE_MAT);
+		}
 
 		g3d_setopt(prevopt, G3D_ALPHA_BLEND | G3D_ADD_BLEND);
 	}
