@@ -70,7 +70,8 @@ static struct playlist *mus;
 
 static int hold;
 static int laps;
-static long race_time;
+static long race_time, race_time_min, race_time_sec, race_time_ms;
+static int half_laps;
 
 int race_init(void)
 {
@@ -179,7 +180,7 @@ void race_start(void)
 	nseg_to_draw = 2 + opt.viewdist;
 
 	hold = 1;
-	laps = 0;
+	laps = half_laps = 0;
 
 	if(mus) {
 		shuffle_playlist(mus);
@@ -188,7 +189,7 @@ void race_start(void)
 		}
 	}
 
-	race_time = -3000;
+	race_time = -4000;
 	prev_upd = time_msec;
 }
 
@@ -227,14 +228,24 @@ static void update(void)
 	prev_upd = time_msec;
 
 	dt = dt_ms / 1000.0f;
-	race_time += dt_ms;
 
 	hold = 0;
 	if(race_time < 0) {
 		hold = 1;
+		race_time_ms = race_time_sec = race_time_min = 0;
+	} else {
+		race_time_ms = race_time;
+		race_time_sec = race_time / 1000;
+		race_time_ms %= 1000;
+		race_time_min = race_time_sec / 60;
+		race_time_sec %= 60;
 	}
+
 	if(laps >= NUM_LAPS) {
 		hold = 1;
+		pspeed -= 2.0 * BRK * dt;
+	} else {
+		race_time += dt_ms;
 	}
 
 	pspeed -= DRAG * dt;
@@ -246,22 +257,22 @@ static void update(void)
 		if(inpstate & INP_BRK_BIT) {
 			pspeed -= BRK * dt;
 		}
+	}
 
-		if(pspeed < 0) pspeed = 0;
-		if(pspeed > MAX_SPEED) pspeed = MAX_SPEED;
-		cgm_vadd_scaled(&ppos, &pdir, pspeed * dt);
+	if(pspeed < 0) pspeed = 0;
+	if(pspeed > MAX_SPEED) pspeed = MAX_SPEED;
+	cgm_vadd_scaled(&ppos, &pdir, pspeed * dt);
 
-		if(inpstate & INP_LTURN_BIT) {
-			TURN_MORE(128.0f);
-			cgm_vrotate(&pdir, dt * turn_rate, 0, 1, 0);
-		} else if(inpstate & INP_RTURN_BIT) {
-			TURN_MORE(-128.0f);
-			cgm_vrotate(&pdir, dt * turn_rate, 0, 1, 0);
-		} else {
-			proll -= proll * 4.0f * dt;
-			if(fabs(proll) < 0.01f) proll = 0.0f;
-			turn_rate = 0;
-		}
+	if(inpstate & INP_LTURN_BIT) {
+		TURN_MORE(128.0f);
+		cgm_vrotate(&pdir, dt * turn_rate, 0, 1, 0);
+	} else if(inpstate & INP_RTURN_BIT) {
+		TURN_MORE(-128.0f);
+		cgm_vrotate(&pdir, dt * turn_rate, 0, 1, 0);
+	} else {
+		proll -= proll * 4.0f * dt;
+		if(fabs(proll) < 0.01f) proll = 0.0f;
+		turn_rate = 0;
 	}
 
 	projt = curve_proj_guess(path, &ppos, projt, &proj_pos);
@@ -487,10 +498,22 @@ static void draw_ui(void)
 		/* TODO do something resolution-independent (or just provide a few sizes of fonts) */
 	}
 
+	select_font(FONT_MENU);
+	fnt_align(FONT_RIGHT);
+	fnt_printf(fb_pixels, fb_width - 10, 5, "%02d:%02d:%02d", race_time_min, race_time_sec, race_time_ms / 10);
+	fnt_printf(fb_pixels, fb_width - 10, 25, "LAP %d/%d", laps + 1, NUM_LAPS);
+
+	if(race_time <= 1000 && race_time > -3000) {
+		const char *fmt = race_time <= -50 ? "%d" : "GO!";
+		select_font(FONT_MENU_SHADEDHL_BIG);
+		fnt_align(FONT_CENTER);
+
+		fnt_printf(fb_pixels, fb_width / 2, fb_height / 3, fmt, -race_time / 1000 + 1);
+	}
+	/*
 	select_font(FONT_VGA);
 	fnt_align(FONT_LEFT);
 
-	/*
 	fnt_printf(fb_pixels, 0, 20, "t:%.3f", projt);
 	*/
 
