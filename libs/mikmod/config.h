@@ -26,6 +26,20 @@
 
 #define STDC_HEADERS 1
 
-#define DRV_SDL	1
+#ifdef __linux__
+#define DRV_ALSA	1
+#endif
+
+#ifdef __FreeBSD__
+#define DRV_OSS		1
+#endif
+
+#ifdef __sgi__
+#define DRV_SGI		1
+#endif
+
+#ifdef WIN32
+#define DRV_XAUDIO2	1
+#endif
 
 #endif	/* MIKMOD_CONFIG_H_ */

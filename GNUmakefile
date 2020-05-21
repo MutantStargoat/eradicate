@@ -1,22 +1,19 @@
-csrc = $(wildcard src/*.c) $(wildcard src/sdl/*.c) $(wildcard src/3dgfx/*.c)
+csrc = $(wildcard src/*.c) $(wildcard src/glut/*.c) $(wildcard src/3dgfx/*.c)
 asmsrc = $(wildcard src/*.asm)
 
 obj = $(csrc:.c=.o) $(asmsrc:.asm=.o)
 dep = $(obj:.o=.d)
 bin = game
 
-inc = -Isrc -Isrc/sdl -Isrc/3dgfx -Ilibs/imago/src -Ilibs/cgmath/src \
+inc = -Isrc -Isrc/glut -Isrc/3dgfx -Ilibs/imago/src -Ilibs/cgmath/src \
 	  -Ilibs/mikmod/include
 warn = -pedantic -Wall
 
-CFLAGS = $(arch) $(warn) -O3 -ffast-math -g -MMD $(def) $(inc) `sdl-config --cflags`
-LDFLAGS = $(arch) -Llibs/imago -limago -Llibs/mikmod -lmikmod $(sdl_ldflags) -lm
+CFLAGS = $(arch) $(warn) -O3 -fno-pie -ffast-math -g -MMD $(def) $(inc)
+LDFLAGS = $(arch) -no-pie -Llibs/imago -limago -Llibs/mikmod -lmikmod -lm
 
 ifneq ($(shell uname -m), i386)
 	arch = -m32
-	sdl_ldflags = -L/usr/lib/i386-linux-gnu -lSDL-1.2
-else
-	sdl_ldflags = `sdl-config --libs`
 endif
 
 sys ?= $(shell uname -s | sed 's/MINGW.*/mingw/')
@@ -27,10 +24,10 @@ ifeq ($(sys), mingw)
 	bin = game_win32.exe
 
 	def = -DMIKMOD_STATIC
-	sdl_ldflags = `sdl-config --libs`
-	LDFLAGS += -lmingw32 -lwinmm -mconsole
+	LDFLAGS += -lmingw32 -lwinmm -mconsole -lopengl32 -lfreeglut
 else
 	def = -DUSE_MMX
+	LDFLAGS += -lasound -lGL -lglut
 endif
 
 
@@ -48,6 +45,9 @@ $(bin): $(obj) imago mikmod
 %.w32.o: %.c
 	$(CC) -o $@ $(CFLAGS) -c $<
 
+.PHONY: libs
+libs: imago mikmod
+
 .PHONY: imago
 imago:
 	$(MAKE) -C libs/imago
@@ -63,6 +63,11 @@ clean:
 .PHONY: cleandep
 cleandep:
 	rm -f $(dep)
+
+.PHONY: clean-libs
+clean-libs:
+	$(MAKE) -C libs/imago clean
+	$(MAKE) -C libs/mikmod clean
 
 .PHONY: data
 data:
