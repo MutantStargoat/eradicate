@@ -15,6 +15,8 @@
 #include "joy.h"
 #include "playlist.h"
 
+#define MIN_UPD_INTERVAL	12
+
 #define NUM_LAPS	3
 
 #define SKY_SUBDIV	3
@@ -224,7 +226,11 @@ static void update(void)
 	cgm_vec3 targ, up = {0, 1, 0};
 	cgm_vec3 offs_dir, path_dir;
 	float dt, s, lensq, prev_t;
-	long dt_ms = time_msec - prev_upd;
+	long dt_ms;
+
+	if((dt_ms = time_msec - prev_upd) < MIN_UPD_INTERVAL) {
+		return;
+	}
 	prev_upd = time_msec;
 
 	dt = dt_ms / 1000.0f;
@@ -346,7 +352,7 @@ static void update(void)
 
 void race_draw(void)
 {
-	int i, j;
+	int i, j, seg;
 
 	update();
 	memset(fb_pixels, 0, fb_size);
@@ -358,10 +364,11 @@ void race_draw(void)
 
 	g3d_load_matrix(cam[act_cam].matrix);
 
+	seg = vis_seg;
 	for(i=0; i<nseg_to_draw + 1; i++) {
 		/* draw detail meshes from the background layers (0,1) before drawing the road */
 		for(j=0; j<2; j++) {
-			struct scene *scn = trk.tseg[vis_seg].scn + j;
+			struct scene *scn = trk.tseg[seg].scn + j;
 			if(scn->num_objects > 0) {
 				zsort_scene(scn);
 				draw_scene(scn);
@@ -370,22 +377,22 @@ void race_draw(void)
 
 		g3d_set_texture(road_tex.width, road_tex.height, road_tex.pixels);
 		g3d_enable(G3D_TEXTURE_2D);
-		draw_mesh(&trk.tseg[vis_seg].mesh);
+		draw_mesh(&trk.tseg[seg].mesh);
 
 		/* draw detail meshes from the foreground layers (2,3) before drawing the road */
 		for(j=2; j<4; j++) {
-			struct scene *scn = trk.tseg[vis_seg].scn + j;
+			struct scene *scn = trk.tseg[seg].scn + j;
 			if(scn->num_objects > 0) {
 				zsort_scene(scn);
 				draw_scene(scn);
 			}
 		}
 
-		vis_seg -= vis_seg_inc;
-		if(vis_seg < 0) {
-			vis_seg = trk.num_tseg - 1;
-		} else if(vis_seg >= trk.num_tseg) {
-			vis_seg = 0;
+		seg -= vis_seg_inc;
+		if(seg < 0) {
+			seg = trk.num_tseg - 1;
+		} else if(seg >= trk.num_tseg) {
+			seg = 0;
 		}
 	}
 
