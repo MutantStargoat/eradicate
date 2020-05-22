@@ -8,8 +8,11 @@ bin = game
 inc = -Isrc -Isrc/glut -Isrc/3dgfx -Ilibs/imago/src -Ilibs/cgmath/src \
 	  -Ilibs/mikmod/include
 warn = -pedantic -Wall
+opt = -O3 -ffast-math
+dbg = -g
 
-CFLAGS = $(arch) $(warn) -O3 -fno-pie -ffast-math -g -MMD $(def) $(inc)
+CFLAGS = $(arch) $(warn) $(opt) -fno-pie -fno-strict-aliasing $(dbg) -MMD \
+		 $(def) $(inc)
 LDFLAGS = $(arch) -no-pie -Llibs/imago -limago -Llibs/mikmod -lmikmod -lm
 
 ifneq ($(shell uname -m), i386)
@@ -23,8 +26,9 @@ ifeq ($(sys), mingw)
 
 	bin = game_win32.exe
 
-	def = -DMIKMOD_STATIC
-	LDFLAGS += -lmingw32 -lwinmm -mconsole -lopengl32 -lfreeglut
+	def = -DMIKMOD_STATIC -DFREEGLUT_STATIC
+	LDFLAGS += -static-libgcc -lmingw32 -mconsole -ldsound -lfreeglut_static \
+			   -lgdi32 -lwinmm -lopengl32 -ldsound
 else
 	def = -DUSE_MMX
 	LDFLAGS += -lasound -lGL -lglut

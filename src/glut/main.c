@@ -10,6 +10,9 @@
 #include "input.h"
 #include "audio.h"
 
+#ifndef GL_UNSIGNED_SHORT_5_6_5
+#define GL_UNSIGNED_SHORT_5_6_5	0x8363
+#endif
 
 static void display(void);
 static void idle(void);
@@ -54,7 +57,8 @@ static void (*glx_swap_interval_sgi)();
 #endif
 #ifdef WIN32
 #include <windows.h>
-static int (*wgl_swap_interval_ext)(int);
+#include <GL/wgl.h>
+static PFNWGLSWAPINTERVALEXTPROC wgl_swap_interval_ext;
 #endif
 
 int main(int argc, char **argv)

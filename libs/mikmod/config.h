@@ -39,7 +39,7 @@
 #endif
 
 #ifdef WIN32
-#define DRV_XAUDIO2	1
+#define DRV_DS	1
 #endif
 
 #endif	/* MIKMOD_CONFIG_H_ */

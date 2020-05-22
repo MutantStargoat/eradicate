@@ -31,7 +31,7 @@ int au_init(void)
 #elif defined(__sgi__)
 	MikMod_RegisterDriver(&drv_sgi);
 #elif defined(WIN32)
-	MikMod_RegisterDriver(&drv_xaudio2);
+	MikMod_RegisterDriver(&drv_ds);
 #else
 	MikMod_RegisterDriver(&drv_nos);
 #endif
