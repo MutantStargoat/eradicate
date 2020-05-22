@@ -499,6 +499,8 @@ static void draw_ui(void)
 	g3d_load_identity();
 
 	/* draw speedometer */
+	g3d_disable(G3D_TEXTURE_2D);
+
 	g3d_translate(fb_width * 0.7, fb_height * 0.05, 0);
 	g3d_scale(fb_width / 5.0f, fb_height / 6.0f, 1);
 	g3d_polygon_mode(G3D_FLAT);
