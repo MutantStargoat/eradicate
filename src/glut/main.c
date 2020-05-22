@@ -9,6 +9,7 @@
 #include "joy.h"
 #include "input.h"
 #include "audio.h"
+#include "options.h"
 
 #ifndef GL_UNSIGNED_SHORT_5_6_5
 #define GL_UNSIGNED_SHORT_5_6_5	0x8363
@@ -23,7 +24,7 @@ static void skeydown(int key, int x, int y);
 static void skeyup(int key, int x, int y);
 static int translate_special(int skey);
 static unsigned int next_pow2(unsigned int x);
-static void toggle_fullscreen(void);
+static void set_fullscreen(int fs);
 static void set_vsync(int vsync);
 
 int have_joy;
@@ -66,7 +67,7 @@ int main(int argc, char **argv)
 	glutInit(&argc, argv);
 	glutInitWindowSize(800, 600);
 	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
-	glutCreateWindow("eradicate/GLUT");
+	glutCreateWindow("eradicate - alt+enter for fullscreen");
 
 	glutDisplayFunc(display);
 	glutIdleFunc(idle);
@@ -103,6 +104,11 @@ int main(int argc, char **argv)
 	time_msec = 0;
 	if(init(argc, argv) == -1) {
 		return 1;
+	}
+	atexit(cleanup);
+
+	if(opt.fullscreen) {
+		set_fullscreen(opt.fullscreen);
 	}
 
 	reset_timer();
@@ -294,7 +300,8 @@ static void keydown(unsigned char key, int x, int y)
 	modkeys = glutGetModifiers();
 
 	if((key == '\n' || key == '\r') && (modkeys & GLUT_ACTIVE_ALT)) {
-		toggle_fullscreen();
+		opt.fullscreen ^= 1;
+		set_fullscreen(opt.fullscreen);
 		return;
 	}
 	keystate[key] = 1;
@@ -361,12 +368,10 @@ static unsigned int next_pow2(unsigned int x)
 	return x + 1;
 }
 
-static void toggle_fullscreen(void)
+static void set_fullscreen(int fs)
 {
-	static int fs;
 	static int win_x, win_y;
 
-	fs ^= 1;
 	if(fs) {
 		win_x = glutGet(GLUT_WINDOW_WIDTH);
 		win_y = glutGet(GLUT_WINDOW_HEIGHT);

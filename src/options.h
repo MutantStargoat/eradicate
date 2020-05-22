@@ -13,6 +13,9 @@ struct options {
 	int vol_master, vol_mus, vol_sfx;
 	int music;
 	struct joystick jscal;
+#ifndef MSDOS
+	int fullscreen;
+#endif
 };
 
 extern struct options opt;

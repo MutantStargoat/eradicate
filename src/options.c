@@ -48,6 +48,10 @@ int load_options(const char *fname)
 	opt.jscal.ymin = ts_lookup_int(cfg, "options.joy.ymin", DEF_JS_MIN);
 	opt.jscal.ymax = ts_lookup_int(cfg, "options.joy.ymax", DEF_JS_MAX);
 
+#ifndef MSDOS
+	opt.fullscreen = ts_lookup_int(cfg, "options.cross.fullscreen", 0);
+#endif
+
 	ts_free_tree(cfg);
 	return 0;
 }
@@ -91,6 +95,12 @@ int save_options(const char *fname)
 	WROPT(2, "ymin = %d", opt.jscal.ymin, DEF_JS_MIN);
 	WROPT(2, "ymax = %d", opt.jscal.ymax, DEF_JS_MAX);
 	fprintf(fp, "\t}\n");
+
+#ifndef MSDOS
+	fprintf(fp, "\tcross {\n");
+	WROPT(2, "fullscreen = %d", opt.fullscreen, 0);
+	fprintf(fp, "\t}\n");
+#endif
 
 	fprintf(fp, "}\n");
 	fprintf(fp, "# v" "i:ts=4 sts=4 sw=4 noexpandtab:\n");
