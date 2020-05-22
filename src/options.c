@@ -50,6 +50,7 @@ int load_options(const char *fname)
 
 #ifndef MSDOS
 	opt.fullscreen = ts_lookup_int(cfg, "options.cross.fullscreen", 0);
+	opt.scaler = ts_lookup_int(cfg, "options.cross.scaler", SCALER_NEAREST);
 #endif
 
 	ts_free_tree(cfg);
@@ -99,6 +100,7 @@ int save_options(const char *fname)
 #ifndef MSDOS
 	fprintf(fp, "\tcross {\n");
 	WROPT(2, "fullscreen = %d", opt.fullscreen, 0);
+	WROPT(2, "scaler = %d", opt.scaler, SCALER_NEAREST);
 	fprintf(fp, "\t}\n");
 #endif
 

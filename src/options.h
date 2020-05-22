@@ -1,6 +1,15 @@
 #ifndef OPTIONS_H_
 #define OPTIONS_H_
 
+#ifndef MSDOS
+enum {
+	SCALER_NEAREST,
+	SCALER_LINEAR,
+
+	NUM_SCALERS
+};
+#endif
+
 struct joystick {
 	int xmin, xmax;
 	int ymin, ymax;
@@ -15,6 +24,7 @@ struct options {
 	struct joystick jscal;
 #ifndef MSDOS
 	int fullscreen;
+	int scaler;
 #endif
 };
 

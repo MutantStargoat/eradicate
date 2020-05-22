@@ -171,8 +171,13 @@ void *set_video_mode(int idx, int nbuf)
 	tex_ysz = next_pow2(vm->ysz);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex_xsz, tex_ysz, 0, GL_RGB,
 			GL_UNSIGNED_SHORT_5_6_5, 0);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	if(opt.scaler == SCALER_LINEAR) {
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	} else {
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	}
 
 	glMatrixMode(GL_TEXTURE);
 	glLoadIdentity();
@@ -316,6 +321,17 @@ static void keyup(unsigned char key, int x, int y)
 
 static void skeydown(int key, int x, int y)
 {
+	if(key == GLUT_KEY_F5) {
+		opt.scaler = (opt.scaler + 1) % NUM_SCALERS;
+
+		if(opt.scaler == SCALER_LINEAR) {
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		} else {
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		}
+	}
 	key = translate_special(key);
 	keystate[key] = 1;
 	game_key(key, 1);
