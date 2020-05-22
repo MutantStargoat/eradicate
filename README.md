@@ -25,10 +25,11 @@ the current settings, start the game with the `-setup` option. You will only
 need to do this once; your choices are automatically saved, and will be used
 every time you start the game in the future.
 
-The GNU/Linux and Windows versions support framebuffer scaling. Use the FBSCALE
-environment variable to set the scaling factor. For example: `export FBSCALE=2`
-will result in 2x scaling. Also you can toggle between fullscreen and windowed
-modes with alt-enter.
+The cross-platform build uses OpenGL to display and scale the frame buffer,
+either in a window, or fullscreen. To toggle between windowed and fullscreen
+modes, simply press alt+enter, and the game will remember your choice next time
+it starts.  Note that OpenGL is not used for 3D rendering; rendering is still
+performed in software, and will be identical to the DOS build.
 
 Controls
 --------
@@ -94,10 +95,10 @@ First copy `libmidas.a` (DJGPP) and/or `midas.lib` (Watcom) from `data/bin` to
     root, and type `wmake`.
   - *DJGPP*: type `make -f Makefile.dj`.
 
-Build SDL version (x86 only)
-----------------------------
-To build the SDL version, you need:
-  - libSDL 1.2 (32bit version) installed.
+Build cross-platform version (x86 only)
+---------------------------------------
+To build the cross-platform version, you need:
+  - freeglut (32bit build)
   - a x86 32bit compiler toolchain (only GCC tested).
   - GNU make.
 
