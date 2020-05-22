@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <assert.h>
 #include <GL/glut.h>
 #include "game.h"
 #include "gfx.h"
@@ -17,7 +18,9 @@ static void keydown(unsigned char key, int x, int y);
 static void keyup(unsigned char key, int x, int y);
 static void skeydown(int key, int x, int y);
 static void skeyup(int key, int x, int y);
+static int translate_special(int skey);
 static unsigned int next_pow2(unsigned int x);
+static void toggle_fullscreen(void);
 static void set_vsync(int vsync);
 
 int have_joy;
@@ -36,6 +39,10 @@ static unsigned int num_pressed;
 static unsigned char keystate[256];
 
 static unsigned long start_time;
+static unsigned int modkeys;
+
+static float win_aspect;
+static unsigned int tex;
 
 #ifdef __unix__
 #include <GL/glx.h>
@@ -54,6 +61,7 @@ int main(int argc, char **argv)
 {
 	glutInit(&argc, argv);
 	glutInitWindowSize(800, 600);
+	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
 	glutCreateWindow("eradicate/GLUT");
 
 	glutDisplayFunc(display);
@@ -65,6 +73,9 @@ int main(int argc, char **argv)
 	glutSpecialUpFunc(skeyup);
 
 	glutSetCursor(GLUT_CURSOR_NONE);
+
+	glEnable(GL_TEXTURE_2D);
+	glEnable(GL_CULL_FACE);
 
 	if(!set_video_mode(match_video_mode(640, 480, 16), 1)) {
 		return 1;
@@ -81,8 +92,6 @@ int main(int argc, char **argv)
 #ifdef WIN32
 	wgl_swap_interval_ext = wglGetProcAddress("wglSwapIntervalEXT");
 #endif
-	glEnable(GL_TEXTURE_2D);
-	glEnable(GL_CULL_FACE);
 
 	if(au_init() == -1) {
 		return 1;
@@ -145,10 +154,19 @@ void *set_video_mode(int idx, int nbuf)
 		return vmem;
 	}
 
+	glGenTextures(1, &tex);
+	glBindTexture(GL_TEXTURE_2D, tex);
+
 	tex_xsz = next_pow2(vm->xsz);
 	tex_ysz = next_pow2(vm->ysz);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex_xsz, tex_ysz, 0, GL_RGB,
 			GL_UNSIGNED_SHORT_5_6_5, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glMatrixMode(GL_TEXTURE);
+	glLoadIdentity();
+	glScalef((float)vm->xsz / tex_xsz, (float)vm->ysz / tex_ysz, 1);
 
 	if(resizefb(vm->xsz, vm->ysz, vm->bpp) == -1) {
 		fprintf(stderr, "failed to allocate virtual framebuffer\n");
@@ -175,21 +193,33 @@ void blit_frame(void *pixels, int vsync)
 
 	if(show_fps) dbg_fps(pixels);
 
+	glBindTexture(GL_TEXTURE_2D, tex);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, fb_width, fb_height, GL_RGB,
 			GL_UNSIGNED_SHORT_5_6_5, pixels);
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	if(win_aspect >= fb_aspect) {
+		glScalef(fb_aspect / win_aspect, 1, 1);
+	} else {
+		glScalef(1, win_aspect / fb_aspect, 1);
+	}
+
+	glClear(GL_COLOR_BUFFER_BIT);
 
 	glBegin(GL_QUADS);
 	glTexCoord2f(0, 1);
 	glVertex2f(-1, -1);
 	glTexCoord2f(1, 1);
-	glVertex2f(-1, 1);
+	glVertex2f(1, -1);
 	glTexCoord2f(1, 0);
 	glVertex2f(1, 1);
 	glTexCoord2f(0, 0);
-	glVertex2f(1, -1);
+	glVertex2f(-1, 1);
 	glEnd();
 
 	glutSwapBuffers();
+	assert(glGetError() == GL_NO_ERROR);
 }
 
 /* joystick */
@@ -252,22 +282,68 @@ static void idle(void)
 static void reshape(int x, int y)
 {
 	glViewport(0, 0, x, y);
+	win_aspect = (float)x / (float)y;
 }
 
 static void keydown(unsigned char key, int x, int y)
 {
+	modkeys = glutGetModifiers();
+
+	if((key == '\n' || key == '\r') && (modkeys & GLUT_ACTIVE_ALT)) {
+		toggle_fullscreen();
+		return;
+	}
+	keystate[key] = 1;
+	game_key(key, 1);
 }
 
 static void keyup(unsigned char key, int x, int y)
 {
+	keystate[key] = 0;
+	game_key(key, 0);
 }
 
 static void skeydown(int key, int x, int y)
 {
+	key = translate_special(key);
+	keystate[key] = 1;
+	game_key(key, 1);
 }
 
 static void skeyup(int key, int x, int y)
 {
+	key = translate_special(key);
+	keystate[key] = 0;
+	game_key(key, 0);
+}
+
+static int translate_special(int skey)
+{
+	switch(skey) {
+	case 127:
+		return 127;
+	case GLUT_KEY_LEFT:
+		return KB_LEFT;
+	case GLUT_KEY_RIGHT:
+		return KB_RIGHT;
+	case GLUT_KEY_UP:
+		return KB_UP;
+	case GLUT_KEY_DOWN:
+		return KB_DOWN;
+	case GLUT_KEY_PAGE_UP:
+		return KB_PGUP;
+	case GLUT_KEY_PAGE_DOWN:
+		return KB_PGDN;
+	case GLUT_KEY_HOME:
+		return KB_HOME;
+	case GLUT_KEY_END:
+		return KB_END;
+	default:
+		if(skey >= GLUT_KEY_F1 && skey <= GLUT_KEY_F12) {
+			return KB_F1 + skey - GLUT_KEY_F1;
+		}
+	}
+	return 0;
 }
 
 static unsigned int next_pow2(unsigned int x)
@@ -281,13 +357,29 @@ static unsigned int next_pow2(unsigned int x)
 	return x + 1;
 }
 
+static void toggle_fullscreen(void)
+{
+	static int fs;
+	static int win_x, win_y;
+
+	fs ^= 1;
+	if(fs) {
+		win_x = glutGet(GLUT_WINDOW_WIDTH);
+		win_y = glutGet(GLUT_WINDOW_HEIGHT);
+		glutFullScreen();
+	} else {
+		glutReshapeWindow(win_x, win_y);
+	}
+}
+
 #ifdef __unix__
 static void set_vsync(int vsync)
 {
+	vsync = vsync ? 1 : 0;
 	if(glx_swap_interval_ext) {
-		glx_swap_interval_ext(xdpy, xwin, vsync ? 1 : 0);
+		glx_swap_interval_ext(xdpy, xwin, vsync);
 	} else if(glx_swap_interval_sgi) {
-		glx_swap_interval_sgi(vsync ? 1 : 0);
+		glx_swap_interval_sgi(vsync);
 	}
 }
 #endif
