@@ -74,7 +74,7 @@ void intro_draw(void)
 	fade_image(fb_pixels, logo, fade);
 #else
 	{
-		int i, j;
+		int i;
 		uint32_t *src = logo;
 		uint16_t *dest = fb_pixels;
 		for(i=0; i<640*480; i++) {

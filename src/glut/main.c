@@ -56,9 +56,9 @@ static Window xwin;
 static void (*glx_swap_interval_ext)();
 static void (*glx_swap_interval_sgi)();
 #endif
-#ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
-#include <GL/wgl.h>
+#include <GL/wglext.h>
 static PFNWGLSWAPINTERVALEXTPROC wgl_swap_interval_ext;
 #endif
 
@@ -94,8 +94,8 @@ int main(int argc, char **argv)
 		glx_swap_interval_sgi = glXGetProcAddress((unsigned char*)"glXSwapIntervalSGI");
 	}
 #endif
-#ifdef WIN32
-	wgl_swap_interval_ext = wglGetProcAddress("wglSwapIntervalEXT");
+#ifdef _WIN32
+	wgl_swap_interval_ext = (PFNWGLSWAPINTERVALEXTPROC)wglGetProcAddress("wglSwapIntervalEXT");
 #endif
 
 	if(au_init() == -1) {

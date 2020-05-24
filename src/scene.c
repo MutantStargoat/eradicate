@@ -10,7 +10,7 @@
 #include "rbtree.h"
 #include "resman.h"
 
-#if defined(__WATCOMC__) || defined(WIN32) || defined(__DJGPP__)
+#if defined(__WATCOMC__) || defined(_WIN32) || defined(__DJGPP__)
 #include <malloc.h>
 #else
 #include <alloca.h>

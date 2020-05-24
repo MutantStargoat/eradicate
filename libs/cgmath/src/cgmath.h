@@ -26,7 +26,7 @@
 #include <math.h>
 #include <string.h>
 
-#if defined(__WATCOMC__) && __WATCOMC__ < 1200
+#if (defined(__WATCOMC__) && __WATCOMC__ < 1200) || (defined(_MSC_VER) && _MSC_VER < 1800)
 #define inline __inline
 #endif
 

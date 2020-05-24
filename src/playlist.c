@@ -3,8 +3,10 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
-#ifdef __WATCOMC__
+#if defined(__WATCOMC__)
 #include <direct.h>
+#elif defined(_MSC_VER)
+#include "w32_dirent.h"
 #else
 #include <dirent.h>
 #endif

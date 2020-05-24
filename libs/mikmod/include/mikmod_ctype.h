@@ -20,6 +20,10 @@
 #ifndef MIKMOD_CTYPE_H
 #define MIKMOD_CTYPE_H
 
+#if defined(_MSC_VER) && _MSC_VER < 1400
+#define inline __inline
+#endif
+
 static inline int mik_isascii(int c) {
     return ((c & ~0x7f) == 0);
 }
