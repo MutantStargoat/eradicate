@@ -20,7 +20,7 @@
 #ifndef MIKMOD_CTYPE_H
 #define MIKMOD_CTYPE_H
 
-#if defined(_MSC_VER) && _MSC_VER < 1400
+#if defined(_MSC_VER) && _MSC_VER < 1800
 #define inline __inline
 #endif
 

@@ -41,7 +41,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="src;src\glut;libs;libs\cgmath\src;libs\imago\src;libs\mikmod\include"
-				PreprocessorDefinitions="_USE_MATH_DEFINES;MIKMOD_STATIC;FREEGLUT_STATIC"
+				PreprocessorDefinitions="_USE_MATH_DEFINES;MIKMOD_STATIC;MINIGLUT_WINMAIN"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -62,7 +62,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="imago.lib mikmod.lib freeglut_static.lib"
+				AdditionalDependencies="imago.lib mikmod.lib dsound.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="$(OutDir)"
 				GenerateDebugInformation="true"
@@ -120,7 +120,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="src;src\glut;libs;libs\cgmath\src;libs\imago\src;libs\mikmod\include"
-				PreprocessorDefinitions="_USE_MATH_DEFINES;MIKMOD_STATIC;FREEGLUT_STATIC"
+				PreprocessorDefinitions="_USE_MATH_DEFINES;MIKMOD_STATIC;MINIGLUT_WINMAIN"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -139,7 +139,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="imago.lib mikmod.lib freeglut_static.lib"
+				AdditionalDependencies="imago.lib mikmod.lib dsound.lib"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="$(OutDir)"
 				GenerateDebugInformation="true"
@@ -379,6 +379,14 @@
 				</File>
 				<File
 					RelativePath=".\src\glut\main.c"
+					>
+				</File>
+				<File
+					RelativePath=".\src\glut\miniglut.c"
+					>
+				</File>
+				<File
+					RelativePath=".\src\glut\miniglut.h"
 					>
 				</File>
 				<File

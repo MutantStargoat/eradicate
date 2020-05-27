@@ -2,6 +2,10 @@
 Microsoft Visual Studio Solution File, Format Version 9.00
 # Visual Studio 2005
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "eradicate", "eradicate.vcproj", "{17CA446D-7737-4BA2-AAF2-1C7E74D5BD93}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F938472B-00BE-4025-908F-D6D9C5BFF895} = {F938472B-00BE-4025-908F-D6D9C5BFF895}
+		{23C95258-D5AE-4AAF-A25A-989BDB9148DA} = {23C95258-D5AE-4AAF-A25A-989BDB9148DA}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "imago", "libs\imago\imago.vcproj", "{F938472B-00BE-4025-908F-D6D9C5BFF895}"
 EndProject
