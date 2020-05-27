@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <assert.h>
-#include <GL/glut.h>
+#include "miniglut.h"
 #include "game.h"
 #include "gfx.h"
 #include "timer.h"
@@ -58,8 +58,7 @@ static void (*glx_swap_interval_sgi)();
 #endif
 #ifdef _WIN32
 #include <windows.h>
-#include <GL/wglext.h>
-static PFNWGLSWAPINTERVALEXTPROC wgl_swap_interval_ext;
+static PROC wgl_swap_interval_ext;
 #endif
 
 int main(int argc, char **argv)
@@ -95,7 +94,7 @@ int main(int argc, char **argv)
 	}
 #endif
 #ifdef _WIN32
-	wgl_swap_interval_ext = (PFNWGLSWAPINTERVALEXTPROC)wglGetProcAddress("wglSwapIntervalEXT");
+	wgl_swap_interval_ext = wglGetProcAddress("wglSwapIntervalEXT");
 #endif
 
 	if(au_init() == -1) {

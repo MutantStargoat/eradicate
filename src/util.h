@@ -150,6 +150,27 @@ void debug_break(void);
 #endif
 
 #ifdef _MSC_VER
+void __inline memset16(void *dest, uint16_t val, int count)
+{
+	__asm {
+		cld
+		mov ax, val
+		mov edi, dest
+		mov ecx, count
+		test ecx, 1
+		jz memset16_dwords
+		rep stosw
+		jmp memset16_done
+		memset16_dwords:
+		shr ecx, 1
+		push ax
+		shl eax, 16
+		pop ax
+		rep stosd
+		memset16_done:
+	}
+}
+
 #define perf_start() \
 	do { \
 		__asm { \

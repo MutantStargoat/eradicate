@@ -8,7 +8,6 @@
 #define HAVE_MEMORY_H 1
 #define HAVE_POSIX_MEMALIGN 1
 #define HAVE_SETENV 1
-#define HAVE_SNPRINTF 1
 #define HAVE_STDLIB_H 1
 #define HAVE_STRINGS_H 1
 #define HAVE_STRING_H 1
@@ -16,6 +15,7 @@
 
 #if !defined(_MSC_VER) || _MSC_VER >= 1400
 #define HAVE_STDINT_H 1
+#define HAVE_SNPRINTF 1
 #endif
 
 #ifdef __unix__
@@ -44,7 +44,7 @@
 #define DRV_SGI		1
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #define DRV_DS	1
 #endif
 

@@ -16,6 +16,10 @@
 #include "game.h"
 #include "fonts.h"
 
+#ifndef S_ISREG
+#define S_ISREG(mode)	(((mode) & S_IFMT) == S_IFREG)
+#endif
+
 struct playlist {
 	struct au_module *mod;
 	char **files;

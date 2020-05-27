@@ -30,7 +30,7 @@ int au_init(void)
 	MikMod_RegisterDriver(&drv_oss);
 #elif defined(__sgi__)
 	MikMod_RegisterDriver(&drv_sgi);
-#elif defined(WIN32)
+#elif defined(_WIN32)
 	MikMod_RegisterDriver(&drv_ds);
 #else
 	MikMod_RegisterDriver(&drv_nos);
