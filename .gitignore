@@ -36,3 +36,10 @@ data
 *.DJA
 tools/mksprite/mksprite
 tools/trktool/trktool
+*Debug/
+*Release/
+*.opt
+*.plg
+*.suo
+*.ncb
+*.vcproj*
