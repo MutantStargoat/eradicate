@@ -1264,8 +1264,6 @@ static HRESULT CALLBACK handle_message(HWND win, unsigned int msg, WPARAM wparam
 	return 0;
 }
 
-#include <stdio.h>
-
 static void update_modkeys(void)
 {
 	if(GetKeyState(VK_SHIFT) & 0x8000) {
