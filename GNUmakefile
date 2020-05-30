@@ -7,6 +7,7 @@ bin = game
 
 inc = -Isrc -Isrc/glut -Isrc/3dgfx -Ilibs/imago/src -Ilibs/cgmath/src \
 	  -Ilibs/mikmod/include
+def = -DMINIGLUT_USE_LIBC -DMIKMOD_STATIC
 warn = -pedantic -Wall
 opt = -O3 -ffast-math
 dbg = -g
@@ -26,12 +27,11 @@ ifeq ($(sys), mingw)
 
 	bin = game_win32.exe
 
-	def = -DMIKMOD_STATIC -DFREEGLUT_STATIC
-	LDFLAGS += -static-libgcc -lmingw32 -mconsole -ldsound -lfreeglut_static \
-			   -lgdi32 -lwinmm -lopengl32 -ldsound
+	LDFLAGS += -static-libgcc -lmingw32 -mconsole -ldsound -lgdi32 -lwinmm \
+			   -lopengl32
 else
-	def = -DUSE_MMX
-	LDFLAGS += -lasound -lGL -lglut
+	def += -DUSE_MMX
+	LDFLAGS += -lasound -lGL -lX11
 endif
 
 

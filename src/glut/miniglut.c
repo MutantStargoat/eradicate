@@ -15,20 +15,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#ifdef MINIGLUT_USE_LIBC
-#define _GNU_SOURCE
-#include <stdlib.h>
-#include <math.h>
-#else
-static void mglut_sincosf(float angle, float *sptr, float *cptr);
-static float mglut_atan(float x);
-#endif
-
-#define PI	3.1415926536f
-
 #if defined(__unix__)
 
 #include <X11/Xlib.h>
+#include <X11/keysym.h>
 #include <X11/cursorfont.h>
 #include <GL/glx.h>
 #define BUILD_X11
@@ -46,7 +36,12 @@ static Window win, root;
 static int scr;
 static GLXContext ctx;
 static Atom xa_wm_proto, xa_wm_del_win;
+static Atom xa_net_wm_state, xa_net_wm_state_fullscr;
+static Atom xa_motif_wm_hints;
+static Atom xa_motion_event, xa_button_press_event, xa_button_release_event, xa_command_event;
 static unsigned int evmask;
+
+static int have_netwm_fullscr(void);
 
 #elif defined(_WIN32)
 
@@ -63,7 +58,6 @@ static HGLRC ctx;
 #else
 #error unsupported platform
 #endif
-
 #include <GL/gl.h>
 #include "miniglut.h"
 
@@ -76,6 +70,7 @@ struct ctx_info {
 	int srgb;
 };
 
+static void cleanup(void);
 static void create_window(const char *title);
 static void get_window_pos(int *x, int *y);
 static void get_window_size(int *w, int *h);
@@ -113,7 +108,6 @@ static int quit;
 static int upd_pending;
 static int modstate;
 
-
 void glutInit(int *argc, char **argv)
 {
 #ifdef BUILD_X11
@@ -124,8 +118,19 @@ void glutInit(int *argc, char **argv)
 	root = RootWindow(dpy, scr);
 	xa_wm_proto = XInternAtom(dpy, "WM_PROTOCOLS", False);
 	xa_wm_del_win = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
+	xa_motif_wm_hints = XInternAtom(dpy, "_MOTIF_WM_HINTS", False);
+	if(have_netwm_fullscr()) {
+		xa_net_wm_state = XInternAtom(dpy, "_NET_WM_STATE", False);
+		xa_net_wm_state_fullscr = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
+	}
+
+	xa_motion_event = XInternAtom(dpy, "MotionEvent", True);
+	xa_button_press_event = XInternAtom(dpy, "ButtonPressEvent", True);
+	xa_button_release_event = XInternAtom(dpy, "ButtonReleaseEvent", True);
+	xa_command_event = XInternAtom(dpy, "CommandEvent", True);
 
 	evmask = ExposureMask | StructureNotifyMask;
+
 #endif
 #ifdef BUILD_WIN32
 	WNDCLASSEX wc = {0};
@@ -299,7 +304,7 @@ void glutSpaceballRotateFunc(glut_cb_sbmotion func)
 	cb_sball_rotate = func;
 }
 
-void glutSpaceballBittonFunc(glut_cb_sbbutton func)
+void glutSpaceballButtonFunc(glut_cb_sbbutton func)
 {
 	cb_sball_button = func;
 }
@@ -410,206 +415,42 @@ int glutExtensionSupported(char *ext)
 	return 0;
 }
 
-/* TODO */
-void glutSolidSphere(float rad, int slices, int stacks)
-{
-	int i, j, k, gray;
-	float x, y, z, s, t, u, v, phi, theta, sintheta, costheta, sinphi, cosphi;
-	float du = 1.0f / (float)slices;
-	float dv = 1.0f / (float)stacks;
-
-	glBegin(GL_QUADS);
-	for(i=0; i<stacks; i++) {
-		v = i * dv;
-		for(j=0; j<slices; j++) {
-			u = j * du;
-			for(k=0; k<4; k++) {
-				gray = k ^ (k >> 1);
-				s = gray & 1 ? u + du : u;
-				t = gray & 2 ? v + dv : v;
-				theta = s * PI * 2.0f;
-				phi = t * PI;
-				mglut_sincosf(theta, &sintheta, &costheta);
-				mglut_sincosf(phi, &sinphi, &cosphi);
-				x = sintheta * sinphi;
-				y = costheta * sinphi;
-				z = cosphi;
-
-				glColor3f(s, t, 1);
-				glTexCoord2f(s, t);
-				glNormal3f(x, y, z);
-				glVertex3f(x * rad, y * rad, z * rad);
-			}
-		}
-	}
-	glEnd();
-}
-
-void glutWireSphere(float rad, int slices, int stacks)
-{
-	glPushAttrib(GL_POLYGON_BIT);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	glutSolidSphere(rad, slices, stacks);
-	glPopAttrib();
-}
-
-void glutSolidCube(float sz)
-{
-	int i, j, idx, gray, flip, rotx;
-	float vpos[3], norm[3];
-	float rad = sz * 0.5f;
-
-	glBegin(GL_QUADS);
-	for(i=0; i<6; i++) {
-		flip = i & 1;
-		rotx = i >> 2;
-		idx = (~i & 2) - rotx;
-		norm[0] = norm[1] = norm[2] = 0.0f;
-		norm[idx] = flip ^ ((i >> 1) & 1) ? -1 : 1;
-		glNormal3fv(norm);
-		vpos[idx] = norm[idx] * rad;
-		for(j=0; j<4; j++) {
-			gray = j ^ (j >> 1);
-			vpos[i & 2] = (gray ^ flip) & 1 ? rad : -rad;
-			vpos[rotx + 1] = (gray ^ (rotx << 1)) & 2 ? rad : -rad;
-			glTexCoord2f(gray & 1, gray >> 1);
-			glVertex3fv(vpos);
-		}
-	}
-	glEnd();
-}
-
-void glutWireCube(float sz)
-{
-	glPushAttrib(GL_POLYGON_BIT);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	glutSolidCube(sz);
-	glPopAttrib();
-}
-
-static void draw_cylinder(float rbot, float rtop, float height, int slices, int stacks)
-{
-	int i, j, k, gray;
-	float x, y, z, s, t, u, v, theta, phi, sintheta, costheta, sinphi, cosphi, rad;
-	float du = 1.0f / (float)slices;
-	float dv = 1.0f / (float)stacks;
-
-	rad = rbot - rtop;
-	phi = mglut_atan((rad < 0 ? -rad : rad) / height);
-	mglut_sincosf(phi, &sinphi, &cosphi);
-
-	glBegin(GL_QUADS);
-	for(i=0; i<stacks; i++) {
-		v = i * dv;
-		for(j=0; j<slices; j++) {
-			u = j * du;
-			for(k=0; k<4; k++) {
-				gray = k ^ (k >> 1);
-				s = gray & 2 ? u + du : u;
-				t = gray & 1 ? v + dv : v;
-				rad = rbot + (rtop - rbot) * t;
-				theta = s * PI * 2.0f;
-				mglut_sincosf(theta, &sintheta, &costheta);
-
-				x = sintheta * cosphi;
-				y = costheta * cosphi;
-				z = sinphi;
-
-				glColor3f(s, t, 1);
-				glTexCoord2f(s, t);
-				glNormal3f(x, y, z);
-				glVertex3f(sintheta * rad, costheta * rad, t * height);
-			}
-		}
-	}
-	glEnd();
-}
-
-void glutSolidCone(float base, float height, int slices, int stacks)
-{
-	draw_cylinder(base, 0, height, slices, stacks);
-}
-
-void glutWireCone(float base, float height, int slices, int stacks)
-{
-	glPushAttrib(GL_POLYGON_BIT);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	glutSolidCone(base, height, slices, stacks);
-	glPopAttrib();
-}
-
-void glutSolidCylinder(float rad, float height, int slices, int stacks)
-{
-	draw_cylinder(rad, rad, height, slices, stacks);
-}
-
-void glutWireCylinder(float rad, float height, int slices, int stacks)
-{
-	glPushAttrib(GL_POLYGON_BIT);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	glutSolidCylinder(rad, height, slices, stacks);
-	glPopAttrib();
-}
-
-void glutSolidTorus(float inner_rad, float outer_rad, int sides, int rings)
-{
-	int i, j, k, gray;
-	float x, y, z, s, t, u, v, phi, theta, sintheta, costheta, sinphi, cosphi;
-	float du = 1.0f / (float)rings;
-	float dv = 1.0f / (float)sides;
-
-	glBegin(GL_QUADS);
-	for(i=0; i<rings; i++) {
-		u = i * du;
-		for(j=0; j<sides; j++) {
-			v = j * dv;
-			for(k=0; k<4; k++) {
-				gray = k ^ (k >> 1);
-				s = gray & 1 ? u + du : u;
-				t = gray & 2 ? v + dv : v;
-				theta = s * PI * 2.0f;
-				phi = t * PI * 2.0f;
-				mglut_sincosf(theta, &sintheta, &costheta);
-				mglut_sincosf(phi, &sinphi, &cosphi);
-				x = sintheta * sinphi;
-				y = costheta * sinphi;
-				z = cosphi;
-
-				glColor3f(s, t, 1);
-				glTexCoord2f(s, t);
-				glNormal3f(x, y, z);
-
-				x = x * inner_rad + sintheta * outer_rad;
-				y = y * inner_rad + costheta * outer_rad;
-				z *= inner_rad;
-				glVertex3f(x, y, z);
-			}
-		}
-	}
-	glEnd();
-}
-
-void glutWireTorus(float inner_rad, float outer_rad, int sides, int rings)
-{
-	glPushAttrib(GL_POLYGON_BIT);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	glutSolidTorus(inner_rad, outer_rad, sides, rings);
-	glPopAttrib();
-}
-
-void glutSolidTeapot(float size)
-{
-}
-
-void glutWireTeapot(float size)
-{
-}
-
-
 
 /* --------------- UNIX/X11 implementation ----------------- */
 #ifdef BUILD_X11
+enum {
+    SPNAV_EVENT_ANY,  /* used by spnav_remove_events() */
+    SPNAV_EVENT_MOTION,
+    SPNAV_EVENT_BUTTON  /* includes both press and release */
+};
+
+struct spnav_event_motion {
+    int type;
+    int x, y, z;
+    int rx, ry, rz;
+    unsigned int period;
+    int *data;
+};
+
+struct spnav_event_button {
+    int type;
+    int press;
+    int bnum;
+};
+
+union spnav_event {
+    int type;
+    struct spnav_event_motion motion;
+    struct spnav_event_button button;
+};
+
+
 static void handle_event(XEvent *ev);
+
+static int spnav_window(Window win);
+static int spnav_event(const XEvent *xev, union spnav_event *event);
+static int spnav_remove_events(int type);
+
 
 void glutMainLoopEvent(void)
 {
@@ -622,12 +463,12 @@ void glutMainLoopEvent(void)
 	if(!upd_pending && !cb_idle) {
 		XNextEvent(dpy, &ev);
 		handle_event(&ev);
-		if(quit) return;
+		if(quit) goto end;
 	}
 	while(XPending(dpy)) {
 		XNextEvent(dpy, &ev);
 		handle_event(&ev);
-		if(quit) return;
+		if(quit) goto end;
 	}
 
 	if(cb_idle) {
@@ -637,6 +478,20 @@ void glutMainLoopEvent(void)
 	if(upd_pending && mapped) {
 		upd_pending = 0;
 		cb_display();
+	}
+
+end:
+	if(quit) {
+		cleanup();
+	}
+}
+
+static void cleanup(void)
+{
+	if(win) {
+		spnav_window(root);
+		glXMakeCurrent(dpy, 0, 0);
+		XDestroyWindow(dpy, win);
 	}
 }
 
@@ -664,6 +519,7 @@ static KeySym translate_keysym(KeySym sym)
 static void handle_event(XEvent *ev)
 {
 	KeySym sym;
+	union spnav_event sev;
 
 	switch(ev->type) {
 	case MapNotify:
@@ -684,6 +540,28 @@ static void handle_event(XEvent *ev)
 		if(ev->xclient.message_type == xa_wm_proto) {
 			if(ev->xclient.data.l[0] == xa_wm_del_win) {
 				quit = 1;
+			}
+		}
+		if(spnav_event(ev, &sev)) {
+			switch(sev.type) {
+			case SPNAV_EVENT_MOTION:
+				if(cb_sball_motion) {
+					cb_sball_motion(sev.motion.x, sev.motion.y, sev.motion.z);
+				}
+				if(cb_sball_rotate) {
+					cb_sball_rotate(sev.motion.rx, sev.motion.ry, sev.motion.rz);
+				}
+				spnav_remove_events(SPNAV_EVENT_MOTION);
+				break;
+
+			case SPNAV_EVENT_BUTTON:
+				if(cb_sball_button) {
+					cb_sball_button(sev.button.bnum + 1, sev.button.press ? GLUT_DOWN : GLUT_UP);
+				}
+				break;
+
+			default:
+				break;
 			}
 		}
 		break;
@@ -751,19 +629,123 @@ void glutSwapBuffers(void)
 	glXSwapBuffers(dpy, win);
 }
 
+/* BUG:
+ * set_fullscreen_mwm removes the decorations with MotifWM hints, and then it
+ * needs to resize the window to make it fullscreen. The way it does this is by
+ * querying the size of the root window (see get_screen_size), which in the
+ * case of multi-monitor setups will be the combined size of all monitors.
+ * This is problematic; the way to solve it is to use the XRandR extension, or
+ * the Xinerama extension, to figure out the dimensions of the correct video
+ * output, which would add potentially two extension support libraries to our
+ * dependencies list.
+ * Moreover, any X installation modern enough to support XR&R will almost
+ * certainly be running a window manager supporting the EHWM
+ * _NET_WM_STATE_FULLSCREEN method (set_fullscreen_ewmh), which does not rely
+ * on manual resizing, and is used in preference if available, making this
+ * whole endeavor pointless.
+ * So I'll just leave it with set_fullscreen_mwm covering the entire
+ * multi-monitor area for now.
+ */
+
+struct mwm_hints {
+	unsigned long flags;
+	unsigned long functions;
+	unsigned long decorations;
+	long input_mode;
+	unsigned long status;
+};
+
+#define MWM_HINTS_DECORATIONS	2
+#define MWM_DECOR_ALL			1
+
+static void set_fullscreen_mwm(int fs)
+{
+	struct mwm_hints hints;
+	int scr_width, scr_height;
+
+	if(fs) {
+		get_window_pos(&prev_win_x, &prev_win_y);
+		get_window_size(&prev_win_width, &prev_win_height);
+		get_screen_size(&scr_width, &scr_height);
+
+		hints.decorations = 0;
+		hints.flags = MWM_HINTS_DECORATIONS;
+		XChangeProperty(dpy, win, xa_motif_wm_hints, xa_motif_wm_hints, 32,
+				PropModeReplace, (unsigned char*)&hints, 5);
+
+		XMoveResizeWindow(dpy, win, 0, 0, scr_width, scr_height);
+	} else {
+		XDeleteProperty(dpy, win, xa_motif_wm_hints);
+		XMoveResizeWindow(dpy, win, prev_win_x, prev_win_y, prev_win_width, prev_win_height);
+	}
+}
+
+static int have_netwm_fullscr(void)
+{
+	int fmt;
+	long offs = 0;
+	unsigned long i, count, rem;
+	Atom prop[8], type;
+	Atom xa_net_supported = XInternAtom(dpy, "_NET_SUPPORTED", False);
+
+	do {
+		XGetWindowProperty(dpy, root, xa_net_supported, offs, 8, False, AnyPropertyType,
+				&type, &fmt, &count, &rem, (unsigned char**)prop);
+
+		for(i=0; i<count; i++) {
+			if(prop[i] == xa_net_wm_state_fullscr) {
+				return 1;
+			}
+		}
+		offs += count;
+	} while(rem > 0);
+
+	return 0;
+}
+
+static void set_fullscreen_ewmh(int fs)
+{
+	XClientMessageEvent msg = {0};
+
+	msg.type = ClientMessage;
+	msg.window = win;
+	msg.message_type = xa_net_wm_state;	/* _NET_WM_STATE */
+	msg.format = 32;
+	msg.data.l[0] = fs ? 1 : 0;
+	msg.data.l[1] = xa_net_wm_state_fullscr;	/* _NET_WM_STATE_FULLSCREEN */
+	msg.data.l[2] = 0;
+	msg.data.l[3] = 1;	/* source regular application */
+	XSendEvent(dpy, root, False, SubstructureNotifyMask | SubstructureRedirectMask, (XEvent*)&msg);
+}
+
+static void set_fullscreen(int fs)
+{
+	if(fullscreen == fs) return;
+
+	if(xa_net_wm_state && xa_net_wm_state_fullscr) {
+		set_fullscreen_ewmh(fs);
+		fullscreen = fs;
+	} else if(xa_motif_wm_hints) {
+		set_fullscreen_mwm(fs);
+		fullscreen = fs;
+	}
+}
+
 void glutPositionWindow(int x, int y)
 {
+	set_fullscreen(0);
 	XMoveWindow(dpy, win, x, y);
 }
 
 void glutReshapeWindow(int xsz, int ysz)
 {
+	set_fullscreen(0);
 	XResizeWindow(dpy, win, xsz, ysz);
 }
 
 void glutFullScreen(void)
 {
-	/* TODO */
+	set_fullscreen(1);
 }
 
 void glutSetWindowTitle(const char *title)
@@ -872,7 +854,7 @@ static XVisualInfo *choose_visual(unsigned int mode)
 
 static void create_window(const char *title)
 {
-	XSetWindowAttributes xattr;
+	XSetWindowAttributes xattr = {0};
 	XVisualInfo *vi;
 	unsigned int xattr_mask;
 	unsigned int mode = init_mode;
@@ -902,7 +884,7 @@ static void create_window(const char *title)
 
 	xattr.background_pixel = BlackPixel(dpy, scr);
 	xattr.colormap = XCreateColormap(dpy, root, vi->visual, AllocNone);
-	xattr_mask = CWBackPixel | CWColormap;
+	xattr_mask = CWBackPixel | CWColormap | CWBackPixmap | CWBorderPixel;
 	if(!(win = XCreateWindow(dpy, root, init_x, init_y, init_width, init_height, 0,
 			vi->depth, InputOutput, vi->visual, xattr_mask, &xattr))) {
 		XFree(vi);
@@ -912,6 +894,8 @@ static void create_window(const char *title)
 	XFree(vi);
 
 	XSelectInput(dpy, win, evmask);
+
+	spnav_window(win);
 
 	glutSetWindowTitle(title);
 	glutSetIconTitle(title);
@@ -923,10 +907,8 @@ static void create_window(const char *title)
 
 static void get_window_pos(int *x, int *y)
 {
-	XWindowAttributes wattr;
-	XGetWindowAttributes(dpy, win, &wattr);
-	*x = wattr.x;
-	*y = wattr.y;
+	Window child;
+	XTranslateCoordinates(dpy, win, root, 0, 0, x, y, &child);
 }
 
 static void get_window_size(int *w, int *h)
@@ -944,6 +926,149 @@ static void get_screen_size(int *scrw, int *scrh)
 	*scrw = wattr.width;
 	*scrh = wattr.height;
 }
+
+
+/* spaceball */
+enum {
+  CMD_APP_WINDOW = 27695,
+  CMD_APP_SENS
+};
+
+static Window get_daemon_window(Display *dpy);
+static int catch_badwin(Display *dpy, XErrorEvent *err);
+
+#define SPNAV_INITIALIZED	(xa_motion_event)
+
+static int spnav_window(Window win)
+{
+	int (*prev_xerr_handler)(Display*, XErrorEvent*);
+	XEvent xev;
+	Window daemon_win;
+
+	if(!SPNAV_INITIALIZED) {
+		return -1;
+	}
+
+	if(!(daemon_win = get_daemon_window(dpy))) {
+		return -1;
+	}
+
+	prev_xerr_handler = XSetErrorHandler(catch_badwin);
+
+	xev.type = ClientMessage;
+	xev.xclient.send_event = False;
+	xev.xclient.display = dpy;
+	xev.xclient.window = win;
+	xev.xclient.message_type = xa_command_event;
+	xev.xclient.format = 16;
+	xev.xclient.data.s[0] = ((unsigned int)win & 0xffff0000) >> 16;
+	xev.xclient.data.s[1] = (unsigned int)win & 0xffff;
+	xev.xclient.data.s[2] = CMD_APP_WINDOW;
+
+	XSendEvent(dpy, daemon_win, False, 0, &xev);
+	XSync(dpy, False);
+
+	XSetErrorHandler(prev_xerr_handler);
+	return 0;
+}
+
+static Bool match_events(Display *dpy, XEvent *xev, char *arg)
+{
+	int evtype = *(int*)arg;
+
+	if(xev->type != ClientMessage) {
+		return False;
+	}
+
+	if(xev->xclient.message_type == xa_motion_event) {
+		return !evtype || evtype == SPNAV_EVENT_MOTION ? True : False;
+	}
+	if(xev->xclient.message_type == xa_button_press_event ||
+			xev->xclient.message_type == xa_button_release_event) {
+		return !evtype || evtype == SPNAV_EVENT_BUTTON ? True : False;
+	}
+	return False;
+}
+
+static int spnav_remove_events(int type)
+{
+	int rm_count = 0;
+	XEvent xev;
+	while(XCheckIfEvent(dpy, &xev, match_events, (char*)&type)) {
+		rm_count++;
+	}
+	return rm_count;
+}
+
+static int spnav_event(const XEvent *xev, union spnav_event *event)
+{
+	int i;
+	int xmsg_type;
+
+	xmsg_type = xev->xclient.message_type;
+
+	if(xmsg_type != xa_motion_event && xmsg_type != xa_button_press_event &&
+			xmsg_type != xa_button_release_event) {
+		return 0;
+	}
+
+	if(xmsg_type == xa_motion_event) {
+		event->type = SPNAV_EVENT_MOTION;
+		event->motion.data = &event->motion.x;
+
+		for(i=0; i<6; i++) {
+			event->motion.data[i] = xev->xclient.data.s[i + 2];
+		}
+		event->motion.period = xev->xclient.data.s[8];
+	} else {
+		event->type = SPNAV_EVENT_BUTTON;
+		event->button.press = xmsg_type == xa_button_press_event ? 1 : 0;
+		event->button.bnum = xev->xclient.data.s[2];
+	}
+	return event->type;
+}
+
+static int mglut_strcmp(const char *s1, const char *s2)
+{
+	while(*s1 && *s1 == *s2) {
+		s1++;
+		s2++;
+	}
+	return *s1 - *s2;
+}
+
+static Window get_daemon_window(Display *dpy)
+{
+	Window win;
+	XTextProperty wname;
+	Atom type;
+	int fmt;
+	unsigned long nitems, bytes_after;
+	unsigned char *prop;
+
+	XGetWindowProperty(dpy, root, xa_command_event, 0, 1, False, AnyPropertyType,
+			&type, &fmt, &nitems, &bytes_after, &prop);
+	if(!prop) {
+		return 0;
+	}
+
+	win = *(Window*)prop;
+	XFree(prop);
+
+	if(!XGetWMName(dpy, win, &wname) || mglut_strcmp("Magellan Window", (char*)wname.value) != 0) {
+		return 0;
+	}
+
+	return win;
+}
+
+static int catch_badwin(Display *dpy, XErrorEvent *err)
+{
+	return 0;
+}
+
+
+
 #endif	/* BUILD_X11 */
 
 
@@ -997,6 +1122,15 @@ void glutMainLoopEvent(void)
 	if(upd_pending && mapped) {
 		upd_pending = 0;
 		cb_display();
+	}
+}
+
+static void cleanup(void)
+{
+	if(win) {
+		wglMakeCurrent(dc, 0);
+		wglDeleteContext(ctx);
+		UnregisterClass("MiniGLUT", hinst);
 	}
 }
 
@@ -1085,51 +1219,158 @@ void glutSetCursor(int cidx)
 	}
 }
 
+#define WGL_DRAW_TO_WINDOW	0x2001
+#define WGL_SUPPORT_OPENGL	0x2010
+#define WGL_DOUBLE_BUFFER	0x2011
+#define WGL_STEREO			0x2012
+#define WGL_PIXEL_TYPE		0x2013
+#define WGL_COLOR_BITS		0x2014
+#define WGL_RED_BITS		0x2015
+#define WGL_GREEN_BITS		0x2017
+#define WGL_BLUE_BITS		0x2019
+#define WGL_ALPHA_BITS		0x201b
+#define WGL_ACCUM_BITS		0x201d
+#define WGL_DEPTH_BITS		0x2022
+#define WGL_STENCIL_BITS	0x2023
 
-static void create_window(const char *title)
+#define WGL_TYPE_RGBA		0x202b
+#define WGL_TYPE_COLORINDEX	0x202c
+
+#define WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB	0x20a9
+#define WGL_SAMPLE_BUFFERS_ARB				0x2041
+#define WGL_SAMPLES_ARB						0x2042
+
+static PROC wglChoosePixelFormat;
+static PROC wglGetPixelFormatAttribiv;
+
+#define ATTR(a, v) \
+	do { *aptr++ = (a); *aptr++ = (v); } while(0)
+
+static unsigned int choose_pixfmt(unsigned int mode)
 {
+	unsigned int num_pixfmt, pixfmt = 0;
+	int attr[32] = { WGL_DRAW_TO_WINDOW, 1, WGL_SUPPORT_OPENGL, 1 };
+
+	int *aptr = attr;
+	int *samples = 0;
+
+	if(mode & GLUT_DOUBLE) {
+		ATTR(WGL_DOUBLE_BUFFER, 1);
+	}
+
+	ATTR(WGL_PIXEL_TYPE, mode & GLUT_INDEX ? WGL_TYPE_COLORINDEX : WGL_TYPE_RGBA);
+	ATTR(WGL_COLOR_BITS, 8);
+	if(mode & GLUT_ALPHA) {
+		ATTR(WGL_ALPHA_BITS, 4);
+	}
+	if(mode & GLUT_DEPTH) {
+		ATTR(WGL_DEPTH_BITS, 16);
+	}
+	if(mode & GLUT_STENCIL) {
+		ATTR(WGL_STENCIL_BITS, 1);
+	}
+	if(mode & GLUT_ACCUM) {
+		ATTR(WGL_ACCUM_BITS, 1);
+	}
+	if(mode & GLUT_STEREO) {
+		ATTR(WGL_STEREO, 1);
+	}
+	if(mode & GLUT_SRGB) {
+		ATTR(WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB, 1);
+	}
+	if(mode & GLUT_MULTISAMPLE) {
+		ATTR(WGL_SAMPLE_BUFFERS_ARB, 1);
+		*aptr++ = WGL_SAMPLES_ARB;
+		samples = aptr;
+		*aptr++ = 32;
+	}
+	*aptr++ = 0;
+
+	while((!wglChoosePixelFormat(dc, attr, 0, 1, &pixfmt, &num_pixfmt) || !num_pixfmt) && samples && *samples) {
+		*samples >>= 1;
+		if(!*samples) {
+			aptr[-3] = 0;
+		}
+	}
+	return pixfmt;
+}
+
+static PIXELFORMATDESCRIPTOR tmppfd = {
+	sizeof tmppfd, 1, PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
+	PFD_TYPE_RGBA, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 24, 8, 0,
+	PFD_MAIN_PLANE, 0, 0, 0, 0
+};
+#define TMPCLASS	"TempMiniGLUT"
+
+#define GETATTR(attr, vptr) \
+	do { \
+		int gattr = attr; \
+		wglGetPixelFormatAttribiv(dc, pixfmt, 0, 1, &gattr, vptr); \
+	} while(0)
+
+static int create_window_wglext(const char *title, int width, int height)
+{
+	WNDCLASSEX wc = {0};
+	HWND tmpwin = 0;
+	HDC tmpdc = 0;
+	HGLRC tmpctx = 0;
 	int pixfmt;
-	PIXELFORMATDESCRIPTOR pfd = {0};
-	RECT rect;
 
-	rect.left = init_x;
-	rect.top = init_y;
-	rect.right = init_x + init_width;
-	rect.bottom = init_y + init_height;
-	AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, 0);
+	/* create a temporary window and GL context, just to query and retrieve
+	 * the wglChoosePixelFormatEXT function
+	 */
+	wc.cbSize = sizeof wc;
+	wc.hbrBackground = GetStockObject(BLACK_BRUSH);
+	wc.hCursor = LoadCursor(0, IDC_ARROW);
+	wc.hIcon = wc.hIconSm = LoadIcon(0, IDI_APPLICATION);
+	wc.hInstance = hinst;
+	wc.lpfnWndProc = DefWindowProc;
+	wc.lpszClassName = TMPCLASS;
+	wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+	if(!RegisterClassEx(&wc)) {
+		return 0;
+	}
+	if(!(tmpwin = CreateWindow(TMPCLASS, "temp", WS_OVERLAPPEDWINDOW, 0, 0,
+					width, height, 0, 0, hinst, 0))) {
+		goto fail;
+	}
+	tmpdc = GetDC(tmpwin);
 
-	if(!(win = CreateWindow("MiniGLUT", title, WS_OVERLAPPEDWINDOW, rect.left, rect.top,
-				rect.right - rect.left, rect.bottom - rect.top, 0, 0, hinst, 0))) {
+	if(!(pixfmt = ChoosePixelFormat(tmpdc, &tmppfd)) ||
+			!SetPixelFormat(tmpdc, pixfmt, &tmppfd) ||
+			!(tmpctx = wglCreateContext(tmpdc))) {
+		goto fail;
+	}
+	wglMakeCurrent(tmpdc, tmpctx);
+
+	if(!(wglChoosePixelFormat = wglGetProcAddress("wglChoosePixelFormatARB"))) {
+		if(!(wglChoosePixelFormat = wglGetProcAddress("wglChoosePixelFormatEXT"))) {
+			goto fail;
+		}
+		if(!(wglGetPixelFormatAttribiv = wglGetProcAddress("wglGetPixelFormatAttribivEXT"))) {
+			goto fail;
+		}
+	} else {
+		if(!(wglGetPixelFormatAttribiv = wglGetProcAddress("wglGetPixelFormatAttribivARB"))) {
+			goto fail;
+		}
+	}
+	wglMakeCurrent(0, 0);
+	wglDeleteContext(tmpctx);
+	DestroyWindow(tmpwin);
+	UnregisterClass(TMPCLASS, hinst);
+
+	/* create the real window and context */
+	if(!(win = CreateWindow("MiniGLUT", title, WS_OVERLAPPEDWINDOW, init_x,
+					init_y, width, height, 0, 0, hinst, 0))) {
 		panic("Failed to create window\n");
 	}
 	dc = GetDC(win);
 
-	pfd.nSize = sizeof pfd;
-	pfd.nVersion = 1;
-	pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-	if(init_mode & GLUT_STEREO) {
-		pfd.dwFlags |= PFD_STEREO;
-	}
-	pfd.iPixelType = init_mode & GLUT_INDEX ? PFD_TYPE_COLORINDEX : PFD_TYPE_RGBA;
-	pfd.cColorBits = 24;
-	if(init_mode & GLUT_ALPHA) {
-		pfd.cAlphaBits = 8;
-	}
-	if(init_mode & GLUT_ACCUM) {
-		pfd.cAccumBits = 24;
-	}
-	if(init_mode & GLUT_DEPTH) {
-		pfd.cDepthBits = 24;
-	}
-	if(init_mode & GLUT_STENCIL) {
-		pfd.cStencilBits = 8;
-	}
-	pfd.iLayerType = PFD_MAIN_PLANE;
-
-	if(!(pixfmt = ChoosePixelFormat(dc, &pfd))) {
+	if(!(pixfmt = choose_pixfmt(init_mode))) {
 		panic("Failed to find suitable pixel format\n");
 	}
-	if(!SetPixelFormat(dc, pixfmt, &pfd)) {
+	if(!SetPixelFormat(dc, pixfmt, &tmppfd)) {
 		panic("Failed to set the selected pixel format\n");
 	}
 	if(!(ctx = wglCreateContext(dc))) {
@@ -1137,16 +1378,97 @@ static void create_window(const char *title)
 	}
 	wglMakeCurrent(dc, ctx);
 
-	DescribePixelFormat(dc, pixfmt, sizeof pfd, &pfd);
-	ctx_info.rsize = pfd.cRedBits;
-	ctx_info.gsize = pfd.cGreenBits;
-	ctx_info.bsize = pfd.cBlueBits;
-	ctx_info.asize = pfd.cAlphaBits;
-	ctx_info.zsize = pfd.cDepthBits;
-	ctx_info.ssize = pfd.cStencilBits;
-	ctx_info.dblbuf = pfd.dwFlags & PFD_DOUBLEBUFFER ? 1 : 0;
-	ctx_info.samples = 1;	/* TODO */
-	ctx_info.srgb = 0;		/* TODO */
+	GETATTR(WGL_RED_BITS, &ctx_info.rsize);
+	GETATTR(WGL_GREEN_BITS, &ctx_info.gsize);
+	GETATTR(WGL_BLUE_BITS, &ctx_info.bsize);
+	GETATTR(WGL_ALPHA_BITS, &ctx_info.asize);
+	GETATTR(WGL_DEPTH_BITS, &ctx_info.zsize);
+	GETATTR(WGL_STENCIL_BITS, &ctx_info.ssize);
+	GETATTR(WGL_DOUBLE_BUFFER, &ctx_info.dblbuf);
+	GETATTR(WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB, &ctx_info.srgb);
+	GETATTR(WGL_SAMPLES_ARB, &ctx_info.samples);
+	return 0;
+
+fail:
+	if(tmpctx) {
+		wglMakeCurrent(0, 0);
+		wglDeleteContext(tmpctx);
+	}
+	if(tmpwin) {
+		DestroyWindow(tmpwin);
+	}
+	UnregisterClass(TMPCLASS, hinst);
+	return -1;
+}
+
+
+static void create_window(const char *title)
+{
+	int pixfmt;
+	PIXELFORMATDESCRIPTOR pfd = {0};
+	RECT rect;
+	int width, height;
+
+	rect.left = init_x;
+	rect.top = init_y;
+	rect.right = init_x + init_width;
+	rect.bottom = init_y + init_height;
+	AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, 0);
+	width = rect.right - rect.left;
+	height = rect.bottom - rect.top;
+
+	if(create_window_wglext(title, width, height) == -1) {
+
+		if(!(win = CreateWindow("MiniGLUT", title, WS_OVERLAPPEDWINDOW,
+					rect.left, rect.top, width, height, 0, 0, hinst, 0))) {
+			panic("Failed to create window\n");
+		}
+		dc = GetDC(win);
+
+		pfd.nSize = sizeof pfd;
+		pfd.nVersion = 1;
+		pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+		if(init_mode & GLUT_STEREO) {
+			pfd.dwFlags |= PFD_STEREO;
+		}
+		pfd.iPixelType = init_mode & GLUT_INDEX ? PFD_TYPE_COLORINDEX : PFD_TYPE_RGBA;
+		pfd.cColorBits = 24;
+		if(init_mode & GLUT_ALPHA) {
+			pfd.cAlphaBits = 8;
+		}
+		if(init_mode & GLUT_ACCUM) {
+			pfd.cAccumBits = 24;
+		}
+		if(init_mode & GLUT_DEPTH) {
+			pfd.cDepthBits = 24;
+		}
+		if(init_mode & GLUT_STENCIL) {
+			pfd.cStencilBits = 8;
+		}
+		pfd.iLayerType = PFD_MAIN_PLANE;
+
+		if(!(pixfmt = ChoosePixelFormat(dc, &pfd))) {
+			panic("Failed to find suitable pixel format\n");
+		}
+		if(!SetPixelFormat(dc, pixfmt, &pfd)) {
+			panic("Failed to set the selected pixel format\n");
+		}
+		if(!(ctx = wglCreateContext(dc))) {
+			panic("Failed to create the OpenGL context\n");
+		}
+		wglMakeCurrent(dc, ctx);
+
+		DescribePixelFormat(dc, pixfmt, sizeof pfd, &pfd);
+		ctx_info.rsize = pfd.cRedBits;
+		ctx_info.gsize = pfd.cGreenBits;
+		ctx_info.bsize = pfd.cBlueBits;
+		ctx_info.asize = pfd.cAlphaBits;
+		ctx_info.zsize = pfd.cDepthBits;
+		ctx_info.ssize = pfd.cStencilBits;
+		ctx_info.dblbuf = pfd.dwFlags & PFD_DOUBLEBUFFER ? 1 : 0;
+		ctx_info.samples = 0;
+		ctx_info.srgb = 0;
+	}
 
 	ShowWindow(win, 1);
 	SetForegroundWindow(win);
@@ -1166,8 +1488,7 @@ static HRESULT CALLBACK handle_message(HWND win, unsigned int msg, WPARAM wparam
 		break;
 
 	case WM_DESTROY:
-		wglMakeCurrent(dc, 0);
-		wglDeleteContext(ctx);
+		cleanup();
 		quit = 1;
 		PostQuitMessage(0);
 		break;
@@ -1364,7 +1685,7 @@ static long get_msec(void)
 	}
 	return (tv.tv_sec - tv0.tv_sec) * 1000 + (tv.tv_usec - tv0.tv_usec) / 1000;
 }
-#endif
+#endif	/* UNIX */
 #ifdef _WIN32
 static long get_msec(void)
 {
@@ -1404,86 +1725,9 @@ static int sys_write(int fd, const void *buf, int count)
 	return write(fd, buf, count);
 }
 
-static int sys_gettimeofday(struct timeval *tv, struct timezone *tz)
-{
-	return gettimeofday(tv, tz);
-}
-
 #else	/* !MINIGLUT_USE_LIBC */
 
-#ifdef __GNUC__
-static void mglut_sincosf(float angle, float *sptr, float *cptr)
-{
-	asm volatile(
-		"flds %2\n\t"
-		"fsincos\n\t"
-		"fstps %1\n\t"
-		"fstps %0\n\t"
-		: "=m"(*sptr), "=m"(*cptr)
-		: "m"(angle)
-	);
-}
-
-static float mglut_atan(float x)
-{
-	float res;
-	asm volatile(
-		"flds %1\n\t"
-		"fld1\n\t"
-		"fpatan\n\t"
-		"fstps %0\n\t"
-		: "=m"(res)
-		: "m"(x)
-	);
-	return res;
-}
-#endif
-
-#ifdef _MSC_VER
-static void mglut_sincosf(float angle, float *sptr, float *cptr)
-{
-	float s, c;
-	__asm {
-		fld angle
-		fsincos
-		fstp c
-		fstp s
-	}
-	*sptr = s;
-	*cptr = c;
-}
-
-static float mglut_atan(float x)
-{
-	float res;
-	__asm {
-		fld x
-		fld1
-		fpatan
-		fstp res
-	}
-	return res;
-}
-#endif
-
-#ifdef __WATCOMC__
-#pragma aux mglut_sincosf = \
-	"fsincos" \
-	"fstp dword ptr [edx]" \
-	"fstp dword ptr [eax]" \
-	parm[8087][eax][edx]	\
-	modify[8087];
-
-#pragma aux mglut_atan = \
-	"fld1" \
-	"fpatan" \
-	parm[8087] \
-	value[8087] \
-	modify [8087];
-#endif
-
 #ifdef __linux__
-
 #ifdef __x86_64__
 static void sys_exit(int status)
 {
@@ -1509,7 +1753,7 @@ static int sys_gettimeofday(struct timeval *tv, struct timezone *tz)
 		: "a"(96), "D"(tv), "S"(tz));
 	return res;
 }
-#endif
+#endif	/* __x86_64__ */
 #ifdef __i386__
 static void sys_exit(int status)
 {
@@ -1535,8 +1779,7 @@ static int sys_gettimeofday(struct timeval *tv, struct timezone *tz)
 		: "a"(78), "b"(tv), "c"(tz));
 	return res;
 }
-#endif
-
+#endif	/* __i386__ */
 #endif	/* __linux__ */
 
 #ifdef _WIN32
@@ -1555,5 +1798,292 @@ static int sys_write(int fd, const void *buf, int count)
 	return wrsz;
 }
 #endif	/* _WIN32 */
+#endif	/* !MINIGLUT_USE_LIBC */
+
+
+/* ----------------- primitives ------------------ */
+#ifdef MINIGLUT_USE_LIBC
+#include <stdlib.h>
+#include <math.h>
+
+void mglut_sincos(float angle, float *sptr, float *cptr)
+{
+	*sptr = sin(angle);
+	*cptr = cos(angle);
+}
+
+float mglut_atan(float x)
+{
+	return atan(x);
+}
+
+#else	/* !MINIGLUT_USE_LIBC */
+
+#ifdef __GNUC__
+void mglut_sincos(float angle, float *sptr, float *cptr)
+{
+	asm volatile(
+		"flds %2\n\t"
+		"fsincos\n\t"
+		"fstps %1\n\t"
+		"fstps %0\n\t"
+		: "=m"(*sptr), "=m"(*cptr)
+		: "m"(angle)
+	);
+}
+
+float mglut_atan(float x)
+{
+	float res;
+	asm volatile(
+		"flds %1\n\t"
+		"fld1\n\t"
+		"fpatan\n\t"
+		"fstps %0\n\t"
+		: "=m"(res)
+		: "m"(x)
+	);
+	return res;
+}
+#endif
+
+#ifdef _MSC_VER
+void mglut_sincos(float angle, float *sptr, float *cptr)
+{
+	float s, c;
+	__asm {
+		fld angle
+		fsincos
+		fstp c
+		fstp s
+	}
+	*sptr = s;
+	*cptr = c;
+}
+
+float mglut_atan(float x)
+{
+	float res;
+	__asm {
+		fld x
+		fld1
+		fpatan
+		fstp res
+	}
+	return res;
+}
+#endif
+
+#ifdef __WATCOMC__
+#pragma aux mglut_sincos = \
+	"fsincos" \
+	"fstp dword ptr [edx]" \
+	"fstp dword ptr [eax]" \
+	parm[8087][eax][edx]	\
+	modify[8087];
+
+#pragma aux mglut_atan = \
+	"fld1" \
+	"fpatan" \
+	parm[8087] \
+	value[8087] \
+	modify [8087];
+#endif	/* __WATCOMC__ */
 
 #endif	/* !MINIGLUT_USE_LIBC */
+
+#define PI	3.1415926536f
+
+void glutSolidSphere(float rad, int slices, int stacks)
+{
+	int i, j, k, gray;
+	float x, y, z, s, t, u, v, phi, theta, sintheta, costheta, sinphi, cosphi;
+	float du = 1.0f / (float)slices;
+	float dv = 1.0f / (float)stacks;
+
+	glBegin(GL_QUADS);
+	for(i=0; i<stacks; i++) {
+		v = i * dv;
+		for(j=0; j<slices; j++) {
+			u = j * du;
+			for(k=0; k<4; k++) {
+				gray = k ^ (k >> 1);
+				s = gray & 1 ? u + du : u;
+				t = gray & 2 ? v + dv : v;
+				theta = s * PI * 2.0f;
+				phi = t * PI;
+				mglut_sincos(theta, &sintheta, &costheta);
+				mglut_sincos(phi, &sinphi, &cosphi);
+				x = sintheta * sinphi;
+				y = costheta * sinphi;
+				z = cosphi;
+
+				glColor3f(s, t, 1);
+				glTexCoord2f(s, t);
+				glNormal3f(x, y, z);
+				glVertex3f(x * rad, y * rad, z * rad);
+			}
+		}
+	}
+	glEnd();
+}
+
+void glutWireSphere(float rad, int slices, int stacks)
+{
+	glPushAttrib(GL_POLYGON_BIT);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glutSolidSphere(rad, slices, stacks);
+	glPopAttrib();
+}
+
+void glutSolidCube(float sz)
+{
+	int i, j, idx, gray, flip, rotx;
+	float vpos[3], norm[3];
+	float rad = sz * 0.5f;
+
+	glBegin(GL_QUADS);
+	for(i=0; i<6; i++) {
+		flip = i & 1;
+		rotx = i >> 2;
+		idx = (~i & 2) - rotx;
+		norm[0] = norm[1] = norm[2] = 0.0f;
+		norm[idx] = flip ^ ((i >> 1) & 1) ? -1 : 1;
+		glNormal3fv(norm);
+		vpos[idx] = norm[idx] * rad;
+		for(j=0; j<4; j++) {
+			gray = j ^ (j >> 1);
+			vpos[i & 2] = (gray ^ flip) & 1 ? rad : -rad;
+			vpos[rotx + 1] = (gray ^ (rotx << 1)) & 2 ? rad : -rad;
+			glTexCoord2f(gray & 1, gray >> 1);
+			glVertex3fv(vpos);
+		}
+	}
+	glEnd();
+}
+
+void glutWireCube(float sz)
+{
+	glPushAttrib(GL_POLYGON_BIT);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glutSolidCube(sz);
+	glPopAttrib();
+}
+
+static void draw_cylinder(float rbot, float rtop, float height, int slices, int stacks)
+{
+	int i, j, k, gray;
+	float x, y, z, s, t, u, v, theta, phi, sintheta, costheta, sinphi, cosphi, rad;
+	float du = 1.0f / (float)slices;
+	float dv = 1.0f / (float)stacks;
+
+	rad = rbot - rtop;
+	phi = mglut_atan((rad < 0 ? -rad : rad) / height);
+	mglut_sincos(phi, &sinphi, &cosphi);
+
+	glBegin(GL_QUADS);
+	for(i=0; i<stacks; i++) {
+		v = i * dv;
+		for(j=0; j<slices; j++) {
+			u = j * du;
+			for(k=0; k<4; k++) {
+				gray = k ^ (k >> 1);
+				s = gray & 2 ? u + du : u;
+				t = gray & 1 ? v + dv : v;
+				rad = rbot + (rtop - rbot) * t;
+				theta = s * PI * 2.0f;
+				mglut_sincos(theta, &sintheta, &costheta);
+
+				x = sintheta * cosphi;
+				y = costheta * cosphi;
+				z = sinphi;
+
+				glColor3f(s, t, 1);
+				glTexCoord2f(s, t);
+				glNormal3f(x, y, z);
+				glVertex3f(sintheta * rad, costheta * rad, t * height);
+			}
+		}
+	}
+	glEnd();
+}
+
+void glutSolidCone(float base, float height, int slices, int stacks)
+{
+	draw_cylinder(base, 0, height, slices, stacks);
+}
+
+void glutWireCone(float base, float height, int slices, int stacks)
+{
+	glPushAttrib(GL_POLYGON_BIT);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glutSolidCone(base, height, slices, stacks);
+	glPopAttrib();
+}
+
+void glutSolidCylinder(float rad, float height, int slices, int stacks)
+{
+	draw_cylinder(rad, rad, height, slices, stacks);
+}
+
+void glutWireCylinder(float rad, float height, int slices, int stacks)
+{
+	glPushAttrib(GL_POLYGON_BIT);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glutSolidCylinder(rad, height, slices, stacks);
+	glPopAttrib();
+}
+
+void glutSolidTorus(float inner_rad, float outer_rad, int sides, int rings)
+{
+	int i, j, k, gray;
+	float x, y, z, s, t, u, v, phi, theta, sintheta, costheta, sinphi, cosphi;
+	float du = 1.0f / (float)rings;
+	float dv = 1.0f / (float)sides;
+
+	glBegin(GL_QUADS);
+	for(i=0; i<rings; i++) {
+		u = i * du;
+		for(j=0; j<sides; j++) {
+			v = j * dv;
+			for(k=0; k<4; k++) {
+				gray = k ^ (k >> 1);
+				s = gray & 1 ? u + du : u;
+				t = gray & 2 ? v + dv : v;
+				theta = s * PI * 2.0f;
+				phi = t * PI * 2.0f;
+				mglut_sincos(theta, &sintheta, &costheta);
+				mglut_sincos(phi, &sinphi, &cosphi);
+				x = sintheta * sinphi;
+				y = costheta * sinphi;
+				z = cosphi;
+
+				glColor3f(s, t, 1);
+				glTexCoord2f(s, t);
+				glNormal3f(x, y, z);
+
+				x = x * inner_rad + sintheta * outer_rad;
+				y = y * inner_rad + costheta * outer_rad;
+				z *= inner_rad;
+				glVertex3f(x, y, z);
+			}
+		}
+	}
+	glEnd();
+}
+
+void glutWireTorus(float inner_rad, float outer_rad, int sides, int rings)
+{
+	glPushAttrib(GL_POLYGON_BIT);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glutSolidTorus(inner_rad, outer_rad, sides, rings);
+	glPopAttrib();
+}
+
+void glutSolidTeapot(float size)
+{
+}
+
+void glutWireTeapot(float size)
+{
+}
