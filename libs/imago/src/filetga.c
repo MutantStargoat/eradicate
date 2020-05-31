@@ -23,13 +23,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "inttypes.h"
 #include "imago2.h"
 #include "ftmodule.h"
-#include "byteord.h"
 
-#ifdef BUILD_BIGENDIAN
-#define read_int16_le(f)	read_int16_inv(f)
-#else
+
+#if  defined(__i386__) || defined(__ia64__) || defined(WIN32) || \
+    (defined(__alpha__) || defined(__alpha)) || \
+     defined(__arm__) || \
+    (defined(__mips__) && defined(__MIPSEL__)) || \
+     defined(__SYMBIAN32__) || \
+     defined(__x86_64__) || \
+     defined(__LITTLE_ENDIAN__)
+/* little endian */
 #define read_int16_le(f)	read_int16(f)
-#endif
+#else
+/* big endian */
+#define read_int16_le(f)	read_int16_inv(f)
+#endif	/* endian check */
+
 
 enum {
 	IMG_NONE,
