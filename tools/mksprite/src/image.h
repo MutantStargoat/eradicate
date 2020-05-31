@@ -1,6 +1,10 @@
 #ifndef IMAGE_H_
 #define IMAGE_H_
 
+#ifdef __mips__
+#define BUILD_BIGENDIAN
+#endif
+
 struct cmapent {
 	unsigned char r, g, b;
 };

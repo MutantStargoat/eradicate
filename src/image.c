@@ -5,6 +5,7 @@
 #include <imago2.h>
 #include "image.h"
 #include "treestor.h"
+#include "util.h"
 
 int load_image(struct image *img, const char *fname)
 {
@@ -34,6 +35,10 @@ int load_image(struct image *img, const char *fname)
 		fclose(fp);
 		return -1;
 	}
+#ifdef BUILD_BIGENDIAN
+	width = BSWAP16(width);
+	height = BSWAP16(height);
+#endif
 
 	if(!(img->pixels = malloc(width * height * 2))) {
 		fprintf(stderr, "failed to allocate %dx%d pixel buffer for %s\n", width, height, fname);
@@ -47,6 +52,17 @@ int load_image(struct image *img, const char *fname)
 		fclose(fp);
 		return -1;
 	}
+
+#ifdef BUILD_BIGENDIAN
+	{
+		int i, npix = width * height;
+		for(i=0; i<npix; i++) {
+			uint16_t p = img->pixels[i];
+			img->pixels[i] = BSWAP16(p);
+		}
+	}
+#endif
+
 	fclose(fp);
 	img->width = width;
 	img->height = height;
@@ -134,8 +150,14 @@ int dump_image(struct image *img, const char *fname)
 	FILE *fp;
 	uint16_t width, height;
 
+#ifdef BUILD_BIGENDIAN
+	int i, npix = img->width * img->height;
+	width = BSWAP16(img->width);
+	height = BSWAP16(img->height);
+#else
 	width = img->width;
 	height = img->height;
+#endif
 
 	if(!(fp = fopen(fname, "wb"))) {
 		fprintf(stderr, "dump_image: failed to open %s: %s\n", fname, strerror(errno));
@@ -144,7 +166,15 @@ int dump_image(struct image *img, const char *fname)
 	fwrite("IDUMP565", 1, 8, fp);
 	fwrite(&width, 2, 1, fp);
 	fwrite(&height, 2, 1, fp);
+
+#ifdef BUILD_BIGENDIAN
+	for(i=0; i<npix; i++) {
+		uint16_t p = BSWAP16(img->pixels[i]);
+		fwrite(&p, 2, 1, fp);
+	}
+#else
 	fwrite(img->pixels, 2, img->width * img->height, fp);
+#endif
 	fclose(fp);
 	return 0;
 }

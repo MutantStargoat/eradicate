@@ -12,12 +12,25 @@ warn = -pedantic -Wall
 opt = -O3 -ffast-math
 dbg = -g
 
+CC = gcc
 CFLAGS = $(arch) $(warn) $(opt) -fno-pie -fno-strict-aliasing $(dbg) -MMD \
 		 $(def) $(inc)
-LDFLAGS = $(arch) -no-pie -Llibs/imago -limago -Llibs/mikmod -lmikmod -lm
+LDFLAGS = $(arch) -no-pie -Llibs/imago -limago -Llibs/mikmod \
+		  -lmikmod $(sndlib_$(sys)) -lm
 
-ifneq ($(shell uname -m), i386)
+cpu ?= $(shell uname -m | sed 's/i.86/i386/')
+sys ?= $(shell uname -s)
+
+ifeq ($(cpu), i386)
+	def += -DUSE_MMX
+else ifeq ($(cpu), x86_64)
+	def += -DUSE_MMX
 	arch = -m32
+else ifeq ($(cpu), arm)
+	asmsrc =
+else
+	asmsrc =
+	def += -DBUILD_BIGENDIAN
 endif
 
 sys ?= $(shell uname -s | sed 's/MINGW.*/mingw/')
@@ -30,9 +43,11 @@ ifeq ($(sys), mingw)
 	LDFLAGS += -static-libgcc -lmingw32 -mconsole -ldsound -lgdi32 -lwinmm \
 			   -lopengl32
 else
-	def += -DUSE_MMX
-	LDFLAGS += -lasound -lGL -lX11
+	LDFLAGS += -lGL -lX11
 endif
+
+sndlib_Linux = -lasound
+sndlib_IRIX = -laudio
 
 
 .PHONY: all

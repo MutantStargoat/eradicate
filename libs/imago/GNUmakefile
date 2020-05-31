@@ -5,7 +5,12 @@ src = $(wildcard src/*.c) \
 obj = $(src:.c=.o)
 alib = libimago.a
 
-CFLAGS = -m32 -fno-pie -Wno-main -g -Izlib -Ilibpng -Ijpeglib
+CC = gcc
+CFLAGS = $(arch) -fno-pie -Wno-main -g -Izlib -Ilibpng -Ijpeglib
+
+ifeq ($(shell uname -m), x86_64)
+	arch = -m32
+endif
 
 $(alib): $(obj)
 	$(AR) rcs $@ $(obj)

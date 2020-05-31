@@ -1,5 +1,12 @@
 #!/bin/sh
 
+sys=`uname -s`
+if [ $sys = IRIX -o $sys = FreeBSD ]; then
+	MAKE=gmake
+else
+	MAKE=make
+fi
+
 [ -f ./procdata ] && cd ..
 if [ ! -f tools/procdata ]; then
 	echo 'run from the demo root directory' >&2
@@ -20,7 +27,7 @@ fi
 
 # process RLE sprites
 if [ ! -f tools/mksprite/mksprite ]; then
-	make -C tools/mksprite || exit 1
+	$MAKE -C tools/mksprite || exit 1
 fi
 alias mksprite=tools/mksprite/mksprite
 

@@ -155,10 +155,10 @@ static void unpack_bgra32(struct pixel *unp, void *pptr, int count)
 	unsigned char *pix = pptr;
 
 	for(i=0; i<count; i++) {
-		unp->b = (float)*pix++ / 255.0;
-		unp->g = (float)*pix++ / 255.0;
-		unp->r = (float)*pix++ / 255.0;
 		unp->a = (float)*pix++ / 255.0;
+		unp->r = (float)*pix++ / 255.0;
+		unp->g = (float)*pix++ / 255.0;
+		unp->b = (float)*pix++ / 255.0;
 		unp++;
 	}
 }
@@ -326,7 +326,7 @@ static void pack_rgbaf(void *pptr, struct pixel *unp, int count)
 static void pack_rgb565(void *pptr, struct pixel *unp, int count)
 {
 	int i;
-	uint16_t *pix = pptr;
+	uint16_t p, *pix = pptr;
 
 	for(i=0; i<count; i++) {
 		uint16_t r = (uint16_t)(unp->r * 31.0f);

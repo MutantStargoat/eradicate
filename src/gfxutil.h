@@ -3,6 +3,7 @@
 
 #include "inttypes.h"
 
+
 #define PACK_RGB16(r, g, b) \
 	((((uint16_t)(r) << 8) & 0xf800) | \
 	 (((uint16_t)(g) << 3) & 0x7e0) | \
@@ -12,12 +13,25 @@
 #define UNPACK_G16(c)	(((c) >> 3) & 0xfc)
 #define UNPACK_B16(c)	(((c) << 3) & 0xf8)
 
+
+#ifdef BUILD_BIGENDIAN
+
+#define PACK_RGB32(r, g, b) \
+	((((r) & 0xff) << 8) | (((g) & 0xff) << 16) | (((b) & 0xff) << 24))
+
+#define UNPACK_R32(c)	(((c) >> 8) & 0xff)
+#define UNPACK_G32(c)	(((c) >> 16) & 0xff)
+#define UNPACK_B32(c)	(((c) >> 24) & 0xff)
+
+#else	/* LITTLE_ENDIAN */
+
 #define PACK_RGB32(r, g, b) \
 	((((r) & 0xff) << 16) | (((g) & 0xff) << 8) | ((b) & 0xff))
 
 #define UNPACK_R32(c)	(((c) >> 16) & 0xff)
 #define UNPACK_G32(c)	(((c) >> 8) & 0xff)
 #define UNPACK_B32(c)	((c) & 0xff)
+#endif
 
 int clip_line(int *x0, int *y0, int *x1, int *y1, int xmin, int ymin, int xmax, int ymax);
 void draw_line(int x0, int y0, int x1, int y1, unsigned short color);

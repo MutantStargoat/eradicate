@@ -207,6 +207,11 @@ unsigned int img_gltexture_read(struct img_io *io)
 #endif
 
 #include <dlfcn.h>
+
+#ifndef RTLD_DEFAULT
+#define RTLD_DEFAULT	0
+#endif
+
 #endif
 #ifdef WIN32
 #include <windows.h>

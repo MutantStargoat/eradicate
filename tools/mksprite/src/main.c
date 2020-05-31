@@ -2,12 +2,18 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199900
 #include <stdint.h>
+#else
+#include <sys/types.h>
+#endif
 #include <assert.h>
 #include <alloca.h>
 #include "image.h"
 
 #define MAGIC	"RLESPRIT"
+
+#define BSWAP16(x)	((((x) >> 8) & 0xff) | (((x) & 0xff) << 8))
 
 struct file_header {
 	char magic[8];
@@ -188,10 +194,17 @@ int proc_sheet(const char *fname)
 	}
 
 	memcpy(hdr.magic, MAGIC, sizeof hdr.magic);
+#ifdef BUILD_BIGENDIAN
+	hdr.width = BSWAP16(xsz);
+	hdr.height = BSWAP16(ysz);
+	hdr.bpp = BSWAP16(img.bpp);
+	hdr.count = BSWAP16(num_xtiles * num_ytiles);
+#else
 	hdr.width = xsz;
 	hdr.height = ysz;
 	hdr.bpp = img.bpp;
 	hdr.count = num_xtiles * num_ytiles;
+#endif
 	fwrite(&hdr, sizeof hdr, 1, outfp);
 
 	y = rect.y;
@@ -206,6 +219,16 @@ int proc_sheet(const char *fname)
 
 	free(img.pixels);
 	return 0;
+}
+
+static void write_csop(struct csop *op)
+{
+#ifdef BUILD_BIGENDIAN
+	struct csop tmp;
+	tmp.len = BSWAP16(op->len);
+	op = &tmp;
+#endif
+	fwrite(op, sizeof *op, 1, outfp);
 }
 
 int rlesprite(struct image *img, int x, int y, int xsz, int ysz)
@@ -269,7 +292,7 @@ int rlesprite(struct image *img, int x, int y, int xsz, int ysz)
 
 		case CSOP_ENDL:
 			/* maybe at some point combine multiple endl into yskips? meh */
-			fwrite(optr, sizeof *optr, 1, outfp);
+			write_csop(optr);
 			skip_acc = 0;
 			scanptr += img->scansz;
 			pptr = scanptr;
@@ -280,11 +303,11 @@ int rlesprite(struct image *img, int x, int y, int xsz, int ysz)
 				struct csop skip = {0};
 				skip.op = CSOP_SKIP;
 				skip.len = skip_acc;
-				fwrite(&skip, sizeof skip, 1, outfp);
+				write_csop(&skip);
 				skip_acc = 0;
 			}
 
-			fwrite(optr, sizeof *optr, 1, outfp);
+			write_csop(optr);
 			fwrite(pptr, pixsz, optr->len, outfp);
 
 			pptr += optr->len * pixsz;
@@ -297,7 +320,7 @@ int rlesprite(struct image *img, int x, int y, int xsz, int ysz)
 	}
 
 	endop.op = CSOP_END;
-	fwrite(&endop, sizeof endop, 1, outfp);
+	write_csop(&endop);
 	return 0;
 }
 

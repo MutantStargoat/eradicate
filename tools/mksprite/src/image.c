@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199900
 #include <stdint.h>
+#else
+#include <sys/types.h>
+#endif
 #include <string.h>
 #include <errno.h>
 #include <assert.h>

@@ -476,8 +476,7 @@ static int zsort_cmp(const void *aptr, const void *bptr)
 	za = m[2] * ca->x + m[6] * ca->y + m[10] * ca->z + m[14];
 	zb = m[2] * cb->x + m[6] * cb->y + m[10] * cb->z + m[14];
 
-	//za -= zb;
-	return za < zb ? -1 : (za > zb ? 1 : 0);//*(int*)&za;
+	return za < zb ? -1 : (za > zb ? 1 : 0);
 }
 
 void zsort_scene(struct scene *scn)

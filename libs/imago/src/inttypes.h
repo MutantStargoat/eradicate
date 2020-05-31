@@ -44,7 +44,13 @@ typedef __int64 intptr_t;
 typedef __int32 intptr_t;
 #endif
 #else	/* not msvc */
+
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199900
 #include <stdint.h>
+#else
+#include <sys/types.h>
+#endif
+
 #endif	/* end !msvc */
 #endif	/* end !dos */
 

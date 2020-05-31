@@ -54,18 +54,25 @@ int load_sprites(struct sprites *ss, const char *fname)
 		goto err;
 	}
 
+#ifdef BUILD_BIGENDIAN
+	ss->width = BSWAP16(hdr.width);
+	ss->height = BSWAP16(hdr.height);
+	ss->bpp = BSWAP16(hdr.bpp);
+	ss->num_sprites = BSWAP16(hdr.count);
+#else
 	ss->width = hdr.width;
 	ss->height = hdr.height;
 	ss->bpp = hdr.bpp;
 	ss->num_sprites = hdr.count;
+#endif
 
-	if(!(ss->sprites = malloc(hdr.count * sizeof *ss->sprites))) {
-		fprintf(stderr, "failed to allocate %d sprites for %s\n", hdr.count, fname);
+	if(!(ss->sprites = malloc(ss->num_sprites * sizeof *ss->sprites))) {
+		fprintf(stderr, "failed to allocate %d sprites for %s\n", ss->num_sprites, fname);
 		goto err;
 	}
 
 	for(i=0; i<ss->num_sprites; i++) {
-		if(read_sprite(ss->sprites + i, (hdr.bpp + 7) / 8, fp) == -1) {
+		if(read_sprite(ss->sprites + i, (ss->bpp + 7) / 8, fp) == -1) {
 			goto err;
 		}
 	}
@@ -79,6 +86,17 @@ err:
 	return -1;
 }
 
+static int read_op(uint32_t *op, FILE *fp)
+{
+	if(fread(op, sizeof *op, 1, fp) == 0) {
+		return -1;
+	}
+#ifdef BUILD_BIGENDIAN
+	*op = BSWAP32(*op);
+#endif
+	return 0;
+}
+
 static int read_sprite(struct sprite *spr, int pixsz, FILE *fp)
 {
 	int i, idx, max_ops, newmax, len, bufsz;
@@ -90,8 +108,9 @@ static int read_sprite(struct sprite *spr, int pixsz, FILE *fp)
 
 	do {
 		/* read the op */
-		if(fread(&op, sizeof op, 1, fp) == 0) {
+		if(read_op(&op, fp) == -1) {
 			free(spr->ops);
+			fprintf(stderr, "unexpected EOF while trying to read sprite op\n");
 			return -1;
 		}
 
@@ -123,6 +142,14 @@ static int read_sprite(struct sprite *spr, int pixsz, FILE *fp)
 				fprintf(stderr, "unexpected EOF while trying to read sprite data (%d pixels)\n", len);
 				goto err;
 			}
+#ifdef BUILD_BIGENDIAN
+			{
+				uint16_t *pix = tmp;
+				for(i=0; i<len; i++) {
+					pix[i] = BSWAP16(pix[i]);
+				}
+			}
+#endif
 			spr->ops[idx].data = tmp;
 		} else {
 			spr->ops[idx].data = 0;

@@ -28,6 +28,7 @@ int init_fonts(void)
 
 	for(i=0; i<NUM_FONTS; i++) {
 		if(load_sprites(fonts + i, fontfiles[i]) == -1) {
+			fprintf(stderr, "failed to load sprite: %s\n", fontfiles[i]);
 			return -1;
 		}
 	}

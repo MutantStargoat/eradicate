@@ -16,6 +16,14 @@
 #define PACKED
 #endif
 
+#define BSWAP16(x)	((((x) >> 8) & 0xff) | (((x) & 0xff) << 8))
+#define BSWAP32(x)	\
+	((((x) >> 24) & 0xff) | \
+	 (((x) >> 8) & 0xff00) | \
+	 (((x) << 8) & 0xff0000) | \
+	 ((x) << 24))
+
+#if defined(__i386__) || defined(__x86_64__) || defined(__386__) || defined(MSDOS)
 /* fast conversion of double -> 32bit int
  * for details see:
  *  - http://chrishecker.com/images/f/fb/Gdmfp.pdf
@@ -26,6 +34,9 @@ static INLINE int32_t cround64(double val)
 	val += 6755399441055744.0;
 	return *(int32_t*)&val;
 }
+#else
+#define cround64(x)	((int32_t)(x))
+#endif
 
 static INLINE float rsqrt(float x)
 {
@@ -95,6 +106,7 @@ void debug_break(void);
 #endif
 
 #ifdef __GNUC__
+#if defined(__i386__) || defined(__x86_64__)
 #define memset16(dest, val, count) asm volatile ( \
 	"cld\n\t" \
 	"test $1, %2\n\t" \
@@ -110,6 +122,13 @@ void debug_break(void);
 	"1:\n\t"\
 	:: "D"(dest), "a"((uint16_t)(val)), "c"(count) \
 	: "memory")
+#else
+static void INLINE memset16(void *dest, uint16_t val, int count)
+{
+	uint16_t *ptr = dest;
+	while(count--) *ptr++ = val;
+}
+#endif
 
 #ifdef USE_MMX
 #define memcpy64(dest, src, count) asm volatile ( \
