@@ -19,21 +19,24 @@ LDFLAGS = $(arch) -no-pie -Llibs/imago -limago -Llibs/mikmod \
 		  -lmikmod $(sndlib_$(sys)) -lm
 
 cpu ?= $(shell uname -m | sed 's/i.86/i386/')
-sys ?= $(shell uname -s)
 
 ifeq ($(cpu), i386)
 	def += -DUSE_MMX
-else ifeq ($(cpu), x86_64)
-	def += -DUSE_MMX
-	arch = -m32
-else ifeq ($(cpu), arm)
-	asmsrc =
 else
-	asmsrc =
-	def += -DBUILD_BIGENDIAN
+	ifeq ($(cpu), x86_64)
+		def += -DUSE_MMX
+		arch = -m32
+	else
+		ifeq ($(cpu), arm)
+			asmsrc =
+		else
+			asmsrc =
+			def += -DBUILD_BIGENDIAN
+		endif
+	endif
 endif
 
-sys ?= $(shell uname -s | sed 's/MINGW.*/mingw/')
+sys ?= $(shell uname -s | sed 's/MINGW.*/mingw/; s/IRIX.*/IRIX/')
 ifeq ($(sys), mingw)
 	obj = $(csrc:.c=.w32.o)
 	dep	= $(obj:.o=.d)
