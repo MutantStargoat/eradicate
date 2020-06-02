@@ -565,7 +565,7 @@ void g3d_draw_indexed(int prim, const struct g3d_vertex *varr, int varr_size,
 				int r, g, b, inv_alpha;
 				g3d_pixel *dest = st->pixels + (pv[0].y >> 8) * st->width + (pv[0].x >> 8);
 				if(st->opt & G3D_ALPHA_BLEND) {
-					int inv_alpha = 255 - pv[0].a;
+					inv_alpha = 255 - pv[0].a;
 					r = ((int)pv[0].r * pv[0].a + G3D_UNPACK_R(*dest) * inv_alpha) >> 8;
 					g = ((int)pv[0].g * pv[0].a + G3D_UNPACK_G(*dest) * inv_alpha) >> 8;
 					b = ((int)pv[0].b * pv[0].a + G3D_UNPACK_B(*dest) * inv_alpha) >> 8;

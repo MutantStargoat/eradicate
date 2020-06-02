@@ -23,8 +23,8 @@ static int translate_special(int skey);
 static unsigned int next_pow2(unsigned int x);
 static void set_fullscreen(int fs);
 static void set_vsync(int vsync);
-static void gldebug(unsigned int src, unsigned int type, unsigned int id,
-		unsigned int severity, int length, const char *msg, const void *cls);
+/* static void gldebug(unsigned int src, unsigned int type, unsigned int id,
+		unsigned int severity, int length, const char *msg, const void *cls); */
 
 int have_joy;
 unsigned int joy_bnstate, joy_bndiff, joy_bnpress;
@@ -80,8 +80,10 @@ int main(int argc, char **argv)
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_CULL_FACE);
 
+	/*
 	glDebugMessageCallback(gldebug, 0);
 	glEnable(GL_DEBUG_OUTPUT);
+	*/
 
 	if(!set_video_mode(match_video_mode(640, 480, 16), 1)) {
 		return 1;
@@ -447,8 +449,10 @@ static void set_vsync(int vsync)
 }
 #endif
 
+/*
 static void gldebug(unsigned int src, unsigned int type, unsigned int id,
 		unsigned int severity, int length, const char *msg, const void *cls)
 {
 	fprintf(stderr, "GLDEBUG: %s\n", msg);
 }
+*/

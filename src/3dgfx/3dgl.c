@@ -1,18 +1,36 @@
 #ifdef BUILD_OPENGL
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include <GL/gl.h>
 #include "3dgfx.h"
 #include "rbtree.h"
 
+#if defined(__WATCOMC__) || defined(_WIN32) || defined(__DJGPP__)
+#include <malloc.h>
+#else
+#include <alloca.h>
+#endif
+
 #ifndef GL_GENERATE_MIPMAP_SGIS
 #define GL_GENERATE_MIPMAP_SGIS		0x8191
 #endif
+
+#define CHECK_GLERR	\
+	do { \
+		int err = glGetError(); \
+		if(err != GL_NO_ERROR) { \
+			fprintf(stderr, "GL error (%s:%d): %x\n", __FILE__, __LINE__, err); \
+			abort(); \
+		} \
+	} while(0)
 
 static float texmat[16];
 static unsigned int flags;
 static int polymode;
 static struct rbtree *textures;
+static int max_tex_size;
 
 int g3d_init(void)
 {
@@ -21,6 +39,9 @@ int g3d_init(void)
 		return -1;
 	}
 	g3d_reset();
+
+	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_tex_size);
+	printf("GL: max texture size: %d\n", max_tex_size);
 	return 0;
 }
 
@@ -335,10 +356,60 @@ void g3d_mtl_shininess(float shin)
 	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, shin);
 }
 
+static void halftex(int xsz, int ysz, uint16_t *pixels)
+{
+	int i, j, r, g, b, shift;
+	int nx = xsz >> 1;
+	int ny = ysz >> 1;
+	uint16_t *dptr, *sptr;
+
+	dptr = sptr = pixels;
+
+	if(!nx) nx = xsz;
+	if(!ny) ny = ysz;
+
+	for(i=0; i<ny; i++) {
+		for(j=0; j<nx; j++) {
+			r = UNPACK_R16(*sptr);
+			g = UNPACK_G16(*sptr);
+			b = UNPACK_B16(*sptr);
+			shift = 0;
+
+			if(nx != xsz) {
+				r += UNPACK_R16(sptr[1]);
+				g += UNPACK_G16(sptr[1]);
+				b += UNPACK_G16(sptr[1]);
+				shift++;
+			}
+			if(ny != ysz) {
+				r += UNPACK_R16(sptr[xsz]);
+				g += UNPACK_G16(sptr[xsz]);
+				b += UNPACK_B16(sptr[xsz]);
+				shift++;
+				if(nx != xsz) {
+					r += UNPACK_R16(sptr[xsz + 1]);
+					g += UNPACK_G16(sptr[xsz + 1]);
+					b += UNPACK_B16(sptr[xsz + 1]);
+				}
+			}
+
+			*dptr++ = PACK_RGB16(r >> shift, g >> shift, b >> shift);
+			if(nx != xsz) {
+				sptr += 2;
+			}
+		}
+		if(ny != ysz) {
+			sptr += xsz;
+		}
+	}
+}
+
 void g3d_set_texture(int xsz, int ysz, void *pixels)
 {
 	struct rbnode *node;
 	unsigned int tex;
+	int level = 0;
+	uint16_t *pbuf = alloca(xsz * ysz * sizeof *pbuf);
 
 	if((node = rb_find(textures, pixels))) {
 		tex = (int)node->data;
@@ -346,13 +417,24 @@ void g3d_set_texture(int xsz, int ysz, void *pixels)
 		return;
 	}
 
+	memcpy(pbuf, pixels, xsz * ysz * sizeof *pbuf);
+
 	glGenTextures(1, &tex);
 	glBindTexture(GL_TEXTURE_2D, tex);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, 1);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, xsz, ysz, 0, GL_RGB,
-			GL_UNSIGNED_SHORT_5_6_5, pixels);
+
+	while(xsz > 0 || ysz > 0) {
+		if(xsz <= max_tex_size && ysz <= max_tex_size) {
+			glTexImage2D(GL_TEXTURE_2D, level++, GL_RGB, xsz > 0 ? xsz : 1, ysz > 0 ? ysz : 1,
+					0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, pbuf);
+			CHECK_GLERR;
+		}
+
+		halftex(xsz, ysz, pbuf);
+		xsz >>= 1;
+		ysz >>= 1;
+	}
 
 	rb_insert(textures, pixels, (void*)tex);
 }
@@ -377,6 +459,8 @@ void g3d_draw(int prim, const struct g3d_vertex *varr, int varr_size)
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 	if(!(flags & G3D_TEXTURE_2D)) {
 		glEnableClientState(GL_COLOR_ARRAY);
+	} else {
+		glColor3ub(255, 255, 255);
 	}
 
 	glDrawArrays(glprim[prim], 0, varr_size);
@@ -402,6 +486,8 @@ void g3d_draw_indexed(int prim, const struct g3d_vertex *varr, int varr_size,
 	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 	if(!(flags & G3D_TEXTURE_2D)) {
 		glEnableClientState(GL_COLOR_ARRAY);
+	} else {
+		glColor3ub(255, 255, 255);
 	}
 
 	glDrawElements(glprim[prim], iarr_size, GL_UNSIGNED_SHORT, iarr);
