@@ -5,15 +5,12 @@
 #include "miniglut.h"
 #include "game.h"
 #include "gfx.h"
+#include "gfxutil.h"
 #include "timer.h"
 #include "joy.h"
 #include "input.h"
 #include "audio.h"
 #include "options.h"
-
-#ifndef GL_UNSIGNED_SHORT_5_6_5
-#define GL_UNSIGNED_SHORT_5_6_5	0x8363
-#endif
 
 static void display(void);
 static void idle(void);
@@ -26,6 +23,8 @@ static int translate_special(int skey);
 static unsigned int next_pow2(unsigned int x);
 static void set_fullscreen(int fs);
 static void set_vsync(int vsync);
+static void gldebug(unsigned int src, unsigned int type, unsigned int id,
+		unsigned int severity, int length, const char *msg, const void *cls);
 
 int have_joy;
 unsigned int joy_bnstate, joy_bndiff, joy_bnpress;
@@ -80,6 +79,9 @@ int main(int argc, char **argv)
 
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_CULL_FACE);
+
+	glDebugMessageCallback(gldebug, 0);
+	glEnable(GL_DEBUG_OUTPUT);
 
 	if(!set_video_mode(match_video_mode(640, 480, 16), 1)) {
 		return 1;
@@ -154,6 +156,8 @@ int match_video_mode(int xsz, int ysz, int bpp)
 }
 
 static int tex_xsz, tex_ysz;
+static uint32_t *convbuf;
+static int convbuf_size;
 
 void *set_video_mode(int idx, int nbuf)
 {
@@ -163,13 +167,14 @@ void *set_video_mode(int idx, int nbuf)
 		return vmem;
 	}
 
+#ifndef BUILD_OPENGL
 	glGenTextures(1, &tex);
 	glBindTexture(GL_TEXTURE_2D, tex);
 
 	tex_xsz = next_pow2(vm->xsz);
 	tex_ysz = next_pow2(vm->ysz);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex_xsz, tex_ysz, 0, GL_RGB,
-			GL_UNSIGNED_SHORT_5_6_5, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex_xsz, tex_ysz, 0, GL_RGBA,
+			GL_UNSIGNED_BYTE, 0);
 	if(opt.scaler == SCALER_LINEAR) {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -181,6 +186,13 @@ void *set_video_mode(int idx, int nbuf)
 	glMatrixMode(GL_TEXTURE);
 	glLoadIdentity();
 	glScalef((float)vm->xsz / tex_xsz, (float)vm->ysz / tex_ysz, 1);
+
+	if(vm->xsz * vm->ysz > convbuf_size) {
+		convbuf_size = vm->xsz * vm->ysz;
+		free(convbuf);
+		convbuf = malloc(convbuf_size * sizeof *convbuf);
+	}
+#endif	/* !def BUILD_OPENGL */
 
 	if(resizefb(vm->xsz, vm->ysz, vm->bpp) == -1) {
 		fprintf(stderr, "failed to allocate virtual framebuffer\n");
@@ -198,6 +210,9 @@ void wait_vsync(void)
 
 void blit_frame(void *pixels, int vsync)
 {
+	int i, npix = fb_width * fb_height;
+	uint32_t *dptr = convbuf;
+	uint16_t *sptr = pixels;
 	static int prev_vsync = -1;
 
 	if(vsync != prev_vsync) {
@@ -207,9 +222,18 @@ void blit_frame(void *pixels, int vsync)
 
 	if(show_fps) dbg_fps(pixels);
 
+#ifndef BUILD_OPENGL
+	for(i=0; i<npix; i++) {
+		int r = UNPACK_R16(*sptr);
+		int g = UNPACK_G16(*sptr);
+		int b = UNPACK_B16(*sptr);
+		*dptr++ = PACK_RGB32(b, g, r);
+		sptr++;
+	}
+
 	glBindTexture(GL_TEXTURE_2D, tex);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, fb_width, fb_height, GL_RGB,
-			GL_UNSIGNED_SHORT_5_6_5, pixels);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, fb_width, fb_height, GL_RGBA,
+			GL_UNSIGNED_BYTE, convbuf);
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
@@ -231,6 +255,7 @@ void blit_frame(void *pixels, int vsync)
 	glTexCoord2f(0, 0);
 	glVertex2f(-1, 1);
 	glEnd();
+#endif	/* !def BUILD_OPENGL */
 
 	glutSwapBuffers();
 	assert(glGetError() == GL_NO_ERROR);
@@ -284,6 +309,10 @@ static void display(void)
 {
 	inp_update();
 
+#ifdef BUILD_OPENGL
+	glClear(GL_COLOR_BUFFER_BIT);
+#endif
+
 	time_msec = get_msec();
 	draw();
 }
@@ -321,6 +350,7 @@ static void keyup(unsigned char key, int x, int y)
 static void skeydown(int key, int x, int y)
 {
 	if(key == GLUT_KEY_F5) {
+#ifndef BUILD_OPENGL
 		opt.scaler = (opt.scaler + 1) % NUM_SCALERS;
 
 		if(opt.scaler == SCALER_LINEAR) {
@@ -330,6 +360,7 @@ static void skeydown(int key, int x, int y)
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		}
+#endif	/* !def BUILD_OPENGL */
 	}
 	key = translate_special(key);
 	keystate[key] = 1;
@@ -415,3 +446,9 @@ static void set_vsync(int vsync)
 	}
 }
 #endif
+
+static void gldebug(unsigned int src, unsigned int type, unsigned int id,
+		unsigned int severity, int length, const char *msg, const void *cls)
+{
+	fprintf(stderr, "GLDEBUG: %s\n", msg);
+}

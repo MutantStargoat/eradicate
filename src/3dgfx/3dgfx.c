@@ -1,3 +1,4 @@
+#ifndef BUILD_OPENGL
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -777,3 +778,5 @@ static void shade(struct g3d_vertex *v)
 	v->g = g > 255 ? 255 : g;
 	v->b = b > 255 ? 255 : b;
 }
+
+#endif	/* !def BUILD_OPENGL */
