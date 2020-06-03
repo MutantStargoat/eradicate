@@ -7,9 +7,9 @@ bin = game
 
 inc = -Isrc -Isrc/glut -Isrc/3dgfx -Ilibs/imago/src -Ilibs/cgmath/src \
 	  -Ilibs/mikmod/include
-def = -DMINIGLUT_USE_LIBC -DMIKMOD_STATIC
+def = -DMINIGLUT_USE_LIBC -DMIKMOD_STATIC -DBUILD_OPENGL
 warn = -pedantic -Wall
-opt = -O3 -ffast-math
+#opt = -O3 -ffast-math
 dbg = -g
 
 CC = gcc

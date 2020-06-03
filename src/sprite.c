@@ -78,6 +78,9 @@ int load_sprites(struct sprites *ss, const char *fname)
 	}
 
 	fclose(fp);
+#ifdef BUILD_OPENGL
+	init_glsprites(ss);
+#endif
 	return 0;
 
 err:
@@ -167,6 +170,7 @@ err:
 	return -1;
 }
 
+#ifndef BUILD_OPENGL
 void draw_sprite(void *dest, int fbpitch, struct sprites *ss, int idx)
 {
 	struct sprite_op *sop = ss->sprites[idx].ops;
@@ -199,3 +203,4 @@ void draw_sprite(void *dest, int fbpitch, struct sprites *ss, int idx)
 		sop++;
 	}
 }
+#endif	/* !def BUILD_OPENGL */

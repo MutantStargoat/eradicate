@@ -146,10 +146,6 @@ void menu_draw(void)
 
 	if(mus) proc_playlist(mus);
 
-	if(show_fps) {
-		blit(fb_pixels, fb_width, bgpix, 64, 16, bgwidth);
-	}
-
 	blit_frame(fb_pixels, opt.vsync);
 }
 

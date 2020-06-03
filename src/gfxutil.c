@@ -243,9 +243,9 @@ void convimg_rgb24_rgb16(uint16_t *dest, unsigned char *src, int xsz, int ysz)
 
 void blit(uint16_t *dest, int destwidth, uint16_t *src, int width, int height, int pitch_pix)
 {
-	int i;
+	int i, spansz = width << 1;
 	for(i=0; i<height; i++) {
-		memcpy(dest, src, width * 2);
+		memcpy(dest, src, spansz);
 		dest += destwidth;
 		src += pitch_pix;
 	}
