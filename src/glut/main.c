@@ -12,6 +12,8 @@
 #include "audio.h"
 #include "options.h"
 
+#undef GLDEBUG
+
 static void display(void);
 static void idle(void);
 static void reshape(int x, int y);
@@ -23,8 +25,10 @@ static int translate_special(int skey);
 static unsigned int next_pow2(unsigned int x);
 static void set_fullscreen(int fs);
 static void set_vsync(int vsync);
-/* static void gldebug(unsigned int src, unsigned int type, unsigned int id,
-		unsigned int severity, int length, const char *msg, const void *cls); */
+#ifdef GLDEBUG
+static void gldebug(unsigned int src, unsigned int type, unsigned int id,
+		unsigned int severity, int length, const char *msg, const void *cls);
+#endif
 
 int have_joy;
 unsigned int joy_bnstate, joy_bndiff, joy_bnpress;
@@ -80,10 +84,10 @@ int main(int argc, char **argv)
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_CULL_FACE);
 
-	/*
+#ifdef GLDEBUG
 	glDebugMessageCallback(gldebug, 0);
 	glEnable(GL_DEBUG_OUTPUT);
-	*/
+#endif
 
 	if(!set_video_mode(match_video_mode(640, 480, 16), 1)) {
 		return 1;
@@ -326,8 +330,19 @@ static void idle(void)
 
 static void reshape(int x, int y)
 {
-	glViewport(0, 0, x, y);
 	win_aspect = (float)x / (float)y;
+#ifdef BUILD_OPENGL
+	if(!fb_aspect) fb_aspect = 1.3333333333f;
+	if(fb_aspect <= win_aspect) {
+		float gap = x - y * fb_aspect;
+		glViewport(gap / 2, 0, y * fb_aspect, y);
+	} else {
+		float gap = y - x / fb_aspect;
+		glViewport(0, gap / 2, x, x / fb_aspect);
+	}
+#else
+	glViewport(0, 0, x, y);
+#endif
 }
 
 static void keydown(unsigned char key, int x, int y)
@@ -449,10 +464,10 @@ static void set_vsync(int vsync)
 }
 #endif
 
-/*
+#ifdef GLDEBUG
 static void gldebug(unsigned int src, unsigned int type, unsigned int id,
 		unsigned int severity, int length, const char *msg, const void *cls)
 {
 	fprintf(stderr, "GLDEBUG: %s\n", msg);
 }
-*/
+#endif

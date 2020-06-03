@@ -1715,6 +1715,11 @@ static void panic(const char *msg)
 
 
 #ifdef MINIGLUT_USE_LIBC
+#include <stdlib.h>
+#ifdef __unix__
+#include <unistd.h>
+#endif
+
 static void sys_exit(int status)
 {
 	exit(status);

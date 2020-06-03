@@ -6,7 +6,6 @@
 #include "sprite.h"
 #include "gfxutil.h"
 #include "game.h"
-#include "imago2.h"
 
 struct glsprites {
 	struct sprites *ss;
@@ -45,7 +44,7 @@ static void blit_sprite(struct sprite *spr, uint32_t *fb, int fbwidth)
 				r = UNPACK_R16(*sptr);
 				g = UNPACK_G16(*sptr);
 				b = UNPACK_B16(*sptr);
-				fb[xoffs + i] = PACK_RGB32(r, g, b) | 0xff000000;
+				fb[xoffs + i] = PACK_RGB32(b, g, r) | 0xff000000;
 				sptr++;
 			}
 			xoffs += sop->size >> 1;
@@ -104,14 +103,6 @@ int init_glsprites(struct sprites *ss)
 			xoffs = 0;
 			yoffs += ss->height + PAD;
 		}
-	}
-
-	{
-		static int n;
-		static char name[32];
-
-		sprintf(name, "spr%03d.png", n++);
-		img_save_pixels(name, pixels, tex_xsz, tex_ysz, IMG_FMT_RGBA32);
 	}
 
 	gls->ss = ss;
@@ -174,6 +165,7 @@ void draw_sprite(void *dest, int fbpitch, struct sprites *ss, int idx)
 	v = gls->uvoffs[idx * 2 + 1];
 
 	glBegin(GL_QUADS);
+	glColor3f(1, 1, 1);
 	glTexCoord2f(u, v);
 	glVertex2f(0, 0);
 	glTexCoord2f(u + gls->usz, v);

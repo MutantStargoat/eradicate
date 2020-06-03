@@ -1,3 +1,8 @@
+# ---- build options ----
+# renderer = <software|opengl>
+renderer = software
+# -----------------------
+
 csrc = $(wildcard src/*.c) $(wildcard src/glut/*.c) $(wildcard src/3dgfx/*.c)
 asmsrc = $(wildcard src/*.asm)
 
@@ -7,9 +12,9 @@ bin = game
 
 inc = -Isrc -Isrc/glut -Isrc/3dgfx -Ilibs/imago/src -Ilibs/cgmath/src \
 	  -Ilibs/mikmod/include
-def = -DMINIGLUT_USE_LIBC -DMIKMOD_STATIC -DBUILD_OPENGL
+def = -DMINIGLUT_USE_LIBC -DMIKMOD_STATIC
 warn = -pedantic -Wall
-#opt = -O3 -ffast-math
+opt = -O3 -ffast-math
 dbg = -g
 
 CC = gcc
@@ -46,12 +51,15 @@ ifeq ($(sys), mingw)
 	LDFLAGS += -static-libgcc -lmingw32 -mconsole -ldsound -lgdi32 -lwinmm \
 			   -lopengl32
 else
-	LDFLAGS += -lGL -lX11
+	LDFLAGS += -lGL -lX11 -lpthread
 endif
 
 sndlib_Linux = -lasound
 sndlib_IRIX = -laudio
 
+ifeq ($(renderer), opengl)
+	def += -DBUILD_OPENGL
+endif
 
 .PHONY: all
 all: $(bin)

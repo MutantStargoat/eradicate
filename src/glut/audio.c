@@ -10,6 +10,13 @@
 #include "mikmod.h"
 #include "audio.h"
 
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <pthread.h>
+#include <unistd.h>
+#endif
+
 #define SET_MUS_VOL(vol) \
 	do { \
 		int mv = (vol) * vol_master >> 9; \
@@ -18,6 +25,12 @@
 
 static struct au_module *curmod;
 static int vol_master, vol_mus, vol_sfx;
+
+#ifdef _WIN32
+static DWORD WINAPI upd_thread(void *cls);
+#else
+static void *update(void *cls);
+#endif
 
 int au_init(void)
 {
@@ -45,11 +58,27 @@ int au_init(void)
 		fprintf(stderr, "failed ot initialize mikmod: %s\n", MikMod_strerror(MikMod_errno));
 		return -1;
 	}
+	MikMod_InitThreads();
+
+	{
+#ifdef _WIN32
+		HANDLE thr;
+		if((thr = CreateThread(0, 0, update, 0, 0, 0))) {
+			CloseHandle(thr);
+		}
+#else
+		pthread_t upd_thread;
+		if(pthread_create(&upd_thread, 0, update, 0) == 0) {
+			pthread_detach(upd_thread);
+		}
+#endif
+	}
 	return 0;
 }
 
 void au_shutdown(void)
 {
+	curmod = 0;
 	MikMod_Exit();
 }
 
@@ -133,12 +162,29 @@ void au_update(void)
 {
 	if(!curmod) return;
 
-	if(Player_Active()) {
-		MikMod_Update();
-	} else {
+	if(!Player_Active()) {
 		Player_Stop();
 		curmod = 0;
 	}
+}
+
+#ifdef _WIN32
+static DWORD WINAPI upd_thread(void *cls);
+#else
+static void *update(void *cls)
+#endif
+{
+	for(;;) {
+		if(Player_Active()) {
+			MikMod_Update();
+		}
+#ifdef _WIN32
+		Sleep(10);
+#else
+		usleep(10000);
+#endif
+	}
+	return 0;
 }
 
 int au_stop_module(struct au_module *mod)

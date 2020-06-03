@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <GL/gl.h>
+#include "miniglut.h"
 #include "3dgfx.h"
 #include "rbtree.h"
 
@@ -32,6 +32,8 @@ static int polymode;
 static struct rbtree *textures;
 static int max_tex_size;
 
+static int fb_width, fb_height;
+
 int g3d_init(void)
 {
 	if(!(textures = rb_create(RB_KEY_ADDR))) {
@@ -59,6 +61,8 @@ void g3d_reset(void)
 
 void g3d_framebuffer(int width, int height, void *pixels)
 {
+	fb_width = width;
+	fb_height = height;
 	g3d_viewport(0, 0, width, height);
 }
 
@@ -68,7 +72,6 @@ void g3d_framebuffer_addr(void *pixels)
 
 void g3d_viewport(int x, int y, int w, int h)
 {
-	/*glViewport(x, y, w, h);*/
 }
 
 static void gl_set_enable(unsigned int opt, int en)
