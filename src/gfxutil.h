@@ -17,7 +17,7 @@
 #ifdef BUILD_BIGENDIAN
 
 #define PACK_RGB32(r, g, b) \
-	((((r) & 0xff) << 8) | (((g) & 0xff) << 16) | (((b) & 0xff) << 24))
+	((((r) & 0xff) << 8) | (((g) & 0xff) << 16) | (((b) & 0xff) << 24) | 0xff)
 
 #define UNPACK_R32(c)	(((c) >> 8) & 0xff)
 #define UNPACK_G32(c)	(((c) >> 16) & 0xff)
@@ -26,7 +26,7 @@
 #else	/* LITTLE_ENDIAN */
 
 #define PACK_RGB32(r, g, b) \
-	((((r) & 0xff) << 16) | (((g) & 0xff) << 8) | ((b) & 0xff))
+	((((r) & 0xff) << 16) | (((g) & 0xff) << 8) | ((b) & 0xff) | 0xff000000)
 
 #define UNPACK_R32(c)	(((c) >> 16) & 0xff)
 #define UNPACK_G32(c)	(((c) >> 8) & 0xff)

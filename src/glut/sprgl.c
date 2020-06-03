@@ -44,7 +44,7 @@ static void blit_sprite(struct sprite *spr, uint32_t *fb, int fbwidth)
 				r = UNPACK_R16(*sptr);
 				g = UNPACK_G16(*sptr);
 				b = UNPACK_B16(*sptr);
-				fb[xoffs + i] = PACK_RGB32(b, g, r) | 0xff000000;
+				fb[xoffs + i] = PACK_RGB32(b, g, r);
 				sptr++;
 			}
 			xoffs += sop->size >> 1;
