@@ -27,7 +27,7 @@ static struct au_module *curmod;
 static int vol_master, vol_mus, vol_sfx;
 
 #ifdef _WIN32
-static DWORD WINAPI upd_thread(void *cls);
+static DWORD WINAPI update(void *cls);
 #else
 static void *update(void *cls);
 #endif
@@ -169,7 +169,7 @@ void au_update(void)
 }
 
 #ifdef _WIN32
-static DWORD WINAPI upd_thread(void *cls);
+static DWORD WINAPI update(void *cls)
 #else
 static void *update(void *cls)
 #endif
