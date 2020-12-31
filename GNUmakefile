@@ -23,7 +23,7 @@ CFLAGS = $(arch) $(warn) $(opt) -fno-pie -fno-strict-aliasing $(dbg) -MMD \
 LDFLAGS = $(arch) -no-pie -Llibs/imago -limago -Llibs/mikmod \
 		  -lmikmod $(sndlib_$(sys)) -lm
 
-cpu ?= $(shell uname -m | sed 's/i.86/i386/')
+cpu ?= $(shell uname -m | sed 's/i.86/i386/; s/arm.*/arm/; s/aarch.*/arm/')
 
 ifeq ($(cpu), i386)
 	def += -DUSE_MMX
