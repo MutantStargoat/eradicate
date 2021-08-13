@@ -43,8 +43,8 @@ endif
 
 sys ?= $(shell uname -s | sed 's/MINGW.*/mingw/; s/IRIX.*/IRIX/')
 ifeq ($(sys), mingw)
-	obj = $(csrc:.c=.w32.o)
-	dep	= $(obj:.o=.d)
+	obj = $(csrc:.c=.w32.o) $(asmsrc:.asm=.o)
+	dep	= $(csrc:.c=.d)
 
 	bin = game_win32.exe
 
