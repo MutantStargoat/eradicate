@@ -69,7 +69,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /W2 /Gm /GX /ZI /Od /I "src" /I "src\glut" /I "libs" /I "libs\cgmath\src" /I "libs\imago\src" /I "libs\mikmod\include" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D M_PI=3.141592653 /D "MIKMOD_STATIC" /D "FREEGLUT_STATIC" /D "MINIGLUT_WINMAIN" /YX /FD /GZ /c
+# ADD CPP /nologo /W2 /Gm /GX /ZI /Od /I "src" /I "src\nondos" /I "src\ddraw" /I "libs" /I "libs\cgmath\src" /I "libs\imago\src" /I "libs\mikmod\include" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D M_PI=3.141592653 /D "MIKMOD_STATIC" /D "FREEGLUT_STATIC" /D "MINIGLUT_WINMAIN" /FR /YX /FD /GZ /c
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
@@ -90,36 +90,24 @@ LINK32=link.exe
 # Begin Group "src"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat;h"
-# Begin Group "glut"
+# Begin Group "nondos"
 
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=.\src\glut\audio.c
+SOURCE=.\src\nondos\audio.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\glut\gfx.h
+SOURCE=.\src\nondos\gfx.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\glut\main.c
+SOURCE=.\src\nondos\w32_dirent.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\glut\miniglut.c
-# End Source File
-# Begin Source File
-
-SOURCE=.\src\glut\miniglut.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\src\glut\w32_dirent.c
-# End Source File
-# Begin Source File
-
-SOURCE=.\src\glut\w32_dirent.h
+SOURCE=.\src\nondos\w32_dirent.h
 # End Source File
 # End Group
 # Begin Group "3dgfx"
@@ -164,6 +152,70 @@ SOURCE=.\src\3dgfx\polyfill.h
 # Begin Source File
 
 SOURCE=.\src\3dgfx\polytmpl.h
+# End Source File
+# End Group
+# Begin Group "glut"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\src\glut\main.c
+
+!IF  "$(CFG)" == "eradicate - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "eradicate - Win32 Debug"
+
+# PROP Exclude_From_Build 1
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\glut\miniglut.c
+
+!IF  "$(CFG)" == "eradicate - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "eradicate - Win32 Debug"
+
+# PROP Exclude_From_Build 1
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\glut\miniglut.h
+
+!IF  "$(CFG)" == "eradicate - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "eradicate - Win32 Debug"
+
+# PROP Exclude_From_Build 1
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\src\glut\sprgl.c
+
+!IF  "$(CFG)" == "eradicate - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "eradicate - Win32 Debug"
+
+# PROP Exclude_From_Build 1
+
+!ENDIF 
+
+# End Source File
+# End Group
+# Begin Group "ddraw"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\src\ddraw\main.c
 # End Source File
 # End Group
 # Begin Source File

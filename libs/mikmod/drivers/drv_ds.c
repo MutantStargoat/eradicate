@@ -107,7 +107,7 @@ static DWORD WINAPI updateBufferProc(LPVOID lpParameter)
 			IDirectSoundBuffer_GetCurrentPosition
 						(pSoundBuffer,&soundBufferCurrentPosition,NULL);
 
-			if (soundBufferCurrentPosition < fragsize)
+			if (soundBufferCurrentPosition < (unsigned long)fragsize)
 				start = fragsize;
 			else
 				start = 0;

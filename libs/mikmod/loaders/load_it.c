@@ -444,7 +444,7 @@ static void IT_LoadMidiConfiguration(MREADER* r)
 				filtersettings[i].filter=(midiline[5]-'0')|0x80;
 				dat=(midiline[6])?(midiline[6]-'0'):0;
 				if(midiline[7])dat=(dat<<4)|(midiline[7]-'0');
-				filtersettings[i].inf=dat;
+				filtersettings[i].inf=(UBYTE)dat;
 			}
 		}
 	} else { /* use default information */

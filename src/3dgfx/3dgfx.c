@@ -121,7 +121,7 @@ void g3d_reset(void)
 	for(i=0; i<MAX_LIGHTS; i++) {
 		g3d_light_color(i, 1, 1, 1);
 	}
-	g3d_light_ambient(0.1, 0.1, 0.1);
+	g3d_light_ambient(0.1f, 0.1f, 0.1f);
 
 	g3d_mtl_diffuse(1, 1, 1);
 }
@@ -670,9 +670,9 @@ void g3d_color4b(unsigned char r, unsigned char g, unsigned char b, unsigned cha
 
 void g3d_color3f(float r, float g, float b)
 {
-	int ir = r * 255.0f;
-	int ig = g * 255.0f;
-	int ib = b * 255.0f;
+	int ir = (int)(r * 255.0f);
+	int ig = (int)(g * 255.0f);
+	int ib = (int)(b * 255.0f);
 	st->imm_curv.r = CLAMP(ir, 0, 255);
 	st->imm_curv.g = CLAMP(ig, 0, 255);
 	st->imm_curv.b = CLAMP(ib, 0, 255);
@@ -681,10 +681,10 @@ void g3d_color3f(float r, float g, float b)
 
 void g3d_color4f(float r, float g, float b, float a)
 {
-	int ir = r * 255.0f;
-	int ig = g * 255.0f;
-	int ib = b * 255.0f;
-	int ia = a * 255.0f;
+	int ir = (int)(r * 255.0f);
+	int ig = (int)(g * 255.0f);
+	int ib = (int)(b * 255.0f);
+	int ia = (int)(a * 255.0f);
 	st->imm_curv.r = CLAMP(ir, 0, 255);
 	st->imm_curv.g = CLAMP(ig, 0, 255);
 	st->imm_curv.b = CLAMP(ib, 0, 255);

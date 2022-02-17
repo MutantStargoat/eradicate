@@ -131,7 +131,7 @@ void menu_draw(void)
 
 	memcpy(fb_pixels, bgpix, fb_size);
 	g3d_load_identity();
-	g3d_translate(0, 1.2, -4.5);
+	g3d_translate(0, 1.2f, -4.5f);
 	g3d_rotate(cost * 4.0f, 1, 0, 0);
 	g3d_rotate(sint * 6.0f, 0, 1, 0);
 

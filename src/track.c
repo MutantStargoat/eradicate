@@ -29,7 +29,7 @@ int load_track(struct track *trk, const char *fname)
 		return -1;
 	}
 	curve->mode = CURVE_REPEAT;
-	curve->proj_refine_thres = 1e-5;
+	curve->proj_refine_thres = 1e-5f;
 
 	trk->start_pos = ts_lookup_num(root, "track.start", 0.0f);
 	trk->finish_pos = ts_lookup_num(root, "track.finish", 0.0f);
@@ -288,7 +288,7 @@ int gen_track_seg_mesh(struct track *trk, int segidx, int subdiv, float twist)
 			/* add row of vertices */
 			pos = cent;
 			cgm_vadd_scaled(&pos, &right, -ROAD_RAD - WING_SZ);
-			cgm_vadd_scaled(&pos, &up, WING_SZ * 1.5);
+			cgm_vadd_scaled(&pos, &up, WING_SZ * 1.5f);
 			ROAD_VERTEX(pos.x, pos.y, pos.z, 1, 1, 0, 0.0f, vend[j]);
 
 			pos = cent;
@@ -303,7 +303,7 @@ int gen_track_seg_mesh(struct track *trk, int segidx, int subdiv, float twist)
 
 			pos = cent;
 			cgm_vadd_scaled(&pos, &right, ROAD_RAD + WING_SZ);
-			cgm_vadd_scaled(&pos, &up, WING_SZ * 1.5);
+			cgm_vadd_scaled(&pos, &up, WING_SZ * 1.5f);
 			ROAD_VERTEX(pos.x, pos.y, pos.z, -1, 1, 0, 0.0f, vend[j]);
 		}
 	}

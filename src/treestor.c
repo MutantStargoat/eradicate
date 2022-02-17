@@ -213,7 +213,7 @@ int ts_set_valuei_arr(struct ts_value *tsv, int count, const int *arr)
 	tsv->vec_size = count;
 
 	for(i=0; i<count; i++) {
-		tsv->vec[i] = arr[i];
+		tsv->vec[i] = (float)arr[i];
 	}
 
 	if(!(tsv->array = malloc(count * sizeof *tsv->array))) {
@@ -223,7 +223,7 @@ int ts_set_valuei_arr(struct ts_value *tsv, int count, const int *arr)
 
 	for(i=0; i<count; i++) {
 		ts_init_value(tsv->array + i);
-		ts_set_valuef(tsv->array + i, arr[i]);
+		ts_set_valuef(tsv->array + i, (float)arr[i]);
 	}
 
 	tsv->type = TS_VECTOR;

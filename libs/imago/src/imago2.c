@@ -357,10 +357,10 @@ void img_getpixel4i(struct img_pixmap *img, int x, int y, int *r, int *g, int *b
 	if(img_is_float(img)) {
 		float pixel[4] = {0, 0, 0, 0};
 		img_getpixel(img, x, y, pixel);
-		*r = pixel[0] * 255.0;
-		*g = pixel[1] * 255.0;
-		*b = pixel[2] * 255.0;
-		*a = pixel[3] * 255.0;
+		*r = (int)(pixel[0] * 255.0);
+		*g = (int)(pixel[1] * 255.0);
+		*b = (int)(pixel[2] * 255.0);
+		*a = (int)(pixel[3] * 255.0);
 	} else {
 		unsigned char pixel[4];
 		img_getpixel(img, x, y, pixel);
