@@ -20,7 +20,7 @@
 #define SET_MUS_VOL(vol) \
 	do { \
 		int mv = (vol) * vol_master >> 9; \
-		Player_SetVolume(mv ? mv + 1 : 0); \
+		Player_SetVolume((SWORD)(mv ? mv + 1 : 0)); \
 	} while(0)
 
 static struct au_module *curmod;

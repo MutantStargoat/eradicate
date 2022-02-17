@@ -43,3 +43,14 @@ tools/trktool/trktool
 *.suo
 *.ncb
 *.vcproj*
+config.mk
+dosbox.conf
+*.ppm
+fixdos
+instdfs
+pceminst
+*.dsp
+*.dsw
+pull.bat
+push.bat
+shots

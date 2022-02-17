@@ -3,14 +3,15 @@
 renderer = software
 # -----------------------
 
-csrc = $(wildcard src/*.c) $(wildcard src/glut/*.c) $(wildcard src/3dgfx/*.c)
-asmsrc = $(wildcard src/*.asm)
+csrc = $(wildcard src/*.c) $(wildcard src/nondos/*.c) $(wildcard src/glut/*.c) \
+	   $(wildcard src/3dgfx/*.c)
+#asmsrc = $(wildcard src/*.asm)
 
-obj = $(csrc:.c=.o) $(asmsrc:.asm=.o)
+obj = $(csrc:.c=.o)# $(asmsrc:.asm=.o)
 dep = $(obj:.o=.d)
 bin = game
 
-inc = -Isrc -Isrc/glut -Isrc/3dgfx -Ilibs/imago/src -Ilibs/cgmath/src \
+inc = -Isrc -Isrc/nondos -Isrc/glut -Isrc/3dgfx -Ilibs/imago/src -Ilibs/cgmath/src \
 	  -Ilibs/mikmod/include
 def = -DMINIGLUT_USE_LIBC -DMIKMOD_STATIC
 warn = -pedantic -Wall
@@ -29,8 +30,8 @@ ifeq ($(cpu), i386)
 	def += -DUSE_MMX
 else
 	ifeq ($(cpu), x86_64)
-		def += -DUSE_MMX
-		arch = -m32
+		#def += -DUSE_MMX
+		#arch = -m32
 	else
 		ifeq ($(cpu), arm)
 			asmsrc =

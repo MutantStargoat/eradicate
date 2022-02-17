@@ -8,9 +8,9 @@ alib = libimago.a
 CC = gcc
 CFLAGS = $(arch) -fno-pie -Wno-main -g -O3 -Izlib -Ilibpng -Ijpeglib
 
-ifeq ($(shell uname -m), x86_64)
-	arch = -m32
-endif
+#ifeq ($(shell uname -m), x86_64)
+#	arch = -m32
+#endif
 
 $(alib): $(obj)
 	$(AR) rcs $@ $(obj)

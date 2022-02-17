@@ -10,9 +10,9 @@ alib = libmikmod.a
 CC = gcc
 CFLAGS = $(arch) -fno-pie -g -O3 -I. -Iinclude -DHAVE_CONFIG_H -DMIKMOD_STATIC `sdl-config --cflags`
 
-ifeq ($(shell uname -m), x86_64)
-	arch = -m32
-endif
+#ifeq ($(shell uname -m), x86_64)
+#	arch = -m32
+#endif
 
 $(alib): $(obj)
 	$(AR) rcs $@ $(obj)
