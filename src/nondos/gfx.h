@@ -12,7 +12,11 @@ struct video_mode {
 	uint32_t fb_addr;
 	short max_pages;
 	uint32_t bank_size;
+	void *data;
 };
+
+int init_video(void);
+void cleanup_video(void);
 
 struct video_mode *video_modes(void);
 int num_video_modes(void);

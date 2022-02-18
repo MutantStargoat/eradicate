@@ -1,7 +1,5 @@
 #!/bin/sh
 
-mkwrong=$(find . -name makefile)
-
 for i in $(find . -name makefile); do
 	mv $i `dirname $i`/Makefile
 done
@@ -11,5 +9,8 @@ done
 
 files=$(git ls-files -m)
 for i in $files; do
-	dropcr $i
+	# dropcr on all files except those in the vcbuild tree
+	echo $i | grep vcbuild >/dev/null || dropcr $i
+	# chmod -x on all files except for those under scripts
+	echo $i | grep tools/scripts >/dev/null || chmod -x $i
 done
