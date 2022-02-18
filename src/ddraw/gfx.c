@@ -16,12 +16,15 @@ static int firstbit(unsigned int x);
 static int vmcmp(const void *a, const void *b);
 
 
+extern HWND win;
+
 static struct video_mode *vmodes;
 static int num_vmodes, max_vmodes;
 static struct video_mode *cur_vmode;
+static int pgsize;
 
 static IDirectDraw *ddraw;
-static IDirectDrawSurface *ddsurf;
+static IDirectDrawSurface *ddfront, *ddback;
 
 
 int init_video(void)
@@ -49,13 +52,18 @@ int init_video(void)
 		vm++;
 	}
 
-	return -1;
+	return num_vmodes ? 0 : -1;
 }
 
 void cleanup_video(void)
 {
 	free(vmodes);
 	if(ddraw) {
+		if(ddfront) {
+			IDirectDrawSurface_Release(ddfront);
+		}
+		IDirectDraw_RestoreDisplayMode(ddraw);
+		IDirectDraw_SetCooperativeLevel(ddraw, win, DDSCL_NORMAL);
 		IDirectDraw_Release(ddraw);
 	}
 }
@@ -103,15 +111,78 @@ int match_video_mode(int xsz, int ysz, int bpp)
 
 void *set_video_mode(int idx, int nbuf)
 {
-	return 0;
+	DDSURFACEDESC sd;
+	DDSCAPS caps;
+	struct video_mode *vm = vmodes + idx;
+
+	if(cur_vmode == vm) return (void*)0xbadf00d;
+
+	printf("setting video mode %dx%d %d bpp\n", vm->xsz, vm->ysz, vm->bpp);
+
+	if(IDirectDraw_SetCooperativeLevel(ddraw, win, DDSCL_EXCLUSIVE | DDSCL_FULLSCREEN) != 0) {
+		fprintf(stderr, "failed to grab exclusive video access, will run with potentially reduced performance\n");
+	}
+
+	if(IDirectDraw_SetDisplayMode(ddraw, vm->xsz, vm->ysz, vm->bpp) != 0) {
+		fprintf(stderr, "failed to set video mode %dx%d %d bpp\n", vm->xsz, vm->ysz, vm->bpp);
+		return 0;
+	}
+
+	memset(&sd, 0, sizeof sd);
+	sd.dwSize = sizeof sd;
+	sd.dwFlags = DDSD_CAPS | DDSD_BACKBUFFERCOUNT;
+	sd.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE | DDSCAPS_FLIP | DDSCAPS_COMPLEX;
+	sd.dwBackBufferCount = 1;
+
+	if(IDirectDraw_CreateSurface(ddraw, &sd, &ddfront, 0) != 0) {
+		fprintf(stderr, "failed to create primary DirectDraw surface\n");
+		return 0;
+	}
+
+	caps.dwCaps = DDSCAPS_BACKBUFFER;
+	if(IDirectDrawSurface_GetAttachedSurface(ddfront, &caps, &ddback) != 0) {
+		fprintf(stderr, "failed to get back buffer surface\n");
+		return 0;
+	}
+
+	cur_vmode = vm;
+	pgsize = vm->ysz * vm->pitch;
+
+	if(resizefb(vm->xsz, vm->ysz, vm->bpp) == -1) {
+		fprintf(stderr, "failed to allocate %dx%d (%d bpp) framebuffer\n", vm->xsz,
+				vm->ysz, vm->bpp);
+		return 0;
+	}
+
+	return (void*)0xbadf00d;
 }
 
 void wait_vsync(void)
 {
+	IDirectDraw_WaitForVerticalBlank(ddraw, DDWAITVB_BLOCKBEGIN, 0);
 }
 
 void blit_frame(void *pixels, int vsync)
 {
+	DDSURFACEDESC sd;
+
+	IDirectDrawSurface_Lock(ddback, 0, &sd, DDLOCK_WAIT | DDLOCK_NOSYSLOCK |
+			DDLOCK_SURFACEMEMORYPTR | DDLOCK_WRITEONLY, 0);
+
+	memcpy(sd.lpSurface, pixels, sd.dwHeight * sd.lPitch);
+
+	IDirectDrawSurface_Unlock(ddback, 0);
+
+	for(;;) {
+		HRESULT res;
+		if((res = IDirectDrawSurface_Flip(ddfront, 0, 0))== 0) {
+			return;	/* success */
+		}
+		if(res == DDERR_SURFACELOST && IDirectDrawSurface_Restore(ddfront) != 0) {
+			return;	/* failed */
+		}
+		/* on any other result, retry */
+	}
 }
 
 #define RGB_OR_INDEXED	(DDPF_RGB | DDPF_PALETTEINDEXED1 | DDPF_PALETTEINDEXED2 | \

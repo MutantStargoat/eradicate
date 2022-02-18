@@ -43,7 +43,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /W2 /GX /O2 /I "src" /I "src\glut" /I "libs" /I "libs\cgmath\src" /I "libs\imago\src" /I "libs\mikmod\include" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D M_PI=3.141592653 /D "MIKMOD_STATIC" /D "FREEGLUT_STATIC" /D "MINIGLUT_WINMAIN" /YX /FD /c
+# ADD CPP /nologo /W2 /GX /O2 /I "src" /I "src\nondos" /I "src\ddraw" /I "libs" /I "libs\cgmath\src" /I "libs\imago\src" /I "libs\mikmod\include" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D M_PI=3.141592653 /D "MIKMOD_STATIC" /D "FREEGLUT_STATIC" /D "MINIGLUT_WINMAIN" /YX /FD /c
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -160,54 +160,22 @@ SOURCE=.\src\3dgfx\polytmpl.h
 # Begin Source File
 
 SOURCE=.\src\glut\main.c
-
-!IF  "$(CFG)" == "eradicate - Win32 Release"
-
-!ELSEIF  "$(CFG)" == "eradicate - Win32 Debug"
-
 # PROP Exclude_From_Build 1
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
 SOURCE=.\src\glut\miniglut.c
-
-!IF  "$(CFG)" == "eradicate - Win32 Release"
-
-!ELSEIF  "$(CFG)" == "eradicate - Win32 Debug"
-
 # PROP Exclude_From_Build 1
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
 SOURCE=.\src\glut\miniglut.h
-
-!IF  "$(CFG)" == "eradicate - Win32 Release"
-
-!ELSEIF  "$(CFG)" == "eradicate - Win32 Debug"
-
 # PROP Exclude_From_Build 1
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 
 SOURCE=.\src\glut\sprgl.c
-
-!IF  "$(CFG)" == "eradicate - Win32 Release"
-
-!ELSEIF  "$(CFG)" == "eradicate - Win32 Debug"
-
 # PROP Exclude_From_Build 1
-
-!ENDIF 
-
 # End Source File
 # End Group
 # Begin Group "ddraw"

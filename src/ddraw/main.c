@@ -12,6 +12,7 @@ static int regwinclass(HINSTANCE hinst);
 
 void msgbox(const char *msg);
 
+HWND win;
 
 int have_joy;
 unsigned int joy_bnstate, joy_bndiff, joy_bnpress;
@@ -27,6 +28,7 @@ static int quit;
 
 int WINAPI WinMain(HINSTANCE hinst, HINSTANCE hprev, char *cmdline, int showcmd)
 {
+	int vmidx;
 	char *fake_argv[] = {"game.exe", 0};
 
 #ifndef NDEBUG
@@ -39,21 +41,33 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE hprev, char *cmdline, int showcmd)
 	if(regwinclass(hinst) == -1) {
 		return 1;
 	}
-/*
+
+	if(!(win = CreateWindowEx(0, WCNAME, "eradicate", WS_POPUP, 10, 10, 320, 240, 0, 0, hinst, 0))) {
+		msgbox("failed to create window");
+		return 1;
+	}
+	ShowWindow(win, 1);
+
 	if(au_init() == -1) {
 		return 1;
 	}
+
+	if(init_video() == -1) {
+		return 1;
+	}
+
+	if((vmidx = match_video_mode(640, 480, 16)) == -1) {
+		return 1;
+	}
+	if(!set_video_mode(vmidx, 1)) {
+		msgbox("failed to set requested video mode 640x480 16bpp");
+		return 1;
+	}
+
 	time_msec = 0;
 	if(init(1, fake_argv) == -1) {
 		return 1;
 	}
-*/
-	if(init_video() == -1) {
-		system("PAUSE");
-		/*cleanup();*/
-		return 1;
-	}
-
 	reset_timer();
 
 	for(;;) {
@@ -71,6 +85,7 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE hprev, char *cmdline, int showcmd)
 
 end:
 	cleanup_video();
+	DestroyWindow(win);
 	UnregisterClass(WCNAME, hinst);
 	return 0;
 }
@@ -126,7 +141,20 @@ unsigned long get_msec(void)
 
 static LRESULT CALLBACK handle_msg(HWND win, unsigned int msg, WPARAM wparam, LPARAM lparam)
 {
-	return DefWindowProc(win, msg, wparam, lparam);
+	switch(msg) {
+	case WM_CLOSE:
+		PostQuitMessage(0);
+		break;
+
+	case WM_QUIT:
+		quit = 1;
+		break;
+
+	default:
+		return DefWindowProc(win, msg, wparam, lparam);
+	}
+
+	return 0;
 }
 
 static int regwinclass(HINSTANCE hinst)
