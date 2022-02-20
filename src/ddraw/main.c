@@ -13,6 +13,7 @@ static int regwinclass(HINSTANCE hinst);
 void msgbox(const char *msg);
 
 HWND win;
+int fullscreen;
 
 int have_joy;
 unsigned int joy_bnstate, joy_bndiff, joy_bnpress;
@@ -23,6 +24,7 @@ static unsigned char keystate[256];
 static unsigned long start_time;
 static unsigned int modkeys;
 
+static int win_width, win_height;
 static int quit;
 
 
@@ -30,6 +32,7 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE hprev, char *cmdline, int showcmd)
 {
 	int vmidx;
 	char *fake_argv[] = {"game.exe", 0};
+	unsigned int wstyle;
 
 #ifndef NDEBUG
 	AllocConsole();
@@ -42,7 +45,8 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE hprev, char *cmdline, int showcmd)
 		return 1;
 	}
 
-	if(!(win = CreateWindowEx(0, WCNAME, "eradicate", WS_POPUP, 10, 10, 320, 240, 0, 0, hinst, 0))) {
+	wstyle = fullscreen ? WS_POPUP : WS_OVERLAPPEDWINDOW;
+	if(!(win = CreateWindowEx(0, WCNAME, "eradicate", wstyle, 10, 10, 320, 240, 0, 0, hinst, 0))) {
 		msgbox("failed to create window");
 		return 1;
 	}
@@ -80,12 +84,17 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE hprev, char *cmdline, int showcmd)
 			if(quit) goto end;
 		}
 
+		inp_update();
+
+		time_msec = get_msec();
 		draw();
 	}
 
 end:
 	cleanup_video();
-	DestroyWindow(win);
+	if(win) {
+		DestroyWindow(win);
+	}
 	UnregisterClass(WCNAME, hinst);
 	return 0;
 }
@@ -139,17 +148,76 @@ unsigned long get_msec(void)
 	return timeGetTime() - start_time;
 }
 
+static int translate_vkey(int vkey)
+{
+	switch(vkey) {
+	case VK_PRIOR: return KB_PGUP;
+	case VK_NEXT: return KB_PGDN;
+	case VK_END: return KB_END;
+	case VK_HOME: return KB_HOME;
+	case VK_LEFT: return KB_LEFT;
+	case VK_UP: return KB_UP;
+	case VK_RIGHT: return KB_RIGHT;
+	case VK_DOWN: return KB_DOWN;
+	default:
+		break;
+	}
+
+	if(vkey >= 'A' && vkey <= 'Z') {
+		vkey += 32;
+	} else if(vkey >= VK_F1 && vkey <= VK_F12) {
+		vkey -= VK_F1 + KB_F1;
+	}
+
+	return vkey;
+}
+
 static LRESULT CALLBACK handle_msg(HWND win, unsigned int msg, WPARAM wparam, LPARAM lparam)
 {
+	int x, y, key;
+
 	switch(msg) {
 	case WM_CLOSE:
+	case WM_DESTROY:
 		PostQuitMessage(0);
-		break;
-
-	case WM_QUIT:
 		quit = 1;
 		break;
 
+	case WM_PAINT:
+		ValidateRect(win, 0);
+		break;
+
+	case WM_SIZE:
+		x = lparam & 0xffff;
+		y = lparam >> 16;
+		if(x != win_width && y != win_height) {
+			win_width = x;
+			win_height = y;
+		}
+		break;
+	case WM_KEYDOWN:
+	case WM_SYSKEYDOWN:
+		key = translate_vkey(wparam);
+		if(key < 256) {
+			keystate[key] = 1;
+		}
+		game_key(key, 1);
+		break;
+
+	case WM_KEYUP:
+	case WM_SYSKEYUP:
+		key = translate_vkey(wparam);
+		if(key < 256) {
+			keystate[key] = 0;
+		}
+		game_key(key, 0);
+		break;
+
+	case WM_SYSCOMMAND:
+		wparam &= 0xfff0;
+		if(wparam == SC_KEYMENU || wparam == SC_SCREENSAVE || wparam == SC_MONITORPOWER) {
+			return 0;
+		}
 	default:
 		return DefWindowProc(win, msg, wparam, lparam);
 	}

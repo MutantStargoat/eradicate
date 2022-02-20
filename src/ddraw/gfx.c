@@ -17,6 +17,7 @@ static int vmcmp(const void *a, const void *b);
 
 
 extern HWND win;
+extern int fullscreen;
 
 static struct video_mode *vmodes;
 static int num_vmodes, max_vmodes;
@@ -25,6 +26,8 @@ static int pgsize;
 
 static IDirectDraw *ddraw;
 static IDirectDrawSurface *ddfront, *ddback;
+static IDirectDrawPalette *ddpalette;
+static RECT win_frame_offs;
 
 
 int init_video(void)
@@ -59,6 +62,9 @@ void cleanup_video(void)
 {
 	free(vmodes);
 	if(ddraw) {
+		if(ddpalette) {
+			IDirectDrawPalette_Release(ddpalette);
+		}
 		if(ddfront) {
 			IDirectDrawSurface_Release(ddfront);
 		}
@@ -89,7 +95,7 @@ struct video_mode *get_video_mode(int idx)
 
 int match_video_mode(int xsz, int ysz, int bpp)
 {
-	int i, best = -1;
+	int i, res, best = -1;
 	struct video_mode *vm;
 
 	for(i=0; i<num_vmodes; i++) {
@@ -102,6 +108,9 @@ int match_video_mode(int xsz, int ysz, int bpp)
 	}
 
 	if(best == -1) {
+		if(bpp == 16 && (res = match_video_mode(xsz, ysz, 32)) != -1) {
+			return res;
+		}
 		fprintf(stderr, "failed to find video mode %dx%d %d bpp)\n", xsz, ysz, bpp);
 		return -1;
 	}
@@ -114,41 +123,121 @@ void *set_video_mode(int idx, int nbuf)
 	DDSURFACEDESC sd;
 	DDSCAPS caps;
 	struct video_mode *vm = vmodes + idx;
+	RECT winrect;
 
 	if(cur_vmode == vm) return (void*)0xbadf00d;
 
 	printf("setting video mode %dx%d %d bpp\n", vm->xsz, vm->ysz, vm->bpp);
 
-	if(IDirectDraw_SetCooperativeLevel(ddraw, win, DDSCL_EXCLUSIVE | DDSCL_FULLSCREEN) != 0) {
-		fprintf(stderr, "failed to grab exclusive video access, will run with potentially reduced performance\n");
+	if(fullscreen) {
+		if(IDirectDraw_SetCooperativeLevel(ddraw, win, DDSCL_EXCLUSIVE | DDSCL_FULLSCREEN) != 0) {
+			fprintf(stderr, "failed to grab exclusive video access, will run with potentially reduced performance\n");
+		}
+
+		if(IDirectDraw_SetDisplayMode(ddraw, vm->xsz, vm->ysz, vm->bpp) != 0) {
+			fprintf(stderr, "failed to set video mode %dx%d %d bpp\n", vm->xsz, vm->ysz, vm->bpp);
+			return 0;
+		}
+	} else {
+		int width, height;
+
+		IDirectDraw_SetCooperativeLevel(ddraw, win, DDSCL_NORMAL);
+
+		GetWindowRect(win, &winrect);
+		winrect.right = winrect.left + vm->xsz;
+		winrect.bottom = winrect.top + vm->ysz;
+		win_frame_offs = winrect;
+
+		AdjustWindowRect(&winrect, WS_OVERLAPPEDWINDOW, 0);
+
+		win_frame_offs.left -= winrect.left;
+		win_frame_offs.right = winrect.right - win_frame_offs.right;
+		win_frame_offs.top -= winrect.top;
+		win_frame_offs.bottom = winrect.bottom - win_frame_offs.bottom;
+		printf("window frame offsets: X %d/%d  Y %d/%d\n", win_frame_offs.left, win_frame_offs.right,
+				win_frame_offs.top, win_frame_offs.bottom);
+
+		width = winrect.right - winrect.left;
+		height = winrect.bottom - winrect.top;
+
+		if(winrect.left < 0) winrect.left = 0;
+		if(winrect.top < 0) winrect.top = 0;
+
+		MoveWindow(win, winrect.left, winrect.top, width, height, 0);
 	}
 
-	if(IDirectDraw_SetDisplayMode(ddraw, vm->xsz, vm->ysz, vm->bpp) != 0) {
-		fprintf(stderr, "failed to set video mode %dx%d %d bpp\n", vm->xsz, vm->ysz, vm->bpp);
-		return 0;
+	if(vm->bpp <= 8) {
+		unsigned int palflags;
+		static PALETTEENTRY palinit[256];
+
+		switch(vm->bpp) {
+		case 1:
+			palflags = DDPCAPS_1BIT;
+			break;
+		case 2:
+			palflags = DDPCAPS_2BIT;
+			break;
+		case 4:
+			palflags = DDPCAPS_4BIT;
+			break;
+		default:
+			palflags = DDPCAPS_8BIT | DDPCAPS_ALLOW256;
+		}
+		if(IDirectDraw_CreatePalette(ddraw, palflags, palinit, &ddpalette, 0) != 0) {
+			fprintf(stderr, "failed to create palette\n");
+			return 0;
+		}
 	}
 
 	memset(&sd, 0, sizeof sd);
 	sd.dwSize = sizeof sd;
-	sd.dwFlags = DDSD_CAPS | DDSD_BACKBUFFERCOUNT;
-	sd.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE | DDSCAPS_FLIP | DDSCAPS_COMPLEX;
-	sd.dwBackBufferCount = 1;
+	if(fullscreen) {
+		sd.dwFlags = DDSD_CAPS | DDSD_BACKBUFFERCOUNT;
+		sd.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE | DDSCAPS_FLIP | DDSCAPS_COMPLEX;
+		sd.dwBackBufferCount = 1;
+	} else {
+		sd.dwFlags = DDSD_CAPS;
+		sd.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE;
+	}
 
+	if(ddfront) {
+		IDirectDrawSurface_Release(ddfront);
+	}
 	if(IDirectDraw_CreateSurface(ddraw, &sd, &ddfront, 0) != 0) {
 		fprintf(stderr, "failed to create primary DirectDraw surface\n");
 		return 0;
 	}
+	if(vm->bpp <= 8) {
+		IDirectDrawSurface_SetPalette(ddfront, ddpalette);
+	}
 
-	caps.dwCaps = DDSCAPS_BACKBUFFER;
-	if(IDirectDrawSurface_GetAttachedSurface(ddfront, &caps, &ddback) != 0) {
-		fprintf(stderr, "failed to get back buffer surface\n");
-		return 0;
+	if(fullscreen) {
+		caps.dwCaps = DDSCAPS_BACKBUFFER;
+		if(IDirectDrawSurface_GetAttachedSurface(ddfront, &caps, &ddback) != 0) {
+			fprintf(stderr, "failed to get back buffer surface\n");
+			return 0;
+		}
+	} else {
+		memset(&sd, 0, sizeof sd);
+		sd.dwSize = sizeof sd;
+		sd.dwFlags = DDSD_CAPS | DDSD_WIDTH | DDSD_HEIGHT;
+		sd.dwWidth = vm->xsz;
+		sd.dwHeight = vm->ysz;
+		sd.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN;
+
+		if(ddback) {
+			IDirectDrawSurface_Release(ddback);
+		}
+		if(IDirectDraw_CreateSurface(ddraw, &sd, &ddback, 0) != 0) {
+			fprintf(stderr, "failed to create back buffer surface\n");
+			return 0;
+		}
 	}
 
 	cur_vmode = vm;
 	pgsize = vm->ysz * vm->pitch;
 
-	if(resizefb(vm->xsz, vm->ysz, vm->bpp) == -1) {
+	if(resizefb(vm->xsz, vm->ysz, 16) == -1) {
 		fprintf(stderr, "failed to allocate %dx%d (%d bpp) framebuffer\n", vm->xsz,
 				vm->ysz, vm->bpp);
 		return 0;
@@ -164,24 +253,82 @@ void wait_vsync(void)
 
 void blit_frame(void *pixels, int vsync)
 {
-	DDSURFACEDESC sd;
+	int i, j, res;
+	DDSURFACEDESC sd = {0};
+	uint16_t *pptr;
+	uint32_t *dest32;
 
-	IDirectDrawSurface_Lock(ddback, 0, &sd, DDLOCK_WAIT | DDLOCK_NOSYSLOCK |
-			DDLOCK_SURFACEMEMORYPTR | DDLOCK_WRITEONLY, 0);
+	sd.dwSize = sizeof sd;
 
-	memcpy(sd.lpSurface, pixels, sd.dwHeight * sd.lPitch);
+	if((res = IDirectDrawSurface_Lock(ddback, 0, &sd, DDLOCK_WAIT | DDLOCK_NOSYSLOCK |
+			DDLOCK_WRITEONLY, 0)) != 0) {
+		printf("lock failed: ", res);
+		switch(res) {
+		case DDERR_INVALIDOBJECT:
+			printf("DDERR_INVALIDOBJECT\n");
+			break;
+		case DDERR_INVALIDPARAMS:
+			printf("DDERR_INVALIDPARAMS\n");
+			break;
+		case DDERR_OUTOFMEMORY:
+			printf("DDERR_OUTOFMEMORY\n");
+			break;
+		case DDERR_SURFACEBUSY:
+			printf("DDERR_SURFACEBUSY\n");
+			break;
+		case DDERR_SURFACELOST:
+			printf("DDERR_SURFACELOST\n");
+			break;
+		case DDERR_WASSTILLDRAWING:
+			printf("DDERR_WASSTILLDRAWING\n");
+			break;
+		default:
+			printf("unknown\n");
+		}
+		return;
+	}
+
+	switch(cur_vmode->bpp) {
+	case 15:
+	case 16:
+		memcpy(sd.lpSurface, pixels, sd.dwHeight * sd.lPitch);
+		break;
+
+	case 32:
+		pptr = pixels;
+		dest32 = sd.lpSurface;
+		for(i=0; i<cur_vmode->ysz; i++) {
+			for(j=0; j<cur_vmode->xsz; j++) {
+				dest32[j] = ((((*pptr >> 8) & 0xf8) << 16) |
+						(((*pptr >> 3) & 0xfc) << 8) |
+						((*pptr << 3) & 0xf8));
+				*pptr++;
+			}
+			dest32 = (uint32_t*)((char*)dest32 + sd.lPitch);
+		}
+		break;
+
+	default:
+		break;
+	}
+
 
 	IDirectDrawSurface_Unlock(ddback, 0);
 
-	for(;;) {
-		HRESULT res;
-		if((res = IDirectDrawSurface_Flip(ddfront, 0, 0))== 0) {
-			return;	/* success */
+	if(fullscreen) {
+		if((res = IDirectDrawSurface_Flip(ddfront, 0, DDFLIP_WAIT)) != 0) {
+			if(res == DDERR_SURFACELOST && IDirectDrawSurface_Restore(ddfront) == 0) {
+				IDirectDrawSurface_Flip(ddfront, 0, DDFLIP_WAIT);
+			}
 		}
-		if(res == DDERR_SURFACELOST && IDirectDrawSurface_Restore(ddfront) != 0) {
-			return;	/* failed */
-		}
-		/* on any other result, retry */
+	} else {
+		RECT winrect;
+		GetWindowRect(win, &winrect);
+		winrect.left += win_frame_offs.left;
+		winrect.right -= win_frame_offs.right;
+		winrect.top += win_frame_offs.top;
+		winrect.bottom -= win_frame_offs.bottom;
+		IDirectDrawSurface_Blt(ddfront, &winrect, ddback, 0, DDBLT_WAIT, 0);
 	}
 }
 

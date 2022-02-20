@@ -263,7 +263,7 @@ static void apply_options(void)
 	if(mode) {
 		opt.xres = mode->width;
 		opt.yres = mode->height;
-		opt.bpp = mode->bpp;
+		opt.bpp = mode->bpp == 32 ? 16 : mode->bpp;
 	}
 
 	opt.viewdist = ui_list_selection(widgets[W_VIEWDIST]);
@@ -290,7 +290,11 @@ static int modecmp(const void *a, const void *b)
 
 static int populate_mode_list(struct ui_list *widget)
 {
+#ifdef WIN32
+	static const int match_bpp_list[] = {16, 15, 32, 0};
+#else
 	static const int match_bpp_list[] = {16, 15, 0};
+#endif
 	struct mode_item *item;
 	struct video_mode *modes;
 	int i, j, num_modes;

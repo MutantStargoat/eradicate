@@ -158,15 +158,18 @@ void race_start(void)
 	cam->dir.y -= 3.0f;
 	cam->dir.z += 5.0f;
 
-	/* loading done */
-	draw = race_draw;
-	key_event = race_keyb;
-
 	/* save menu video mode, and switch to game video mode */
 	menu_mode_idx = get_video_mode(VMODE_CURRENT) - video_modes();
 	if((vmidx = match_video_mode(opt.xres, opt.yres, opt.bpp)) != -1) {
-		vmem = set_video_mode(vmidx, 1);
+		if(!(vmem = set_video_mode(vmidx, 1))) {
+			destroy_track(&trk);
+			return;
+		}
 	}
+
+	/* loading done */
+	draw = race_draw;
+	key_event = race_keyb;
 
 	g3d_reset();
 	g3d_framebuffer(fb_width, fb_height, fb_pixels);
