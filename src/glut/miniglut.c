@@ -1,6 +1,6 @@
 /*
 MiniGLUT - minimal GLUT subset without dependencies
-Copyright (C) 2020  John Tsiombikas <nuclear@member.fsf.org>
+Copyright (C) 2020-2022  John Tsiombikas <nuclear@member.fsf.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -40,6 +40,7 @@ static Atom xa_net_wm_state, xa_net_wm_state_fullscr;
 static Atom xa_motif_wm_hints;
 static Atom xa_motion_event, xa_button_press_event, xa_button_release_event, xa_command_event;
 static unsigned int evmask;
+static Cursor blank_cursor;
 
 static int have_netwm_fullscr(void);
 
@@ -48,7 +49,7 @@ static int have_netwm_fullscr(void);
 #include <windows.h>
 #define BUILD_WIN32
 
-static HRESULT CALLBACK handle_message(HWND win, unsigned int msg, WPARAM wparam, LPARAM lparam);
+static LRESULT CALLBACK handle_message(HWND win, unsigned int msg, WPARAM wparam, LPARAM lparam);
 
 static HINSTANCE hinst;
 static HWND win;
@@ -87,6 +88,7 @@ static unsigned int init_mode;
 
 static struct ctx_info ctx_info;
 static int cur_cursor = GLUT_CURSOR_INHERIT;
+static int ignore_key_repeat;
 
 static glut_cb cb_display;
 static glut_cb cb_idle;
@@ -111,6 +113,9 @@ static int modstate;
 void glutInit(int *argc, char **argv)
 {
 #ifdef BUILD_X11
+	Pixmap blankpix = 0;
+	XColor xcol;
+
 	if(!(dpy = XOpenDisplay(0))) {
 		panic("Failed to connect to the X server\n");
 	}
@@ -119,9 +124,9 @@ void glutInit(int *argc, char **argv)
 	xa_wm_proto = XInternAtom(dpy, "WM_PROTOCOLS", False);
 	xa_wm_del_win = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
 	xa_motif_wm_hints = XInternAtom(dpy, "_MOTIF_WM_HINTS", False);
+	xa_net_wm_state_fullscr = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
 	if(have_netwm_fullscr()) {
 		xa_net_wm_state = XInternAtom(dpy, "_NET_WM_STATE", False);
-		xa_net_wm_state_fullscr = XInternAtom(dpy, "_NET_WM_STATE_FULLSCREEN", False);
 	}
 
 	xa_motion_event = XInternAtom(dpy, "MotionEvent", True);
@@ -130,6 +135,11 @@ void glutInit(int *argc, char **argv)
 	xa_command_event = XInternAtom(dpy, "CommandEvent", True);
 
 	evmask = ExposureMask | StructureNotifyMask;
+
+	if((blankpix = XCreateBitmapFromData(dpy, root, (char*)&blankpix, 1, 1))) {
+		blank_cursor = XCreatePixmapCursor(dpy, blankpix, blankpix, &xcol, &xcol, 0, 0);
+		XFreePixmap(dpy, blankpix);
+	}
 
 #endif
 #ifdef BUILD_WIN32
@@ -194,6 +204,11 @@ void glutMainLoop(void)
 void glutPostRedisplay(void)
 {
 	upd_pending = 1;
+}
+
+void glutIgnoreKeyRepeat(int ignore)
+{
+	ignore_key_repeat = ignore;
 }
 
 #define UPD_EVMASK(x) \
@@ -571,7 +586,22 @@ static void handle_event(XEvent *ev)
 		break;
 
 	case KeyPress:
+		if(0) {
 	case KeyRelease:
+			if(ignore_key_repeat && XEventsQueued(dpy, QueuedAfterReading)) {
+				XEvent next;
+				XPeekEvent(dpy, &next);
+
+				if(next.type == KeyPress && next.xkey.keycode == ev->xkey.keycode &&
+						next.xkey.time == ev->xkey.time) {
+					/* this is a key-repeat event, ignore the release and consume
+					 * the following press
+					 */
+					XNextEvent(dpy, &next);
+					break;
+				}
+			}
+		}
 		modstate = ev->xkey.state & (ShiftMask | ControlMask | Mod1Mask);
 		if(!(sym = XLookupKeysym(&ev->xkey, 0))) {
 			break;
@@ -685,18 +715,20 @@ static int have_netwm_fullscr(void)
 	int fmt;
 	long offs = 0;
 	unsigned long i, count, rem;
-	Atom prop[8], type;
+	Atom *prop, type;
 	Atom xa_net_supported = XInternAtom(dpy, "_NET_SUPPORTED", False);
 
 	do {
 		XGetWindowProperty(dpy, root, xa_net_supported, offs, 8, False, AnyPropertyType,
-				&type, &fmt, &count, &rem, (unsigned char**)prop);
+				&type, &fmt, &count, &rem, (unsigned char**)&prop);
 
 		for(i=0; i<count; i++) {
 			if(prop[i] == xa_net_wm_state_fullscr) {
+				XFree(prop);
 				return 1;
 			}
 		}
+		XFree(prop);
 		offs += count;
 	} while(rem > 0);
 
@@ -779,13 +811,23 @@ void glutSetCursor(int cidx)
 	case GLUT_CURSOR_INHERIT:
 		break;
 	case GLUT_CURSOR_NONE:
-		/* TODO */
+		cur = blank_cursor;
+		break;
 	default:
 		return;
 	}
 
 	XDefineCursor(dpy, win, cur);
 	cur_cursor = cidx;
+}
+
+void glutSetKeyRepeat(int repmode)
+{
+	if(repmode) {
+		XAutoRepeatOn(dpy);
+	} else {
+		XAutoRepeatOff(dpy);
+	}
 }
 
 static XVisualInfo *choose_visual(unsigned int mode)
@@ -1055,9 +1097,11 @@ static Window get_daemon_window(Display *dpy)
 	win = *(Window*)prop;
 	XFree(prop);
 
+	wname.value = 0;
 	if(!XGetWMName(dpy, win, &wname) || mglut_strcmp("Magellan Window", (char*)wname.value) != 0) {
-		return 0;
+		win = 0;
 	}
+	XFree(wname.value);
 
 	return win;
 }
@@ -1219,7 +1263,12 @@ void glutSetCursor(int cidx)
 	}
 }
 
+void glutSetKeyRepeat(int repmode)
+{
+}
+
 #define WGL_DRAW_TO_WINDOW	0x2001
+#define WGL_ACCELERATION	0x2003
 #define WGL_SUPPORT_OPENGL	0x2010
 #define WGL_DOUBLE_BUFFER	0x2011
 #define WGL_STEREO			0x2012
@@ -1232,6 +1281,7 @@ void glutSetCursor(int cidx)
 #define WGL_ACCUM_BITS		0x201d
 #define WGL_DEPTH_BITS		0x2022
 #define WGL_STENCIL_BITS	0x2023
+#define WGL_FULL_ACCELERATION	0x2027
 
 #define WGL_TYPE_RGBA		0x202b
 #define WGL_TYPE_COLORINDEX	0x202c
@@ -1249,9 +1299,11 @@ static PROC wglGetPixelFormatAttribiv;
 static unsigned int choose_pixfmt(unsigned int mode)
 {
 	unsigned int num_pixfmt, pixfmt = 0;
-	int attr[32] = { WGL_DRAW_TO_WINDOW, 1, WGL_SUPPORT_OPENGL, 1 };
+	int attr[32] = { WGL_DRAW_TO_WINDOW, 1, WGL_SUPPORT_OPENGL, 1,
+		WGL_ACCELERATION, WGL_FULL_ACCELERATION };
+	float fattr[2] = {0, 0};
 
-	int *aptr = attr;
+	int *aptr = attr + 6;
 	int *samples = 0;
 
 	if(mode & GLUT_DOUBLE) {
@@ -1286,7 +1338,7 @@ static unsigned int choose_pixfmt(unsigned int mode)
 	}
 	*aptr++ = 0;
 
-	while((!wglChoosePixelFormat(dc, attr, 0, 1, &pixfmt, &num_pixfmt) || !num_pixfmt) && samples && *samples) {
+	while((!wglChoosePixelFormat(dc, attr, fattr, 1, &pixfmt, &num_pixfmt) || !num_pixfmt) && samples && *samples) {
 		*samples >>= 1;
 		if(!*samples) {
 			aptr[-3] = 0;
@@ -1295,6 +1347,7 @@ static unsigned int choose_pixfmt(unsigned int mode)
 	return pixfmt;
 }
 
+static PIXELFORMATDESCRIPTOR pfd;
 static PIXELFORMATDESCRIPTOR tmppfd = {
 	sizeof tmppfd, 1, PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
 	PFD_TYPE_RGBA, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 24, 8, 0,
@@ -1370,7 +1423,7 @@ static int create_window_wglext(const char *title, int width, int height)
 	if(!(pixfmt = choose_pixfmt(init_mode))) {
 		panic("Failed to find suitable pixel format\n");
 	}
-	if(!SetPixelFormat(dc, pixfmt, &tmppfd)) {
+	if(!SetPixelFormat(dc, pixfmt, &pfd)) {
 		panic("Failed to set the selected pixel format\n");
 	}
 	if(!(ctx = wglCreateContext(dc))) {
@@ -1405,7 +1458,6 @@ fail:
 static void create_window(const char *title)
 {
 	int pixfmt;
-	PIXELFORMATDESCRIPTOR pfd = {0};
 	RECT rect;
 	int width, height;
 
@@ -1417,6 +1469,30 @@ static void create_window(const char *title)
 	width = rect.right - rect.left;
 	height = rect.bottom - rect.top;
 
+	memset(&pfd, 0, sizeof pfd);
+	pfd.nSize = sizeof pfd;
+	pfd.nVersion = 1;
+	pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+	if(init_mode & GLUT_STEREO) {
+		pfd.dwFlags |= PFD_STEREO;
+	}
+	pfd.iPixelType = init_mode & GLUT_INDEX ? PFD_TYPE_COLORINDEX : PFD_TYPE_RGBA;
+	pfd.cColorBits = 24;
+	if(init_mode & GLUT_ALPHA) {
+		pfd.cAlphaBits = 8;
+	}
+	if(init_mode & GLUT_ACCUM) {
+		pfd.cAccumBits = 24;
+	}
+	if(init_mode & GLUT_DEPTH) {
+		pfd.cDepthBits = 24;
+	}
+	if(init_mode & GLUT_STENCIL) {
+		pfd.cStencilBits = 8;
+	}
+	pfd.iLayerType = PFD_MAIN_PLANE;
+
+
 	if(create_window_wglext(title, width, height) == -1) {
 
 		if(!(win = CreateWindow("MiniGLUT", title, WS_OVERLAPPEDWINDOW,
@@ -1424,28 +1500,6 @@ static void create_window(const char *title)
 			panic("Failed to create window\n");
 		}
 		dc = GetDC(win);
-
-		pfd.nSize = sizeof pfd;
-		pfd.nVersion = 1;
-		pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-		if(init_mode & GLUT_STEREO) {
-			pfd.dwFlags |= PFD_STEREO;
-		}
-		pfd.iPixelType = init_mode & GLUT_INDEX ? PFD_TYPE_COLORINDEX : PFD_TYPE_RGBA;
-		pfd.cColorBits = 24;
-		if(init_mode & GLUT_ALPHA) {
-			pfd.cAlphaBits = 8;
-		}
-		if(init_mode & GLUT_ACCUM) {
-			pfd.cAccumBits = 24;
-		}
-		if(init_mode & GLUT_DEPTH) {
-			pfd.cDepthBits = 24;
-		}
-		if(init_mode & GLUT_STENCIL) {
-			pfd.cStencilBits = 8;
-		}
-		pfd.iLayerType = PFD_MAIN_PLANE;
 
 		if(!(pixfmt = ChoosePixelFormat(dc, &pfd))) {
 			panic("Failed to find suitable pixel format\n");
@@ -1477,7 +1531,7 @@ static void create_window(const char *title)
 	reshape_pending = 1;
 }
 
-static HRESULT CALLBACK handle_message(HWND win, unsigned int msg, WPARAM wparam, LPARAM lparam)
+static LRESULT CALLBACK handle_message(HWND win, unsigned int msg, WPARAM wparam, LPARAM lparam)
 {
 	static int mouse_x, mouse_y;
 	int x, y, key;
@@ -1716,7 +1770,9 @@ static void panic(const char *msg)
 
 #ifdef MINIGLUT_USE_LIBC
 #include <stdlib.h>
-#ifdef __unix__
+#ifdef _WIN32
+#include <io.h>
+#else
 #include <unistd.h>
 #endif
 
@@ -2085,10 +2141,327 @@ void glutWireTorus(float inner_rad, float outer_rad, int sides, int rings)
 	glPopAttrib();
 }
 
+#define NUM_TEAPOT_INDICES	(sizeof teapot_index / sizeof *teapot_index)
+#define NUM_TEAPOT_VERTS	(sizeof teapot_verts / sizeof *teapot_verts)
+
+#define NUM_TEAPOT_PATCHES	(NUM_TEAPOT_INDICES / 16)
+
+#define PATCH_SUBDIV	7
+
+static float teapot_part_flip[] = {
+	1, 1, 1, 1,			/* rim flip */
+	1, 1, 1, 1,			/* body1 flip */
+	1, 1, 1, 1,			/* body2 flip */
+	1, 1, 1, 1,			/* lid patch 1 flip */
+	1, 1, 1, 1,			/* lid patch 2 flip */
+	1, -1,				/* handle 1 flip */
+	1, -1,				/* handle 2 flip */
+	1, -1,				/* spout 1 flip */
+	1, -1,				/* spout 2 flip */
+	1, 1, 1, 1			/* bottom flip */
+};
+
+static float teapot_part_rot[] = {
+	0, 90, 180, 270,	/* rim rotations */
+	0, 90, 180, 270,	/* body patch 1 rotations */
+	0, 90, 180, 270,	/* body patch 2 rotations */
+	0, 90, 180, 270,	/* lid patch 1 rotations */
+	0, 90, 180, 270,	/* lid patch 2 rotations */
+	0, 0,				/* handle 1 rotations */
+	0, 0,				/* handle 2 rotations */
+	0, 0,				/* spout 1 rotations */
+	0, 0,				/* spout 2 rotations */
+	0, 90, 180, 270		/* bottom rotations */
+};
+
+
+static int teapot_index[] = {
+	/* rim */
+	102, 103, 104, 105, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+	102, 103, 104, 105, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+	102, 103, 104, 105, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+	102, 103, 104, 105, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+	/* body1 */
+	12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,
+	12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,
+	12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,
+	12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27,
+	/* body 2 */
+	24, 25, 26, 27, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+	24, 25, 26, 27, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+	24, 25, 26, 27, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+	24, 25, 26, 27, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+	/* lid 1 */
+	96, 96, 96, 96, 97, 98, 99, 100, 101, 101, 101, 101, 0,  1,  2, 3,
+	96, 96, 96, 96, 97, 98, 99, 100, 101, 101, 101, 101, 0,  1,  2, 3,
+	96, 96, 96, 96, 97, 98, 99, 100, 101, 101, 101, 101, 0,  1,  2, 3,
+	96, 96, 96, 96, 97, 98, 99, 100, 101, 101, 101, 101, 0,  1,  2, 3,
+	/* lid 2 */
+	0,  1,  2,  3, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117,
+	0,  1,  2,  3, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117,
+	0,  1,  2,  3, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117,
+	0,  1,  2,  3, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117,
+	/* handle 1 */
+	41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56,
+	41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56,
+	/* handle 2 */
+	53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 28, 65, 66, 67,
+	53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 28, 65, 66, 67,
+	/* spout 1 */
+	68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83,
+	68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83,
+	/* spout 2 */
+	80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95,
+	80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95,
+	/* bottom */
+	118, 118, 118, 118, 124, 122, 119, 121, 123, 126, 125, 120, 40, 39, 38, 37,
+	118, 118, 118, 118, 124, 122, 119, 121, 123, 126, 125, 120, 40, 39, 38, 37,
+	118, 118, 118, 118, 124, 122, 119, 121, 123, 126, 125, 120, 40, 39, 38, 37,
+	118, 118, 118, 118, 124, 122, 119, 121, 123, 126, 125, 120, 40, 39, 38, 37
+};
+
+
+static float teapot_verts[][3] = {
+	{  0.2000,  0.0000, 2.70000 }, {  0.2000, -0.1120, 2.70000 },
+	{  0.1120, -0.2000, 2.70000 }, {  0.0000, -0.2000, 2.70000 },
+	{  1.3375,  0.0000, 2.53125 }, {  1.3375, -0.7490, 2.53125 },
+	{  0.7490, -1.3375, 2.53125 }, {  0.0000, -1.3375, 2.53125 },
+	{  1.4375,  0.0000, 2.53125 }, {  1.4375, -0.8050, 2.53125 },
+	{  0.8050, -1.4375, 2.53125 }, {  0.0000, -1.4375, 2.53125 },
+	{  1.5000,  0.0000, 2.40000 }, {  1.5000, -0.8400, 2.40000 },
+	{  0.8400, -1.5000, 2.40000 }, {  0.0000, -1.5000, 2.40000 },
+	{  1.7500,  0.0000, 1.87500 }, {  1.7500, -0.9800, 1.87500 },
+	{  0.9800, -1.7500, 1.87500 }, {  0.0000, -1.7500, 1.87500 },
+	{  2.0000,  0.0000, 1.35000 }, {  2.0000, -1.1200, 1.35000 },
+	{  1.1200, -2.0000, 1.35000 }, {  0.0000, -2.0000, 1.35000 },
+	{  2.0000,  0.0000, 0.90000 }, {  2.0000, -1.1200, 0.90000 },
+	{  1.1200, -2.0000, 0.90000 }, {  0.0000, -2.0000, 0.90000 },
+	{ -2.0000,  0.0000, 0.90000 }, {  2.0000,  0.0000, 0.45000 },
+	{  2.0000, -1.1200, 0.45000 }, {  1.1200, -2.0000, 0.45000 },
+	{  0.0000, -2.0000, 0.45000 }, {  1.5000,  0.0000, 0.22500 },
+	{  1.5000, -0.8400, 0.22500 }, {  0.8400, -1.5000, 0.22500 },
+	{  0.0000, -1.5000, 0.22500 }, {  1.5000,  0.0000, 0.15000 },
+	{  1.5000, -0.8400, 0.15000 }, {  0.8400, -1.5000, 0.15000 },
+	{  0.0000, -1.5000, 0.15000 }, { -1.6000,  0.0000, 2.02500 },
+	{ -1.6000, -0.3000, 2.02500 }, { -1.5000, -0.3000, 2.25000 },
+	{ -1.5000,  0.0000, 2.25000 }, { -2.3000,  0.0000, 2.02500 },
+	{ -2.3000, -0.3000, 2.02500 }, { -2.5000, -0.3000, 2.25000 },
+	{ -2.5000,  0.0000, 2.25000 }, { -2.7000,  0.0000, 2.02500 },
+	{ -2.7000, -0.3000, 2.02500 }, { -3.0000, -0.3000, 2.25000 },
+	{ -3.0000,  0.0000, 2.25000 }, { -2.7000,  0.0000, 1.80000 },
+	{ -2.7000, -0.3000, 1.80000 }, { -3.0000, -0.3000, 1.80000 },
+	{ -3.0000,  0.0000, 1.80000 }, { -2.7000,  0.0000, 1.57500 },
+	{ -2.7000, -0.3000, 1.57500 }, { -3.0000, -0.3000, 1.35000 },
+	{ -3.0000,  0.0000, 1.35000 }, { -2.5000,  0.0000, 1.12500 },
+	{ -2.5000, -0.3000, 1.12500 }, { -2.6500, -0.3000, 0.93750 },
+	{ -2.6500,  0.0000, 0.93750 }, { -2.0000, -0.3000, 0.90000 },
+	{ -1.9000, -0.3000, 0.60000 }, { -1.9000,  0.0000, 0.60000 },
+	{  1.7000,  0.0000, 1.42500 }, {  1.7000, -0.6600, 1.42500 },
+	{  1.7000, -0.6600, 0.60000 }, {  1.7000,  0.0000, 0.60000 },
+	{  2.6000,  0.0000, 1.42500 }, {  2.6000, -0.6600, 1.42500 },
+	{  3.1000, -0.6600, 0.82500 }, {  3.1000,  0.0000, 0.82500 },
+	{  2.3000,  0.0000, 2.10000 }, {  2.3000, -0.2500, 2.10000 },
+	{  2.4000, -0.2500, 2.02500 }, {  2.4000,  0.0000, 2.02500 },
+	{  2.7000,  0.0000, 2.40000 }, {  2.7000, -0.2500, 2.40000 },
+	{  3.3000, -0.2500, 2.40000 }, {  3.3000,  0.0000, 2.40000 },
+	{  2.8000,  0.0000, 2.47500 }, {  2.8000, -0.2500, 2.47500 },
+	{  3.5250, -0.2500, 2.49375 }, {  3.5250,  0.0000, 2.49375 },
+	{  2.9000,  0.0000, 2.47500 }, {  2.9000, -0.1500, 2.47500 },
+	{  3.4500, -0.1500, 2.51250 }, {  3.4500,  0.0000, 2.51250 },
+	{  2.8000,  0.0000, 2.40000 }, {  2.8000, -0.1500, 2.40000 },
+	{  3.2000, -0.1500, 2.40000 }, {  3.2000,  0.0000, 2.40000 },
+	{  0.0000,  0.0000, 3.15000 }, {  0.8000,  0.0000, 3.15000 },
+	{  0.8000, -0.4500, 3.15000 }, {  0.4500, -0.8000, 3.15000 },
+	{  0.0000, -0.8000, 3.15000 }, {  0.0000,  0.0000, 2.85000 },
+	{  1.4000,  0.0000, 2.40000 }, {  1.4000, -0.7840, 2.40000 },
+	{  0.7840, -1.4000, 2.40000 }, {  0.0000, -1.4000, 2.40000 },
+	{  0.4000,  0.0000, 2.55000 }, {  0.4000, -0.2240, 2.55000 },
+	{  0.2240, -0.4000, 2.55000 }, {  0.0000, -0.4000, 2.55000 },
+	{  1.3000,  0.0000, 2.55000 }, {  1.3000, -0.7280, 2.55000 },
+	{  0.7280, -1.3000, 2.55000 }, {  0.0000, -1.3000, 2.55000 },
+	{  1.3000,  0.0000, 2.40000 }, {  1.3000, -0.7280, 2.40000 },
+	{  0.7280, -1.3000, 2.40000 }, {  0.0000, -1.3000, 2.40000 },
+	{  0.0000,  0.0000, 0.00000 }, {  1.4250, -0.7980, 0.00000 },
+	{  1.5000,  0.0000, 0.07500 }, {  1.4250,  0.0000, 0.00000 },
+	{  0.7980, -1.4250, 0.00000 }, {  0.0000, -1.5000, 0.07500 },
+	{  0.0000, -1.4250, 0.00000 }, {  1.5000, -0.8400, 0.07500 },
+	{  0.8400, -1.5000, 0.07500 }
+};
+
+static void draw_patch(int *index, int flip, float scale);
+static float bernstein(int i, float x);
+
 void glutSolidTeapot(float size)
 {
+	int i;
+
+	size /= 2.0;
+
+	for(i=0; i<NUM_TEAPOT_PATCHES; i++) {
+		float flip = teapot_part_flip[i];
+		float rot = teapot_part_rot[i];
+
+		glMatrixMode(GL_MODELVIEW);
+		glPushMatrix();
+		glTranslatef(0, -3.15 * size * 0.5, 0);
+		glRotatef(rot, 0, 1, 0);
+		glScalef(1, 1, flip);
+		glRotatef(-90, 1, 0, 0);
+
+		draw_patch(teapot_index + i * 16, flip < 0.0 ? 1 : 0, size);
+
+		glPopMatrix();
+	}
 }
 
 void glutWireTeapot(float size)
 {
+	glPushAttrib(GL_POLYGON_BIT);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glutSolidTeapot(size);
+	glPopAttrib();
+}
+
+
+static void bezier_patch(float *res, float *cp, float u, float v)
+{
+	int i, j;
+
+	res[0] = res[1] = res[2] = 0.0f;
+
+	for(j=0; j<4; j++) {
+		for(i=0; i<4; i++) {
+			float bu = bernstein(i, u);
+			float bv = bernstein(j, v);
+
+			res[0] += cp[0] * bu * bv;
+			res[1] += cp[1] * bu * bv;
+			res[2] += cp[2] * bu * bv;
+
+			cp += 3;
+		}
+	}
+}
+
+static float rsqrt(float x)
+{
+	float xhalf = x * 0.5f;
+	int i = *(int*)&x;
+	i = 0x5f3759df - (i >> 1);
+	x = *(float*)&i;
+	x = x * (1.5f - xhalf * x * x);
+	return x;
+}
+
+
+#define CROSS(res, a, b) \
+	do { \
+		(res)[0] = (a)[1] * (b)[2] - (a)[2] * (b)[1]; \
+		(res)[1] = (a)[2] * (b)[0] - (a)[0] * (b)[2]; \
+		(res)[2] = (a)[0] * (b)[1] - (a)[1] * (b)[0]; \
+	} while(0)
+
+#define NORMALIZE(v) \
+	do { \
+		float s = rsqrt((v)[0] * (v)[0] + (v)[1] * (v)[1] + (v)[2] * (v)[2]); \
+		(v)[0] *= s; \
+		(v)[1] *= s; \
+		(v)[2] *= s; \
+	} while(0)
+
+#define DT	0.001
+
+static void bezier_patch_norm(float *res, float *cp, float u, float v)
+{
+	float tang[3], bitan[3], tmp[3];
+
+	bezier_patch(tang, cp, u + DT, v);
+	bezier_patch(tmp, cp, u - DT, v);
+	tang[0] -= tmp[0];
+	tang[1] -= tmp[1];
+	tang[2] -= tmp[2];
+
+	bezier_patch(bitan, cp, u, v + DT);
+	bezier_patch(tmp, cp, u, v - DT);
+	bitan[0] -= tmp[0];
+	bitan[1] -= tmp[1];
+	bitan[2] -= tmp[2];
+
+	CROSS(res, tang, bitan);
+	NORMALIZE(res);
+}
+
+
+
+static float bernstein(int i, float x)
+{
+	float invx = 1.0f - x;
+
+	switch(i) {
+	case 0:
+		return invx * invx * invx;
+	case 1:
+		return 3.0f * x * invx * invx;
+	case 2:
+		return 3.0f * x * x * invx;
+	case 3:
+		return x * x * x;
+	default:
+		break;
+	}
+	return 0.0f;
+}
+
+static void draw_patch(int *index, int flip, float scale)
+{
+	static const float uoffs[2][4] = {{0, 0, 1, 1}, {1, 1, 0, 0}};
+	static const float voffs[4] = {0, 1, 1, 0};
+
+	int i, j, k;
+	float cp[16 * 3];
+	float pt[3], n[3];
+	float u, v;
+	float du = 1.0 / PATCH_SUBDIV;
+	float dv = 1.0 / PATCH_SUBDIV;
+
+	/* collect control points */
+	for(i=0; i<16; i++) {
+		cp[i * 3] = teapot_verts[index[i]][0];
+		cp[i * 3 + 1] = teapot_verts[index[i]][1];
+		cp[i * 3 + 2] = teapot_verts[index[i]][2];
+	}
+
+	glBegin(GL_QUADS);
+	glColor3f(1, 1, 1);
+
+	u = 0;
+	for(i=0; i<PATCH_SUBDIV; i++) {
+		v = 0;
+		for(j=0; j<PATCH_SUBDIV; j++) {
+
+			for(k=0; k<4; k++) {
+				bezier_patch(pt, cp, u + uoffs[flip][k] * du, v + voffs[k] * dv);
+
+				/* top/bottom normal hack */
+				if(pt[2] > 3.14) {
+					n[0] = n[1] = 0.0f;
+					n[2] = 1.0f;
+				} else if(pt[2] < 0.00001) {
+					n[0] = n[1] = 0.0f;
+					n[2] = -1.0f;
+				} else {
+					bezier_patch_norm(n, cp, u + uoffs[flip][k] * du, v + voffs[k] * dv);
+				}
+
+				glTexCoord2f(u, v);
+				glNormal3fv(n);
+				glVertex3f(pt[0] * scale, pt[1] * scale, pt[2] * scale);
+			}
+
+			v += dv;
+		}
+		u += du;
+	}
+
+	glEnd();
 }

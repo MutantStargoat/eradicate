@@ -61,6 +61,9 @@ int options_init(void)
 		fprintf(stderr, "failed to load options bg image\n");
 	}
 
+#ifndef MSDOS
+	y -= 8;
+#endif
 	if(!(list = ui_list("Resolution"))) {
 		return -1;
 	}
@@ -70,13 +73,13 @@ int options_init(void)
 	y += VSEP;
 
 #ifndef MSDOS
-	y -= 5;
+	y -= 7;
 	if(!(ckbox = ui_ckbox("Fullscreen", opt.fullscreen))) {
 		return -1;
 	}
 	ui_move(ckbox, x, y);
 	widgets[W_FULLSCR] = ckbox;
-	y += VSEP - 5;
+	y += VSEP - 7;
 #endif
 
 	if(!(ckbox = ui_ckbox("VSync", opt.vsync))) {
@@ -85,6 +88,9 @@ int options_init(void)
 	ui_move(ckbox, x, y);
 	widgets[W_VSYNC] = ckbox;
 	y += VSEP;
+#ifndef MSDOS
+	y -= 7;
+#endif
 
 	if(!(list = ui_list("View distance"))) {
 		return -1;

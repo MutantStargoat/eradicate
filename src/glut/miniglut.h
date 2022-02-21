@@ -1,6 +1,6 @@
 /*
 MiniGLUT - minimal GLUT subset without dependencies
-Copyright (C) 2020  John Tsiombikas <nuclear@member.fsf.org>
+Copyright (C) 2020-2022  John Tsiombikas <nuclear@member.fsf.org>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -116,6 +116,12 @@ enum {
 #define GLUT_ACTIVE_CTRL	4
 #define GLUT_ACTIVE_ALT		8
 
+enum {
+	GLUT_KEY_REPEAT_OFF,
+	GLUT_KEY_REPEAT_ON
+};
+#define GLUT_KEY_REPEAT_DEFAULT GLUT_KEY_REPEAT_ON
+
 typedef void (*glut_cb)(void);
 typedef void (*glut_cb_reshape)(int x, int y);
 typedef void (*glut_cb_state)(int state);
@@ -148,6 +154,9 @@ void glutFullScreen(void);
 void glutSetWindowTitle(const char *title);
 void glutSetIconTitle(const char *title);
 void glutSetCursor(int cursor);
+
+void glutIgnoreKeyRepeat(int ignore);
+void glutSetKeyRepeat(int repmode);
 
 void glutIdleFunc(glut_cb func);
 void glutDisplayFunc(glut_cb func);

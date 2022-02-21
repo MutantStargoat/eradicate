@@ -114,10 +114,6 @@ int main(int argc, char **argv)
 	}
 	atexit(cleanup);
 
-	if(opt.fullscreen) {
-		set_fullscreen(opt.fullscreen);
-	}
-
 	reset_timer();
 
 	glutMainLoop();
@@ -168,6 +164,8 @@ static int convbuf_size;
 void *set_video_mode(int idx, int nbuf)
 {
 	struct video_mode *vm = vmodes + idx;
+
+	set_fullscreen(opt.fullscreen);
 
 	if(cur_vmode == vm) {
 		return vmem;
@@ -441,11 +439,16 @@ static void set_fullscreen(int fs)
 	static int win_x, win_y;
 
 	if(fs) {
-		win_x = glutGet(GLUT_WINDOW_WIDTH);
-		win_y = glutGet(GLUT_WINDOW_HEIGHT);
-		glutFullScreen();
+		if(win_x == 0) {
+			win_x = glutGet(GLUT_WINDOW_WIDTH);
+			win_y = glutGet(GLUT_WINDOW_HEIGHT);
+			glutFullScreen();
+		}
 	} else {
-		glutReshapeWindow(win_x, win_y);
+		if(win_x) {
+			glutReshapeWindow(win_x, win_y);
+			win_x = win_y = 0;
+		}
 	}
 }
 
