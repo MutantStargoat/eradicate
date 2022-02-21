@@ -49,8 +49,6 @@ dosbox.conf
 fixdos
 instdfs
 pceminst
-*.dsp
-*.dsw
 pull.bat
 push.bat
 shots

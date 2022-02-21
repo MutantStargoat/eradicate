@@ -13,7 +13,7 @@ static int regwinclass(HINSTANCE hinst);
 void msgbox(const char *msg);
 
 HWND win;
-int fullscreen;
+int fullscreen = 1;
 
 int have_joy;
 unsigned int joy_bnstate, joy_bndiff, joy_bnpress;
