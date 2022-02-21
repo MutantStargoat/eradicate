@@ -13,6 +13,7 @@
 #define DEF_MUS			1
 #define DEF_JS_MIN		0
 #define DEF_JS_MAX		0
+#define DEF_FULLSCR		1
 
 struct options opt = {
 	DEF_XRES, DEF_YRES, DEF_BPP,
@@ -49,7 +50,7 @@ int load_options(const char *fname)
 	opt.jscal.ymax = ts_lookup_int(cfg, "options.joy.ymax", DEF_JS_MAX);
 
 #ifndef MSDOS
-	opt.fullscreen = ts_lookup_int(cfg, "options.cross.fullscreen", 0);
+	opt.fullscreen = ts_lookup_int(cfg, "options.cross.fullscreen", DEF_FULLSCR);
 	opt.scaler = ts_lookup_int(cfg, "options.cross.scaler", SCALER_NEAREST);
 #endif
 
@@ -99,7 +100,7 @@ int save_options(const char *fname)
 
 #ifndef MSDOS
 	fprintf(fp, "\tcross {\n");
-	WROPT(2, "fullscreen = %d", opt.fullscreen, 0);
+	WROPT(2, "fullscreen = %d", opt.fullscreen, DEF_FULLSCR);
 	WROPT(2, "scaler = %d", opt.scaler, SCALER_NEAREST);
 	fprintf(fp, "\t}\n");
 #endif

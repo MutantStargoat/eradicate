@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <ddraw.h>
 #include "gfx.h"
+#include "options.h"
 
 #define SAME_BPP(a, b)	\
 	((a) == (b) || ((a) == 16 && (b) == 15) || ((a) == 15 && (b) == 16) || \
@@ -17,7 +18,6 @@ static int vmcmp(const void *a, const void *b);
 
 
 extern HWND win;
-extern int fullscreen;
 
 static struct video_mode *vmodes;
 static int num_vmodes, max_vmodes;
@@ -58,19 +58,29 @@ int init_video(void)
 	return num_vmodes ? 0 : -1;
 }
 
+static void reset_ddraw(void)
+{
+	if(!ddraw) return;
+
+	if(ddpalette) {
+		IDirectDrawPalette_Release(ddpalette);
+		ddpalette = 0;
+	}
+	if(ddfront) {
+		IDirectDrawSurface_Release(ddfront);
+		ddfront = 0;
+	}
+	IDirectDraw_RestoreDisplayMode(ddraw);
+	IDirectDraw_SetCooperativeLevel(ddraw, win, DDSCL_NORMAL);
+}
+
 void cleanup_video(void)
 {
 	free(vmodes);
 	if(ddraw) {
-		if(ddpalette) {
-			IDirectDrawPalette_Release(ddpalette);
-		}
-		if(ddfront) {
-			IDirectDrawSurface_Release(ddfront);
-		}
-		IDirectDraw_RestoreDisplayMode(ddraw);
-		IDirectDraw_SetCooperativeLevel(ddraw, win, DDSCL_NORMAL);
+		reset_ddraw();
 		IDirectDraw_Release(ddraw);
+		ddraw = 0;
 	}
 }
 
@@ -129,7 +139,10 @@ void *set_video_mode(int idx, int nbuf)
 
 	printf("setting video mode %dx%d %d bpp\n", vm->xsz, vm->ysz, vm->bpp);
 
-	if(fullscreen) {
+	if(opt.fullscreen) {
+		SetWindowLong(win, GWL_STYLE, WS_POPUP);
+		SetWindowPos(win, HWND_TOPMOST, 0, 0, vm->xsz, vm->ysz, SWP_SHOWWINDOW | SWP_FRAMECHANGED);
+
 		if(IDirectDraw_SetCooperativeLevel(ddraw, win, DDSCL_EXCLUSIVE | DDSCL_FULLSCREEN) != 0) {
 			fprintf(stderr, "failed to grab exclusive video access, will run with potentially reduced performance\n");
 		}
@@ -142,6 +155,9 @@ void *set_video_mode(int idx, int nbuf)
 		int width, height;
 
 		IDirectDraw_SetCooperativeLevel(ddraw, win, DDSCL_NORMAL);
+
+		SetWindowLong(win, GWL_STYLE, WS_OVERLAPPEDWINDOW);
+		SetWindowPos(win, HWND_TOP, 10, 10, vm->xsz, vm->ysz, SWP_SHOWWINDOW | SWP_FRAMECHANGED);
 
 		GetWindowRect(win, &winrect);
 		winrect.right = winrect.left + vm->xsz;
@@ -191,7 +207,7 @@ void *set_video_mode(int idx, int nbuf)
 
 	memset(&sd, 0, sizeof sd);
 	sd.dwSize = sizeof sd;
-	if(fullscreen) {
+	if(opt.fullscreen) {
 		sd.dwFlags = DDSD_CAPS | DDSD_BACKBUFFERCOUNT;
 		sd.ddsCaps.dwCaps = DDSCAPS_PRIMARYSURFACE | DDSCAPS_FLIP | DDSCAPS_COMPLEX;
 		sd.dwBackBufferCount = 1;
@@ -211,7 +227,7 @@ void *set_video_mode(int idx, int nbuf)
 		IDirectDrawSurface_SetPalette(ddfront, ddpalette);
 	}
 
-	if(fullscreen) {
+	if(opt.fullscreen) {
 		caps.dwCaps = DDSCAPS_BACKBUFFER;
 		if(IDirectDrawSurface_GetAttachedSurface(ddfront, &caps, &ddback) != 0) {
 			fprintf(stderr, "failed to get back buffer surface\n");
@@ -244,6 +260,13 @@ void *set_video_mode(int idx, int nbuf)
 	}
 
 	return (void*)0xbadf00d;
+}
+
+int set_text_mode(void)
+{
+	reset_ddraw();
+	cur_vmode = 0;
+	return 0;
 }
 
 void wait_vsync(void)
@@ -315,7 +338,7 @@ void blit_frame(void *pixels, int vsync)
 
 	IDirectDrawSurface_Unlock(ddback, 0);
 
-	if(fullscreen) {
+	if(opt.fullscreen) {
 		if((res = IDirectDrawSurface_Flip(ddfront, 0, DDFLIP_WAIT)) != 0) {
 			if(res == DDERR_SURFACELOST && IDirectDrawSurface_Restore(ddfront) == 0) {
 				IDirectDrawSurface_Flip(ddfront, 0, DDFLIP_WAIT);

@@ -28,6 +28,7 @@ int match_video_mode(int xsz, int ysz, int bpp);
 
 /* argument is the mode list index [0, nmodes-1] */
 void *set_video_mode(int idx, int nbuf);
+int set_text_mode(void);
 
 void blit_frame(void *pixels, int vsync);
 void wait_vsync(void);

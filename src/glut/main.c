@@ -210,6 +210,11 @@ void *set_video_mode(int idx, int nbuf)
 	return vmem;
 }
 
+int set_text_mode(void)
+{
+	return 0;
+}
+
 void wait_vsync(void)
 {
 }

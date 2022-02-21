@@ -21,6 +21,9 @@ static int populate_mode_list(struct ui_list *widget);
 
 enum {
 	W_RESLIST,
+#ifndef MSDOS
+	W_FULLSCR,
+#endif
 	W_VSYNC,
 	W_VIEWDIST,
 
@@ -65,6 +68,16 @@ int options_init(void)
 	populate_mode_list(list);
 	widgets[W_RESLIST] = list;
 	y += VSEP;
+
+#ifndef MSDOS
+	y -= 5;
+	if(!(ckbox = ui_ckbox("Fullscreen", opt.fullscreen))) {
+		return -1;
+	}
+	ui_move(ckbox, x, y);
+	widgets[W_FULLSCR] = ckbox;
+	y += VSEP - 5;
+#endif
 
 	if(!(ckbox = ui_ckbox("VSync", opt.vsync))) {
 		return -1;
@@ -175,6 +188,9 @@ void options_start(void)
 	if(opt.viewdist > 2) opt.viewdist = 2;
 	ui_list_select(widgets[W_VIEWDIST], opt.viewdist);
 
+#ifndef MSDOS
+	ui_ckbox_set(widgets[W_FULLSCR], opt.fullscreen);
+#endif
 	ui_ckbox_set(widgets[W_VSYNC], opt.vsync);
 	ui_slider_set(widgets[W_VOL_MASTER], (1000 * opt.vol_master + 500) / 2550);
 	ui_slider_set(widgets[W_VOL_SFX], (1000 * opt.vol_sfx + 500) / 2550);
@@ -268,6 +284,11 @@ static void apply_options(void)
 
 	opt.viewdist = ui_list_selection(widgets[W_VIEWDIST]);
 
+#ifndef MSDOS
+	opt.fullscreen = ui_ckbox_state(widgets[W_FULLSCR]);
+	set_text_mode();
+	set_video_mode(match_video_mode(640, 480, 16), 1);
+#endif
 	opt.vsync = ui_ckbox_state(widgets[W_VSYNC]);
 
 	opt.vol_master = ui_slider_value(widgets[W_VOL_MASTER]) * 255 / 100;

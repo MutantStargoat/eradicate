@@ -13,7 +13,6 @@ static int regwinclass(HINSTANCE hinst);
 void msgbox(const char *msg);
 
 HWND win;
-int fullscreen = 1;
 
 int have_joy;
 unsigned int joy_bnstate, joy_bndiff, joy_bnpress;
@@ -41,11 +40,13 @@ int WINAPI WinMain(HINSTANCE hinst, HINSTANCE hprev, char *cmdline, int showcmd)
 	freopen("CONOUT$", "w", stderr);
 #endif
 
+	load_options(GAME_CFG_FILE);
+
 	if(regwinclass(hinst) == -1) {
 		return 1;
 	}
 
-	wstyle = fullscreen ? WS_POPUP : WS_OVERLAPPEDWINDOW;
+	wstyle = opt.fullscreen ? WS_POPUP : WS_OVERLAPPEDWINDOW;
 	if(!(win = CreateWindowEx(0, WCNAME, "eradicate", wstyle, 10, 10, 320, 240, 0, 0, hinst, 0))) {
 		msgbox("failed to create window");
 		return 1;
