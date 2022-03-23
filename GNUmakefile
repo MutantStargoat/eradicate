@@ -15,7 +15,7 @@ inc = -Isrc -Isrc/nondos -Isrc/glut -Isrc/3dgfx -Ilibs/imago/src -Ilibs/cgmath/s
 	  -Ilibs/mikmod/include
 def = -DMINIGLUT_USE_LIBC -DMIKMOD_STATIC
 warn = -pedantic -Wall
-opt = -O3 -ffast-math
+#opt = -O3 -ffast-math
 dbg = -g
 
 CC = gcc
