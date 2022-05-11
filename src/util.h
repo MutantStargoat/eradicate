@@ -107,21 +107,26 @@ void debug_break(void);
 
 #ifdef __GNUC__
 #if defined(__i386__) || defined(__x86_64__)
-#define memset16(dest, val, count) asm volatile ( \
-	"cld\n\t" \
-	"test $1, %2\n\t" \
-	"jz 0f\n\t" \
-	"rep stosw\n\t" \
-	"jmp 1f\n\t" \
-	"0:\n\t" \
-	"shr $1, %2\n\t" \
-	"push %%ax\n\t" \
-	"shl $16, %%eax\n\t" \
-	"pop %%ax\n\t" \
-	"rep stosl\n\t" \
-	"1:\n\t"\
-	:: "D"(dest), "a"((uint16_t)(val)), "c"(count) \
-	: "memory")
+#define memset16(dest, val, count) \
+	do { \
+		uint32_t dummy1, dummy2; \
+		asm volatile ( \
+			"cld\n\t" \
+			"test $1, %%ecx\n\t" \
+			"jz 0f\n\t" \
+			"rep stosw\n\t" \
+			"jmp 1f\n\t" \
+			"0:\n\t" \
+			"shr $1, %%ecx\n\t" \
+			"push %%ax\n\t" \
+			"shl $16, %%eax\n\t" \
+			"pop %%ax\n\t" \
+			"rep stosl\n\t" \
+			"1:\n\t"\
+			: "=D"(dummy1), "=c"(dummy2) \
+			: "0"(dest), "a"((uint16_t)(val)), "1"(count) \
+			: "flags", "memory"); \
+	} while(0)
 #else
 static void INLINE memset16(void *dest, uint16_t val, int count)
 {
