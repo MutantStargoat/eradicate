@@ -114,6 +114,10 @@ int main(int argc, char **argv)
 	}
 	atexit(cleanup);
 
+	if(opt.fullscreen) {
+		set_fullscreen(1);
+	}
+
 	reset_timer();
 
 	glutMainLoop();
