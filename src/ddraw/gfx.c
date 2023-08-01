@@ -26,6 +26,7 @@ static int pgsize;
 
 static IDirectDraw *ddraw;
 static IDirectDrawSurface *ddfront, *ddback;
+static int own_backbuf;
 static IDirectDrawPalette *ddpalette;
 static RECT win_frame_offs;
 
@@ -233,6 +234,7 @@ void *set_video_mode(int idx, int nbuf)
 			fprintf(stderr, "failed to get back buffer surface\n");
 			return 0;
 		}
+		own_backbuf = 0;
 	} else {
 		memset(&sd, 0, sizeof sd);
 		sd.dwSize = sizeof sd;
@@ -241,13 +243,14 @@ void *set_video_mode(int idx, int nbuf)
 		sd.dwHeight = vm->ysz;
 		sd.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN;
 
-		if(ddback) {
+		if(own_backbuf && ddback) {
 			IDirectDrawSurface_Release(ddback);
 		}
 		if(IDirectDraw_CreateSurface(ddraw, &sd, &ddback, 0) != 0) {
 			fprintf(stderr, "failed to create back buffer surface\n");
 			return 0;
 		}
+		own_backbuf = 1;
 	}
 
 	cur_vmode = vm;
