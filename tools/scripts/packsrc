@@ -1,0 +1,8 @@
+#!/bin/sh
+
+rm -f /tmp/eradsrc.zip
+zip -r /tmp/eradsrc.zip . -i \*.c -i \*.h -i \*.asm -i \*.inl -i \*akefile\* \
+	-i \*.bat -x \*.swp
+
+rm -f /tmp/eradata.zip
+zip -r /tmp/eradata.zip data -x data/src/\* -x data/.svn/\*

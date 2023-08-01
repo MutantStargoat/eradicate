@@ -73,11 +73,21 @@ src\dos\audos.obj: src\dos\audos.c
 	nasm -f obj -o $@ $[*.asm
 
 !ifdef __UNIX__
+libs/imago/imago.lib:
+	cd libs/imago
+	wmake
+	cd ../..
+
 clean: .symbolic
 	rm -f $(obj)
 	rm -f $(bin)
 	rm -f cflags.occ *.lnk
 !else
+libs\imago\imago.lib:
+	cd libs\imago
+	wmake
+	cd ..\..
+
 clean: .symbolic
 	del src\*.obj
 	del src\dos\*.obj
