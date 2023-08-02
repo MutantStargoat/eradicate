@@ -1,9 +1,10 @@
 !ifdef __UNIX__
 dosobj = src/dos/main.obj src/dos/gfx.obj src/dos/watdpmi.obj &
 	src/dos/vbe.obj src/dos/vga.obj src/dos/keyb.obj src/dos/mouse.obj &
-	src/dos/logger.obj src/dos/joygp.obj src/dos/audos.obj
+	src/dos/logger.obj src/dos/joygp.obj src/dos/audos.obj &
+	src/dos/cpuid.obj src/dos/cpuid_s.obj
 #timerobj = src/dos/timer.obj
-scrobj = src/introscr.obj src/intro_s.obj src/menuscr.obj src/racescr.obj &
+scrobj = src/introscr.obj src/menuscr.obj src/racescr.obj &
 	src/optscr.obj
 gameobj = src/game.obj src/util.obj src/gfxutil.obj src/dynarr.obj &
 	src/rbtree.obj src/treestor.obj src/ts_text.obj src/options.obj src/fonts.obj &
@@ -19,9 +20,10 @@ libpath = libpath libs/imago libpath libs/midas
 
 dosobj = src\dos\main.obj src\dos\gfx.obj src\dos\watdpmi.obj &
 	src\dos\vbe.obj src\dos\vga.obj src\dos\keyb.obj src\dos\mouse.obj &
-	src\dos\logger.obj src\dos\joygp.obj src\dos\audos.obj
+	src\dos\logger.obj src\dos\joygp.obj src\dos\audos.obj &
+	src\dos\cpuid.obj src\dos\cpuid_s.obj
 #timerobj = src\dos\timer.obj
-scrobj = src\introscr.obj src\intro_s.obj src\menuscr.obj src\racescr.obj &
+scrobj = src\introscr.obj src\menuscr.obj src\racescr.obj &
 	src\optscr.obj
 gameobj = src\game.obj src\util.obj src\gfxutil.obj src\dynarr.obj &
 	src\rbtree.obj src\treestor.obj src\ts_text.obj src\options.obj src\fonts.obj &

@@ -2,19 +2,20 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#if defined(__WATCOMC__) || defined(_WIN32) || defined(__DJGPP__)
-#include <malloc.h>
-#else
-#include <alloca.h>
-#endif
 #include "polyfill.h"
 #include "gfxutil.h"
+#include "util.h"
+
+/*#define DEBUG_OVERDRAW	G3D_PACK_RGB(10, 10, 10)*/
 
 #define FILL_POLY_BITS	0x03
+
+void polyfill_flat_new(struct pvertex *varr, int vnum);
 
 /* mode bits: 00-wire 01-flat 10-gouraud 11-reserved
  *     bit 2: texture
  *     bit 3-4: blend mode: 00-none 01-alpha 10-additive 11-reserved
+ *     bit 5: zbuffering
  */
 void (*fillfunc[])(struct pvertex*, int) = {
 	polyfill_wire,
@@ -40,10 +41,35 @@ void (*fillfunc[])(struct pvertex*, int) = {
 	polyfill_add_tex_wire,
 	polyfill_add_tex_flat,
 	polyfill_add_tex_gouraud,
+	0, 0, 0, 0, 0, 0, 0, 0, 0,
+	polyfill_wire,
+	polyfill_flat_zbuf,
+	polyfill_gouraud_zbuf,
+	0,
+	polyfill_tex_wire,
+	polyfill_tex_flat_zbuf,
+	polyfill_tex_gouraud_zbuf,
+	0,
+	polyfill_alpha_wire,
+	polyfill_alpha_flat_zbuf,
+	polyfill_alpha_gouraud_zbuf,
+	0,
+	polyfill_alpha_tex_wire,
+	polyfill_alpha_tex_flat_zbuf,
+	polyfill_alpha_tex_gouraud_zbuf,
+	0,
+	polyfill_add_wire,
+	polyfill_add_flat_zbuf,
+	polyfill_add_gouraud_zbuf,
+	0,
+	polyfill_add_tex_wire,
+	polyfill_add_tex_flat_zbuf,
+	polyfill_add_tex_gouraud_zbuf,
 	0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
 struct pimage pfill_fb, pfill_tex;
+uint16_t *pfill_zbuf;
 
 #define EDGEPAD	8
 static struct pvertex *edgebuf, *left, *right;
@@ -62,7 +88,6 @@ static int fbheight;
 
 void polyfill_fbheight(int height)
 {
-	void *tmp;
 	int newsz = (height * 2 + EDGEPAD * 3) * sizeof *edgebuf;
 
 	if(newsz > edgebuf_size) {
@@ -147,17 +172,9 @@ void polyfill_add_tex_wire(struct pvertex *verts, int nverts)
 	polyfill_wire(verts, nverts);	/* TODO */
 }
 
-#define NEXTIDX(x) (((x) - 1 + nverts) % nverts)
-#define PREVIDX(x) (((x) + 1) % nverts)
-
-/* XXX
- * When HIGH_QUALITY is defined, the rasterizer calculates slopes for attribute
- * interpolation on each scanline separately; otherwise the slope for each
- * attribute would be calculated once for the whole polygon, which is faster,
- * but produces some slight quantization artifacts, due to the limited precision
- * of fixed-point calculations.
- */
-#define HIGH_QUALITY
+#define VNEXT(p)	(((p) == vlast) ? varr : (p) + 1)
+#define VPREV(p)	((p) == varr ? vlast : (p) - 1)
+#define VSUCC(p, side)	((side) == 0 ? VNEXT(p) : VPREV(p))
 
 /* extra bits of precision to use when interpolating colors.
  * try tweaking this if you notice strange quantization artifacts.
@@ -166,121 +183,220 @@ void polyfill_add_tex_wire(struct pvertex *verts, int nverts)
 
 
 #define POLYFILL polyfill_flat
-#define SCANEDGE scanedge_flat
 #undef GOURAUD
 #undef TEXMAP
 #undef BLEND_ALPHA
 #undef BLEND_ADD
+#undef ZBUF
 #include "polytmpl.h"
 #undef POLYFILL
-#undef SCANEDGE
 
 #define POLYFILL polyfill_gouraud
-#define SCANEDGE scanedge_gouraud
 #define GOURAUD
 #undef TEXMAP
 #undef BLEND_ALPHA
 #undef BLEND_ADD
+#undef ZBUF
 #include "polytmpl.h"
 #undef POLYFILL
-#undef SCANEDGE
 
 #define POLYFILL polyfill_tex_flat
-#define SCANEDGE scanedge_tex_flat
 #undef GOURAUD
 #define TEXMAP
 #undef BLEND_ALPHA
 #undef BLEND_ADD
+#undef ZBUF
 #include "polytmpl.h"
 #undef POLYFILL
-#undef SCANEDGE
 
 #define POLYFILL polyfill_tex_gouraud
-#define SCANEDGE scanedge_tex_gouraud
 #define GOURAUD
 #define TEXMAP
 #undef BLEND_ALPHA
 #undef BLEND_ADD
+#undef ZBUF
 #include "polytmpl.h"
 #undef POLYFILL
-#undef SCANEDGE
 
 #define POLYFILL polyfill_alpha_flat
-#define SCANEDGE scanedge_alpha_flat
 #undef GOURAUD
 #undef TEXMAP
 #define BLEND_ALPHA
 #undef BLEND_ADD
+#undef ZBUF
 #include "polytmpl.h"
 #undef POLYFILL
-#undef SCANEDGE
 
 #define POLYFILL polyfill_alpha_gouraud
-#define SCANEDGE scanedge_alpha_gouraud
 #define GOURAUD
 #undef TEXMAP
 #define BLEND_ALPHA
 #undef BLEND_ADD
+#undef ZBUF
 #include "polytmpl.h"
 #undef POLYFILL
-#undef SCANEDGE
 
 #define POLYFILL polyfill_alpha_tex_flat
-#define SCANEDGE scanedge_alpha_tex_flat
 #undef GOURAUD
 #define TEXMAP
 #define BLEND_ALPHA
 #undef BLEND_ADD
+#undef ZBUF
 #include "polytmpl.h"
 #undef POLYFILL
-#undef SCANEDGE
 
 #define POLYFILL polyfill_alpha_tex_gouraud
-#define SCANEDGE scanedge_alpha_tex_gouraud
 #define GOURAUD
 #define TEXMAP
 #define BLEND_ALPHA
 #undef BLEND_ADD
+#undef ZBUF
 #include "polytmpl.h"
 #undef POLYFILL
-#undef SCANEDGE
 
 #define POLYFILL polyfill_add_flat
-#define SCANEDGE scanedge_add_flat
 #undef GOURAUD
 #undef TEXMAP
 #undef BLEND_ALPHA
 #define BLEND_ADD
+#undef ZBUF
 #include "polytmpl.h"
 #undef POLYFILL
-#undef SCANEDGE
 
 #define POLYFILL polyfill_add_gouraud
-#define SCANEDGE scanedge_add_gouraud
 #define GOURAUD
 #undef TEXMAP
 #undef BLEND_ALPHA
 #define BLEND_ADD
+#undef ZBUF
 #include "polytmpl.h"
 #undef POLYFILL
-#undef SCANEDGE
 
 #define POLYFILL polyfill_add_tex_flat
-#define SCANEDGE scanedge_add_tex_flat
 #undef GOURAUD
 #define TEXMAP
 #undef BLEND_ALPHA
 #define BLEND_ADD
+#undef ZBUF
 #include "polytmpl.h"
 #undef POLYFILL
-#undef SCANEDGE
 
 #define POLYFILL polyfill_add_tex_gouraud
-#define SCANEDGE scanedge_add_tex_gouraud
 #define GOURAUD
 #define TEXMAP
 #undef BLEND_ALPHA
 #define BLEND_ADD
+#undef ZBUF
 #include "polytmpl.h"
 #undef POLYFILL
-#undef SCANEDGE
+
+/* ---- zbuffer variants ----- */
+
+#define POLYFILL polyfill_flat_zbuf
+#undef GOURAUD
+#undef TEXMAP
+#undef BLEND_ALPHA
+#undef BLEND_ADD
+#define ZBUF
+#include "polytmpl.h"
+#undef POLYFILL
+
+#define POLYFILL polyfill_gouraud_zbuf
+#define GOURAUD
+#undef TEXMAP
+#undef BLEND_ALPHA
+#undef BLEND_ADD
+#define ZBUF
+#include "polytmpl.h"
+#undef POLYFILL
+
+#define POLYFILL polyfill_tex_flat_zbuf
+#undef GOURAUD
+#define TEXMAP
+#undef BLEND_ALPHA
+#undef BLEND_ADD
+#define ZBUF
+#include "polytmpl.h"
+#undef POLYFILL
+
+#define POLYFILL polyfill_tex_gouraud_zbuf
+#define GOURAUD
+#define TEXMAP
+#undef BLEND_ALPHA
+#undef BLEND_ADD
+#define ZBUF
+#include "polytmpl.h"
+#undef POLYFILL
+
+#define POLYFILL polyfill_alpha_flat_zbuf
+#undef GOURAUD
+#undef TEXMAP
+#define BLEND_ALPHA
+#undef BLEND_ADD
+#define ZBUF
+#include "polytmpl.h"
+#undef POLYFILL
+
+#define POLYFILL polyfill_alpha_gouraud_zbuf
+#define GOURAUD
+#undef TEXMAP
+#define BLEND_ALPHA
+#undef BLEND_ADD
+#define ZBUF
+#include "polytmpl.h"
+#undef POLYFILL
+
+#define POLYFILL polyfill_alpha_tex_flat_zbuf
+#undef GOURAUD
+#define TEXMAP
+#define BLEND_ALPHA
+#undef BLEND_ADD
+#define ZBUF
+#include "polytmpl.h"
+#undef POLYFILL
+
+#define POLYFILL polyfill_alpha_tex_gouraud_zbuf
+#define GOURAUD
+#define TEXMAP
+#define BLEND_ALPHA
+#undef BLEND_ADD
+#define ZBUF
+#include "polytmpl.h"
+#undef POLYFILL
+
+#define POLYFILL polyfill_add_flat_zbuf
+#undef GOURAUD
+#undef TEXMAP
+#undef BLEND_ALPHA
+#define BLEND_ADD
+#define ZBUF
+#include "polytmpl.h"
+#undef POLYFILL
+
+#define POLYFILL polyfill_add_gouraud_zbuf
+#define GOURAUD
+#undef TEXMAP
+#undef BLEND_ALPHA
+#define BLEND_ADD
+#define ZBUF
+#include "polytmpl.h"
+#undef POLYFILL
+
+#define POLYFILL polyfill_add_tex_flat_zbuf
+#undef GOURAUD
+#define TEXMAP
+#undef BLEND_ALPHA
+#define BLEND_ADD
+#define ZBUF
+#include "polytmpl.h"
+#undef POLYFILL
+
+#define POLYFILL polyfill_add_tex_gouraud_zbuf
+#define GOURAUD
+#define TEXMAP
+#undef BLEND_ALPHA
+#define BLEND_ADD
+#define ZBUF
+#include "polytmpl.h"
+#undef POLYFILL
+

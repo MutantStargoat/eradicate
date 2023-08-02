@@ -36,6 +36,7 @@ along with the program. If not, see <http://www.gnu.org/licenses/>
 #include "keyb.h"
 #include "scancode.h"
 #include "inttypes.h"
+#include "dosutil.h"
 
 #define KB_INTR		0x9
 #define KB_PORT		0x60
@@ -55,9 +56,6 @@ static void (INTERRUPT *prev_handler)();
 
 #define DONE_INIT prev_intr.pm_offset
 static _go32_dpmi_seginfo intr, prev_intr;
-
-#define outp(p, v)	outportb(p, v)
-#define inp(p)	inportb(p)
 #endif
 
 static void INTERRUPT kbintr();

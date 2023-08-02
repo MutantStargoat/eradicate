@@ -10,6 +10,7 @@
 #include "joy.h"
 #include "input.h"
 #include "audio.h"
+#include "cpuid.h"
 
 static int quit;
 
@@ -32,6 +33,16 @@ int main(int argc, char **argv)
 #endif
 
 	init_logger("game.log");
+
+#ifdef __WATCOMC__
+	printf("watcom build\n");
+#elif defined(__DJGPP__)
+	printf("djgpp build\n");
+#endif
+
+	if(read_cpuid(&cpuid) == 0) {
+		print_cpuid(&cpuid);
+	}
 
 	/* au_init needs to be called early, before init_timer, and also before
 	 * we enter graphics mode, to use the midas configuration tool if necessary
@@ -59,6 +70,9 @@ int main(int argc, char **argv)
 		goto break_evloop;
 	}
 
+	fflush(stdout);
+	reset_timer();
+
 	for(;;) {
 		int key;
 		while((key = kb_getkey()) != -1) {
@@ -84,4 +98,12 @@ break_evloop:
 void game_quit(void)
 {
 	quit = 1;
+}
+
+void demo_abort(void)
+{
+	set_text_mode();
+	stop_logger();
+	print_tail("game.log");
+	exit(1);
 }

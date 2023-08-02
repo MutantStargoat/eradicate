@@ -22,6 +22,7 @@
 #include "pit8254.h"
 #include "inttypes.h"
 #include "util.h"
+#include "dosutil.h"
 
 #define PIT_TIMER_INTR	8
 #define DOS_TIMER_INTR	0x1c
@@ -45,8 +46,6 @@ static void (INTERRUPT *prev_timer_intr)();
 #define INTERRUPT
 
 static _go32_dpmi_seginfo intr, prev_intr;
-
-#define outp(p, v)	outportb(p, v)
 #endif
 
 static void INTERRUPT timer_irq();

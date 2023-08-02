@@ -207,7 +207,7 @@ void vbe_print_mode_info(FILE *fp, struct vbe_mode_info *minf)
 	if(minf->attr & VBE_ATTR_LFB) {
 		fprintf(fp, " lfb@%lx", (unsigned long)minf->fb_addr);
 	} else {
-		fprintf(fp, " %xkb/bank", (unsigned int)minf->bank_size);
+		fprintf(fp, " (%dk gran)", (int)minf->win_gran);
 	}
 
 	fprintf(fp, " [");

@@ -4,11 +4,6 @@
 #include <string.h>
 #include <math.h>
 #include <assert.h>
-#if defined(__WATCOMC__) || defined(_WIN32) || defined(__DJGPP__)
-#include <malloc.h>
-#else
-#include <alloca.h>
-#endif
 #include "3dgfx.h"
 #include "gfxutil.h"
 #include "polyfill.h"
@@ -16,6 +11,8 @@
 #include "inttypes.h"
 #include "game.h"
 #include "util.h"
+
+#undef ENABLE_ZBUFFER
 
 #define STACK_SIZE	8
 typedef float g3d_matrix[16];
@@ -68,6 +65,8 @@ struct g3d_state {
 
 	int vport[4];
 
+	uint16_t clear_color, clear_depth;
+
 	/* immediate mode */
 	int imm_prim;
 	int imm_numv, imm_pcount;
@@ -90,7 +89,7 @@ static const float idmat[] = {
 
 int g3d_init(void)
 {
-	if(!(st = malloc(sizeof *st))) {
+	if(!(st = calloc(1, sizeof *st))) {
 		fprintf(stderr, "failed to allocate G3D context\n");
 		return -1;
 	}
@@ -101,6 +100,9 @@ int g3d_init(void)
 
 void g3d_destroy(void)
 {
+#ifdef ENABLE_ZBUFFER
+	free(pfill_zbuf);
+#endif
 	free(st);
 }
 
@@ -108,6 +110,10 @@ void g3d_reset(void)
 {
 	int i;
 
+#ifdef ENABLE_ZBUFFER
+	free(pfill_zbuf);
+	pfill_zbuf = 0;
+#endif
 	memset(st, 0, sizeof *st);
 
 	st->opt = G3D_CLIP_FRUSTUM;
@@ -119,24 +125,38 @@ void g3d_reset(void)
 	}
 
 	for(i=0; i<MAX_LIGHTS; i++) {
+		g3d_light_dir(i, 0, 0, 1);
 		g3d_light_color(i, 1, 1, 1);
 	}
-	g3d_light_ambient(0.1f, 0.1f, 0.1f);
+	g3d_light_ambient(0.1, 0.1, 0.1);
 
 	g3d_mtl_diffuse(1, 1, 1);
+
+	st->clear_depth = 65535;
 }
 
 void g3d_framebuffer(int width, int height, void *pixels)
 {
-	static int prev_height;
+	static int max_height;
 
-	if(height > prev_height) {
+#ifdef ENABLE_ZBUFFER
+	static int max_npixels;
+	int npixels = width * height;
+
+	if(npixels > max_npixels) {
+		free(pfill_zbuf);
+		pfill_zbuf = malloc(npixels * sizeof *pfill_zbuf);
+		max_npixels = npixels;
+	}
+#endif
+
+	if(height > max_height) {
 		polyfill_fbheight(height);
+		max_height = height;
 	}
 
 	st->width = width;
 	st->height = height;
-	st->pixels = pixels;
 
 	pfill_fb.pixels = pixels;
 	pfill_fb.width = width;
@@ -148,7 +168,6 @@ void g3d_framebuffer(int width, int height, void *pixels)
 /* set the framebuffer pointer, without resetting the size */
 void g3d_framebuffer_addr(void *pixels)
 {
-	st->pixels = pixels;
 	pfill_fb.pixels = pixels;
 }
 
@@ -158,6 +177,26 @@ void g3d_viewport(int x, int y, int w, int h)
 	st->vport[1] = y;
 	st->vport[2] = w;
 	st->vport[3] = h;
+}
+
+void g3d_clear_color(unsigned char r, unsigned char g, unsigned char b)
+{
+	st->clear_color = PACK_RGB16(r, g, b);
+}
+
+void g3d_clear_depth(uint16_t zval)
+{
+	st->clear_depth = zval;
+}
+
+void g3d_clear(unsigned int mask)
+{
+	if(mask & G3D_COLOR_BUFFER_BIT) {
+		memset16(pfill_fb.pixels, st->clear_color, pfill_fb.width * pfill_fb.height);
+	}
+	if(mask & G3D_DEPTH_BUFFER_BIT) {
+		memset16(pfill_zbuf, st->clear_depth, pfill_fb.width * pfill_fb.height);
+	}
 }
 
 void g3d_enable(unsigned int opt)
@@ -461,6 +500,8 @@ void g3d_draw(int prim, const struct g3d_vertex *varr, int varr_size)
 	g3d_draw_indexed(prim, varr, varr_size, 0, 0);
 }
 
+#define NEED_NORMALS	(st->opt & (G3D_LIGHTING | G3D_TEXTURE_GEN))
+
 void g3d_draw_indexed(int prim, const struct g3d_vertex *varr, int varr_size,
 		const uint16_t *iarr, int iarr_size)
 {
@@ -474,8 +515,10 @@ void g3d_draw_indexed(int prim, const struct g3d_vertex *varr, int varr_size,
 	tmpv = alloca(prim * 6 * sizeof *tmpv);
 
 	/* calc the normal matrix */
-	memcpy(st->norm_mat, st->mat[G3D_MODELVIEW][mvtop], 16 * sizeof(float));
-	st->norm_mat[12] = st->norm_mat[13] = st->norm_mat[14] = 0.0f;
+	if(NEED_NORMALS) {
+		memcpy(st->norm_mat, st->mat[G3D_MODELVIEW][mvtop], 16 * sizeof(float));
+		st->norm_mat[12] = st->norm_mat[13] = st->norm_mat[14] = 0.0f;
+	}
 
 	nfaces = (iarr ? iarr_size : varr_size) / prim;
 
@@ -486,14 +529,16 @@ void g3d_draw_indexed(int prim, const struct g3d_vertex *varr, int varr_size,
 			v[i] = iarr ? varr[*iarr++] : *varr++;
 
 			xform4_vec3(st->mat[G3D_MODELVIEW][mvtop], &v[i].x);
-			xform3_vec3(st->norm_mat, &v[i].nx);
 
-			if(st->opt & G3D_LIGHTING) {
-				shade(v + i);
-			}
-			if(st->opt & G3D_TEXTURE_GEN) {
-				v[i].u = v[i].nx * 0.5 + 0.5;
-				v[i].v = 0.5 - v[i].ny * 0.5;
+			if(NEED_NORMALS) {
+				xform3_vec3(st->norm_mat, &v[i].nx);
+				if(st->opt & G3D_LIGHTING) {
+					shade(v + i);
+				}
+				if(st->opt & G3D_TEXTURE_GEN) {
+					v[i].u = v[i].nx * 0.5 + 0.5;
+					v[i].v = 0.5 - v[i].ny * 0.5;
+				}
 			}
 			if(st->opt & G3D_TEXTURE_MAT) {
 				float *mat = st->mat[G3D_TEXTURE][st->mtop[G3D_TEXTURE]];
@@ -525,7 +570,11 @@ void g3d_draw_indexed(int prim, const struct g3d_vertex *varr, int varr_size,
 			if(v[i].w != 0.0f) {
 				v[i].x /= v[i].w;
 				v[i].y /= v[i].w;
-				/*v[i].z /= v[i].w;*/
+#ifdef ENABLE_ZBUFFER
+				if(st->opt & G3D_DEPTH_TEST) {
+					v[i].z /= v[i].w;
+				}
+#endif
 			}
 
 			/* viewport transformation */
@@ -535,6 +584,12 @@ void g3d_draw_indexed(int prim, const struct g3d_vertex *varr, int varr_size,
 			/* convert pos to 24.8 fixed point */
 			pv[i].x = cround64(v[i].x * 256.0f);
 			pv[i].y = cround64(v[i].y * 256.0f);
+#ifdef ENABLE_ZBUFFER
+			if(st->opt & G3D_DEPTH_TEST) {
+				/* after div/w z is in [-1, 1], remap it to [0, 65535] */
+				pv[i].z = cround64(v[i].z * 32767.5f + 32767.5f);
+			}
+#endif
 			/* convert tex coords to 16.16 fixed point */
 			pv[i].u = cround64(v[i].u * 65536.0f);
 			pv[i].v = cround64(v[i].v * 65536.0f);
@@ -546,6 +601,7 @@ void g3d_draw_indexed(int prim, const struct g3d_vertex *varr, int varr_size,
 		}
 
 		/* backface culling */
+#if 0	/* TODO fix culling */
 		if(vnum > 2 && st->opt & G3D_CULL_FACE) {
 			int32_t ax = pv[1].x - pv[0].x;
 			int32_t ay = pv[1].y - pv[0].y;
@@ -558,12 +614,13 @@ void g3d_draw_indexed(int prim, const struct g3d_vertex *varr, int varr_size,
 				continue;	/* back-facing */
 			}
 		}
+#endif
 
 		switch(vnum) {
 		case 1:
 			if(st->opt & (G3D_ALPHA_BLEND | G3D_ADD_BLEND)) {
 				int r, g, b, inv_alpha;
-				g3d_pixel *dest = st->pixels + (pv[0].y >> 8) * st->width + (pv[0].x >> 8);
+				g3d_pixel *dest = pfill_fb.pixels + (pv[0].y >> 8) * st->width + (pv[0].x >> 8);
 				if(st->opt & G3D_ALPHA_BLEND) {
 					inv_alpha = 255 - pv[0].a;
 					r = ((int)pv[0].r * pv[0].a + G3D_UNPACK_R(*dest) * inv_alpha) >> 8;
@@ -579,7 +636,7 @@ void g3d_draw_indexed(int prim, const struct g3d_vertex *varr, int varr_size,
 				}
 				*dest++ = G3D_PACK_RGB(r, g, b);
 			} else {
-				g3d_pixel *dest = st->pixels + (pv[0].y >> 8) * st->width + (pv[0].x >> 8);
+				g3d_pixel *dest = pfill_fb.pixels + (pv[0].y >> 8) * st->width + (pv[0].x >> 8);
 				*dest = G3D_PACK_RGB(pv[0].r, pv[0].g, pv[0].b);
 			}
 			break;
@@ -601,6 +658,11 @@ void g3d_draw_indexed(int prim, const struct g3d_vertex *varr, int varr_size,
 			} else if(st->opt & G3D_ADD_BLEND) {
 				fill_mode |= POLYFILL_ADD_BIT;
 			}
+#ifdef ENABLE_ZBUFFER
+			if(st->opt & G3D_DEPTH_TEST) {
+				fill_mode |= POLYFILL_ZBUF_BIT;
+			}
+#endif
 			polyfill(fill_mode, pv, vnum);
 		}
 	}
@@ -670,9 +732,9 @@ void g3d_color4b(unsigned char r, unsigned char g, unsigned char b, unsigned cha
 
 void g3d_color3f(float r, float g, float b)
 {
-	int ir = (int)(r * 255.0f);
-	int ig = (int)(g * 255.0f);
-	int ib = (int)(b * 255.0f);
+	int ir = r * 255.0f;
+	int ig = g * 255.0f;
+	int ib = b * 255.0f;
 	st->imm_curv.r = CLAMP(ir, 0, 255);
 	st->imm_curv.g = CLAMP(ig, 0, 255);
 	st->imm_curv.b = CLAMP(ib, 0, 255);
@@ -681,10 +743,10 @@ void g3d_color3f(float r, float g, float b)
 
 void g3d_color4f(float r, float g, float b, float a)
 {
-	int ir = (int)(r * 255.0f);
-	int ig = (int)(g * 255.0f);
-	int ib = (int)(b * 255.0f);
-	int ia = (int)(a * 255.0f);
+	int ir = r * 255.0f;
+	int ig = g * 255.0f;
+	int ib = b * 255.0f;
+	int ia = a * 255.0f;
 	st->imm_curv.r = CLAMP(ir, 0, 255);
 	st->imm_curv.g = CLAMP(ig, 0, 255);
 	st->imm_curv.b = CLAMP(ib, 0, 255);

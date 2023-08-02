@@ -229,14 +229,8 @@ static void update(void)
 	cgm_vec3 targ, up = {0, 1, 0};
 	cgm_vec3 offs_dir, path_dir;
 	float dt, s, lensq, prev_t;
-	long dt_ms;
 
-	if((dt_ms = time_msec - prev_upd) < MIN_UPD_INTERVAL) {
-		return;
-	}
-	prev_upd = time_msec;
-
-	dt = dt_ms / 1000.0f;
+	dt = TSTEP;
 
 	hold = 0;
 	if(race_time < 0) {
@@ -254,7 +248,7 @@ static void update(void)
 		hold = 1;
 		pspeed -= BRK * dt;
 	} else {
-		race_time += dt_ms;
+		race_time += TSTEP * 1000.0f;
 	}
 
 	pspeed -= DRAG * dt;
@@ -355,9 +349,19 @@ static void update(void)
 
 void race_draw(void)
 {
+	static float tm_acc = TSTEP;
+	int upd_iter;
 	int i, j, seg;
 
-	update();
+	tm_acc += (time_msec - prev_upd) / 1000.0f;
+	prev_upd = time_msec;
+
+	upd_iter = 8;
+	while(tm_acc >= TSTEP && --upd_iter >= 0) {
+		update();
+		tm_acc -= TSTEP;
+	}
+
 	memset(fb_pixels, 0, fb_size);
 
 	g3d_polygon_mode(G3D_FLAT);

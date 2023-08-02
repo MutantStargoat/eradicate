@@ -266,7 +266,7 @@ void dbg_printf(void *fb, int x, int y, const char *fmt, ...)
 
 void dbg_fps(void *fb)
 {
-	static char fpsbuf[16];
+	static char fpsbuf[32];
 	static long frame, prev_upd;
 	long msec = time_msec;
 	long delta;

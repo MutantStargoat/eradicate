@@ -29,6 +29,17 @@ struct dpmi_regs {
 } PACKED;
 #pragma pack (pop)
 
+enum {
+	FLAGS_CF	= 0x000001,
+	FLAGS_PF	= 0x000004,
+	FLAGS_ZF	= 0x000040,
+	FLAGS_SF	= 0x000080,
+	FLAGS_IF	= 0x000020,
+	FLAGS_DF	= 0x000040,
+	FLAGS_VM	= 0x020000,
+	FLAGS_ID	= 0x200000,
+};
+
 uint16_t dpmi_alloc(unsigned int par, uint16_t *sel);
 void dpmi_free(uint16_t sel);
 void dpmi_int(int inum, struct dpmi_regs *regs);

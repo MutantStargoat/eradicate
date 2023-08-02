@@ -1,7 +1,14 @@
 #ifndef UTIL_H_
 #define UTIL_H_
 
+#include <stdlib.h>
 #include "inttypes.h"
+
+#if defined(__WATCOMC__) || defined(_WIN32) || defined(__DJGPP__)
+#include <malloc.h>
+#else
+#include <alloca.h>
+#endif
 
 #ifdef __GNUC__
 #define INLINE __inline
@@ -220,6 +227,11 @@ void __inline memset16(void *dest, uint16_t val, int count)
 	do { \
 		__asm { int 3 } \
 	} while(0)
+#endif
+
+#ifdef __WATCOMC__
+int strcasecmp(const char *a, const char *b);
+int strncasecmp(const char *a, const char *b, size_t n);
 #endif
 
 #endif	/* UTIL_H_ */

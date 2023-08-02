@@ -47,7 +47,7 @@ int clip_poly(struct g3d_vertex *vout, int *voutnum,
 
 int check_clip_poly(const struct g3d_vertex *v, int vnum, struct cplane *plane)
 {
-	int i, nextidx, res;
+	int i, nextidx, res = 0;
 	int edges_clipped = 0;
 
 	for(i=0; i<vnum; i++) {

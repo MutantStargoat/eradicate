@@ -7,6 +7,8 @@
 #define GAME_CFG_FILE	"game.cfg"
 #define FB_BPP	16
 
+#define TSTEP	(1.0f / 30.0f)
+
 extern int fb_width;
 extern int fb_height;
 extern float fb_aspect;

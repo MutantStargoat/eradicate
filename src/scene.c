@@ -9,13 +9,7 @@
 #include "image.h"
 #include "rbtree.h"
 #include "resman.h"
-
-#if defined(__WATCOMC__) || defined(_WIN32) || defined(__DJGPP__)
-#include <malloc.h>
-#else
-#include <alloca.h>
-#endif
-
+#include "util.h"
 
 void init_scene(struct scene *scn)
 {
@@ -64,7 +58,7 @@ static char buf[256];
 			int newsz = xarr##_max ? xarr##_max * 2 : 16; \
 			void *newarr = realloc(xarr, newsz * sizeof *xarr); \
 			if(!newarr) { \
-				fprintf(stderr, "load_scene: failed to resize " #xarr " to %d bytes\n", newsz * sizeof *xarr); \
+				fprintf(stderr, "load_scene: failed to resize " #xarr " to %lu bytes\n", (unsigned long)(newsz * sizeof *xarr)); \
 				goto err; \
 			} \
 			xarr = newarr; \
@@ -194,7 +188,7 @@ int load_scene(struct scene *scn, const char *fname)
 					}
 
 					if((node = rb_find(rbtree, &fv))) {
-						idx = (unsigned int)node->data;
+						idx = (uintptr_t)node->data;
 						APPEND(iarr, idx);
 					} else {
 						newidx = gvarr_size;
@@ -224,7 +218,7 @@ int load_scene(struct scene *scn, const char *fname)
 						if((newfv = malloc(sizeof *newfv))) {
 							*newfv = fv;
 						}
-						if(!newfv || rb_insert(rbtree, newfv, (void*)newidx) == -1) {
+						if(!newfv || rb_insert(rbtree, newfv, (void*)(uintptr_t)newidx) == -1) {
 							fprintf(stderr, "load_mesh: failed to insert facevertex into the tree\n");
 							goto err;
 						}

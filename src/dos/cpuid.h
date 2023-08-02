@@ -1,0 +1,96 @@
+#ifndef CPUID_H_
+#define CPUID_H_
+
+#include "inttypes.h"
+
+struct cpuid_info {
+	uint32_t maxidx;	/* 0: eax */
+	char vendor[12];	/* 0: ebx, edx, ecx */
+	uint32_t id;		/* 1: eax */
+	uint32_t rsvd0;		/* 1: ebx */
+	uint32_t feat;		/* 1: edx */
+	uint32_t feat2;		/* 1: ecx */
+
+	char brandstr[48];	/* 80000002h-80000004h */
+};
+
+extern struct cpuid_info cpuid;
+
+#define CPU_HAVE_MMX		(cpuid.feat & CPUID_FEAT_MMX)
+#define CPU_HAVE_MTRR		(cpuid.feat & CPUID_FEAT_MTRR)
+
+#define CPUID_STEPPING(id)	((id) & 0xf)
+#define CPUID_MODEL(id)		(((id) >> 4) & 0xf)
+#define CPUID_FAMILY(id)	(((id) >> 8) & 0xf)
+#define CPUID_EXTMODEL(id)	(((id) >> 16) & 0xf)
+#define CPUID_EXTFAMILY(id)	(((id) >> 20) & 0xff)
+
+#define CPUID_FEAT_FPU			0x00000001
+#define CPUID_FEAT_VME			0x00000002
+#define CPUID_FEAT_DBGEXT		0x00000004
+#define CPUID_FEAT_PSE			0x00000008
+#define CPUID_FEAT_TSC			0x00000010
+#define CPUID_FEAT_MSR			0x00000020
+#define CPUID_FEAT_PAE			0x00000040
+#define CPUID_FEAT_MCE			0x00000080
+#define CPUID_FEAT_CX8			0x00000100
+#define CPUID_FEAT_APIC			0x00000200
+
+#define CPUID_FEAT_SEP			0x00000800
+#define CPUID_FEAT_MTRR			0x00001000
+#define CPUID_FEAT_PGE			0x00002000
+#define CPUID_FEAT_MCA			0x00004000
+#define CPUID_FEAT_CMOV			0x00008000
+#define CPUID_FEAT_PAT			0x00010000
+#define CPUID_FEAT_PSE36		0x00020000
+#define CPUID_FEAT_PSN			0x00040000
+#define CPUID_FEAT_CLF			0x00080000
+
+#define CPUID_FEAT_DTES			0x00200000
+#define CPUID_FEAT_ACPI			0x00400000
+#define CPUID_FEAT_MMX			0x00800000
+#define CPUID_FEAT_FXSR			0x01000000
+#define CPUID_FEAT_SSE			0x02000000
+#define CPUID_FEAT_SSE2			0x04000000
+#define CPUID_FEAT_SS			0x08000000
+#define CPUID_FEAT_HTT			0x10000000
+#define CPUID_FEAT_TM1			0x20000000
+#define CPUID_FEAT_IA64			0x40000000
+#define CPUID_FEAT_PBE			0x80000000
+
+#define CPUID_FEAT2_SSE3		0x00000001
+#define CPUID_FEAT2_PCLMUL		0x00000002
+#define CPUID_FEAT2_DTES64		0x00000004
+#define CPUID_FEAT2_MONITOR		0x00000008
+#define CPUID_FEAT2_DS_CPL		0x00000010
+#define CPUID_FEAT2_VMX			0x00000020
+#define CPUID_FEAT2_SMX			0x00000040
+#define CPUID_FEAT2_EST			0x00000080
+#define CPUID_FEAT2_TM2			0x00000100
+#define CPUID_FEAT2_SSSE3		0x00000200
+#define CPUID_FEAT2_CID			0x00000400
+#define CPUID_FEAT2_SDBG		0x00000800
+#define CPUID_FEAT2_FMA			0x00001000
+#define CPUID_FEAT2_CX16		0x00002000
+#define CPUID_FEAT2_ETPRD		0x00004000
+#define CPUID_FEAT2_PDCM		0x00008000
+
+#define CPUID_FEAT2_PCID		0x00020000
+#define CPUID_FEAT2_DCA			0x00040000
+#define CPUID_FEAT2_SSE41		0x00080000
+#define CPUID_FEAT2_SSE42		0x00100000
+#define CPUID_FEAT2_X2APIC		0x00200000
+#define CPUID_FEAT2_MOVBE		0x00400000
+#define CPUID_FEAT2_POPCNT		0x00800000
+
+#define CPUID_FEAT2_AES			0x02000000
+#define CPUID_FEAT2_XSAVE		0x04000000
+#define CPUID_FEAT2_OSXSAVE		0x08000000
+#define CPUID_FEAT2_AVX			0x10000000
+#define CPUID_FEAT2_F16C		0x20000000
+#define CPUID_FEAT2_RDRAND		0x40000000
+
+int read_cpuid(struct cpuid_info *info);
+void print_cpuid(struct cpuid_info *info);
+
+#endif	/* CPUID_H_ */

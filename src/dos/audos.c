@@ -1,9 +1,12 @@
 #include <stdio.h>
+
+#ifndef NO_SOUND
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include "audio.h"
 #include "midasdll.h"
+#include "util.h"
 
 #define SET_MUS_VOL(vol) \
 	do { \
@@ -209,3 +212,76 @@ unsigned long get_msec(void)
 {
 	return ticks * tick_interval;
 }
+
+void sleep_msec(unsigned long msec)
+{
+	unsigned long wakeup_time = ticks + msec / tick_interval;
+	while(ticks < wakeup_time) {
+#ifdef USE_HLT
+		halt();
+#endif
+	}
+}
+
+#else	/* NO_SOUND */
+#include "audio.h"
+
+static int vol_master, vol_mus, vol_sfx;
+
+int au_init(void)
+{
+	vol_master = vol_mus = vol_sfx = 255;
+	return 0;
+}
+
+void au_shutdown(void)
+{
+}
+
+struct au_module *au_load_module(const char *fname)
+{
+	return 0;
+}
+
+void au_free_module(struct au_module *mod)
+{
+}
+
+int au_play_module(struct au_module *mod)
+{
+	return -1;
+}
+
+void au_update(void)
+{
+}
+
+int au_stop_module(struct au_module *mod)
+{
+	return -1;
+}
+
+int au_module_state(struct au_module *mod)
+{
+	return AU_STOPPED;
+}
+
+int au_volume(int vol)
+{
+	AU_VOLADJ(vol_master, vol);
+	return vol_master;
+}
+
+int au_sfx_volume(int vol)
+{
+	AU_VOLADJ(vol_sfx, vol);
+	return vol_sfx;
+}
+
+
+int au_music_volume(int vol)
+{
+	AU_VOLADJ(vol_mus, vol);
+	return vol_mus;
+}
+#endif	/* NO_SOUND */
