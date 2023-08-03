@@ -52,3 +52,5 @@ pceminst
 pull.bat
 push.bat
 shots
+libs/imago/imago.dsp
+libs/mikmod/mikmod.dsp

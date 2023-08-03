@@ -16,7 +16,7 @@ Recommended hardware:
   - 32MB RAM
   - SVGA video card supporting 16bit color, and VBE 2.0+
   - Any ISA sound card
-  - Any gameport-compatible gamepad
+  - Any gameport-compatible gamepad (TODO)
 
 Eradicate attempts to auto-detect the installed sound card, and only asks the
 user for manual sound card configuration if the auto-detection fails. If for
@@ -58,6 +58,11 @@ See https://modarchive.org for a wide selection of compatible music files.
 
 Download
 --------
+
+Release v0.2 (jam bugfixes, includes source and binaries for DOS, GNU/Linux and Windows):
+  - http://nuclear.mutantstargoat.com/sw/games/eradicate/releases/eradicate-0.2.tar.gz
+  - http://nuclear.mutantstargoat.com/sw/games/eradicate/releases/eradicate-0.2.zip
+  - http://nuclear.mutantstargoat.com/sw/games/eradicate/releases/erad02.zip
 
 Release v0.1 (jam release, includes source and binaries for DOS, GNU/Linux and Windows):
   - http://nuclear.mutantstargoat.com/sw/games/eradicate/releases/eradicate-0.1.tar.gz
