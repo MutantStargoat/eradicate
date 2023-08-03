@@ -19,7 +19,7 @@ void *fb_pixels, *vmem;
 void *fb_buf;
 
 long time_msec;
-int show_fps = 1;
+int show_fps;
 
 static long last_vol_chg = -16384;
 
@@ -134,6 +134,10 @@ void game_key(int key, int pressed)
 		case 'm':
 			opt.music ^= 1;
 			last_vol_chg = time_msec;
+			break;
+
+		case '`':
+			show_fps ^= 1;
 			break;
 
 		default:
