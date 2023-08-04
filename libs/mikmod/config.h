@@ -33,19 +33,32 @@
 #define STDC_HEADERS 1
 
 #ifdef __linux__
-#define DRV_ALSA	1
+#define MIKMOD_DYNAMIC	1
+#define HAVE_SYS_SOUNDCARD_H	1
+
+#define DRV_ALSA		1
+#define DRV_PULSEAUDIO	1
+#define DRV_OSS			1
 #endif
 
 #ifdef __FreeBSD__
+#define HAVE_SYS_SOUNDCARD_H	1
+
 #define DRV_OSS		1
 #endif
 
-#ifdef __sgi__
+#ifdef __APPLE__
+#define DRV_OSX		1
+#endif
+
+#ifdef __sgi
 #define DRV_SGI		1
 #endif
 
 #ifdef _WIN32
-#define DRV_DS	1
+/*#define DRV_DS		1*/
+#define DRV_WIN		1
+/*#define DRV_XAUDIO2	1*/
 #endif
 
 #endif	/* MIKMOD_CONFIG_H_ */

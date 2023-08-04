@@ -29,6 +29,8 @@
 #include "config.h"
 #endif
 
+#ifndef NO_DEPACKERS
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -137,6 +139,10 @@ static int decompressS404(UBYTE *src, UBYTE *orgdst,
   dst = orgdst + oLen;
 
   eff = initGetb(&bs, src, src_length);
+
+  /* Sanity check--prevent invalid shift exponents. */
+  if (eff < 6 || eff >= 16)
+    return -1;
 
   while (oLen > 0) {
     x = getb(&bs, 9);
@@ -368,8 +374,24 @@ BOOL S404_Unpack(MREADER *reader, void **out, long *outlen)
 	fprintf(stderr,"S404: iLen= %d, sLen= %d, pLen= %d, oLen= %d\n",
 		iLen, sLen, pLen, oLen);
 #endif
-	if (sLen < 0 || oLen <= 0 || pLen <= 0) return 0;
-	if (pLen + 16 >= iLen) return 0; /* sanity check */
+	if (sLen < 0 || oLen <= 0 || pLen <= 6 || pLen > iLen - 18) {
+		#ifdef STC_DEBUG
+		fprintf(stderr, "S404: bad lengths\n");
+		#endif
+		return 0;
+	}
+
+	/**
+	 * Best case ratio of S404 sliding window:
+	 *
+	 *  2-3:  9b + (>=1b) -> 2-3B  ->  24:10
+	 *  4-7:  9b + (>=3b) -> 4-7B  ->  56:12
+	 *  8:22: 9b + (>=6b) -> 8-22B -> 176:15
+	 *  23+:  9b + 3b + 8b * floor((n-23)/255) + 7b + (>=0b) -> n B -> ~255:1
+	 */
+	if (pLen < (oLen / 255)) {
+		return 0;
+	}
 
 	if (!(src = (UBYTE*) MikMod_malloc(iLen - 16)))
 		return 0;
@@ -391,3 +413,5 @@ BOOL S404_Unpack(MREADER *reader, void **out, long *outlen)
 	MikMod_free(dst);
 	return 0;
 }
+
+#endif /* NO_DEPACKERS */

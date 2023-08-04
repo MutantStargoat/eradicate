@@ -59,8 +59,8 @@
 #include <stdlib.h>
 #include <dmedia/audio.h>
 
+#define DEFAULT_SGI_FRAGSIZE  20000
 #define DEFAULT_SGI_BUFSIZE   40000
-#define DEFAULT_SGI_FRAGSIZE  (DEFAULT_SGI_BUFSIZE / 2)
 
 static	ALconfig sgi_config;
 static	ALport sgi_port;

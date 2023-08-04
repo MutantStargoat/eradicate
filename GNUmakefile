@@ -18,16 +18,18 @@ warn = -pedantic -Wall
 #opt = -O3 -ffast-math
 dbg = -g
 
+libs_path = libs/unix
+libdir = -L$(libs_path)
+
 CC = gcc
 CFLAGS = $(arch) $(warn) $(opt) -fno-pie -fno-strict-aliasing $(dbg) -MMD \
 		 $(def) $(inc)
-LDFLAGS = $(arch) -no-pie -Llibs/imago -limago -Llibs/mikmod \
-		  -lmikmod $(sndlib_$(sys)) -lm
+LDFLAGS = $(arch) -no-pie $(libdir) -limago -lmikmod $(sndlib_$(sys)) -lm
 
 cpu ?= $(shell uname -m | sed 's/i.86/i386/; s/arm.*/arm/; s/aarch.*/arm/')
 
 ifeq ($(cpu), i386)
-	def += -DUSE_MMX
+	#def += -DUSE_MMX
 else
 	ifeq ($(cpu), x86_64)
 		#def += -DUSE_MMX
@@ -46,6 +48,7 @@ sys ?= $(shell uname -s | sed 's/MINGW.*/mingw/; s/IRIX.*/IRIX/')
 ifeq ($(sys), mingw)
 	obj = $(csrc:.c=.w32.o) $(asmsrc:.asm=.o)
 	dep	= $(csrc:.c=.d)
+	libs_path = libs/w32
 
 	bin = game_win32.exe
 

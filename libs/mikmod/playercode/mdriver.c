@@ -69,7 +69,7 @@ UWORD md_bpm = 125;	/* tempo */
 UBYTE md_numchn  = 0, md_sngchn = 0, md_sfxchn = 0;
 UBYTE md_hardchn = 0, md_softchn= 0;
 
-void (*md_player)(void) = Player_HandleTick;
+MikMod_player_t md_player  =  Player_HandleTick;
 
 MikMod_callback_t vc_callback = NULL;
 
@@ -187,7 +187,7 @@ MIKMODAPI CHAR* MikMod_InfoDriver(void)
 	MUTEX_LOCK(lists);
 	/* compute size of buffer */
 	for(l = firstdriver; l; l = l->next)
-		len += 4 + (l->next ? 1 : 0) + strlen(l->Version);
+		len += 4 + 1 + strlen(l->Version);
 
 	if(len)
 	  if((list=(CHAR*)MikMod_malloc(len*sizeof(CHAR))) != NULL) {
@@ -195,7 +195,8 @@ MIKMODAPI CHAR* MikMod_InfoDriver(void)
 		list[0] = 0;
 		/* list all registered device drivers : */
 		for(t = 1, l = firstdriver; l; l = l->next, t++) {
-		    list_end += sprintf(list_end, "%2d %s%s", t, l->Version, (l->next)? "\n" : "");
+		    list_end += sprintf(list_end, "%2d %s\n", t, l->Version);
+		    if (!l->next) list_end[-1] = 0;
 		}
 	}
 	MUTEX_UNLOCK(lists);
@@ -780,7 +781,8 @@ static SBYTE Sample_Play_internal(SAMPLE *s,ULONG start,UBYTE flags)
 			if(md_driver->VoiceStopped(c=sfxpool+md_sngchn)) {
 				sfxinfo[sfxpool]=flags;
 				Voice_Play_internal(c,s,start);
-				md_driver->VoiceSetVolume(c,s->volume<<2);
+				/*md_driver->VoiceSetVolume(c,s->volume<<2);*/
+				Voice_SetVolume_internal(c,s->volume<<2);
 				Voice_SetPanning_internal(c,s->panning);
 				md_driver->VoiceSetFrequency(c,s->speed);
 				sfxpool++;
@@ -790,7 +792,8 @@ static SBYTE Sample_Play_internal(SAMPLE *s,ULONG start,UBYTE flags)
 		} else {
 			sfxinfo[sfxpool]=flags;
 			Voice_Play_internal(c=sfxpool+md_sngchn,s,start);
-			md_driver->VoiceSetVolume(c,s->volume<<2);
+			/*md_driver->VoiceSetVolume(c,s->volume<<2);*/
+			Voice_SetVolume_internal(c,s->volume<<2);
 			Voice_SetPanning_internal(c,s->panning);
 			md_driver->VoiceSetFrequency(c,s->speed);
 			sfxpool++;

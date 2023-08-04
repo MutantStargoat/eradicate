@@ -48,6 +48,8 @@
 #include "config.h"
 #endif
 
+#ifndef NO_DEPACKERS
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -68,6 +70,7 @@ struct io {
 	UBYTE *src;
 	UBYTE *dest;
 	int offs;
+	int srclen;
 };
 
 static const UBYTE ctable[]={
@@ -80,7 +83,7 @@ static const UBYTE ctable[]={
 	8, 7, 6, 2, 3, 4, 5, 0
 };
 
-static UWORD readmem16b(UBYTE *m)
+static UWORD readmem16b(const UBYTE *m)
 {
 	ULONG a, b;
 
@@ -90,7 +93,7 @@ static UWORD readmem16b(UBYTE *m)
 	return (a << 8) | b;
 }
 
-static ULONG readmem24b(UBYTE *m)
+static ULONG readmem24b(const UBYTE *m)
 {
 	ULONG a, b, c;
 
@@ -101,20 +104,44 @@ static ULONG readmem24b(UBYTE *m)
 	return (a << 16) | (b << 8) | c;
 }
 
-static UWORD xchecksum(ULONG * ptr, ULONG count)
+static ULONG readmem32b(const UBYTE *m)
 {
-	register ULONG sum = 0;
+	ULONG a, b, c, d;
+
+	a = m[0];
+	b = m[1];
+	c = m[2];
+	d = m[3];
+
+	return (a << 24) | (b << 16) | (c << 8) | d;
+}
+
+static UWORD xchecksum(UBYTE *ptr, ULONG count)
+{
+	ULONG sum = 0;
 
 	while (count-- > 0) {
-		sum ^= *ptr++;
+		sum ^= readmem32b(ptr);
+		ptr += 4;
 	}
 
 	return (UWORD) (sum ^ (sum >> 16));
 }
 
+static int has_bits(struct io *io, int count)
+{
+	return (count <= io->srclen - io->offs);
+}
+
 static int get_bits(struct io *io, int count)
 {
-	int r = readmem24b(io->src + (io->offs >> 3));
+	int r;
+
+	if (!has_bits(io, count)) {
+		return -1;
+	}
+
+	r = readmem24b(io->src + (io->offs >> 3));
 
 	r <<= io->offs % 8;
 	r &= 0xffffff;
@@ -126,6 +153,9 @@ static int get_bits(struct io *io, int count)
 
 static int get_bits_final(struct io *io, int count)
 {
+	/* Note: has_bits check should be done separately since
+	 * this can return negative values.
+	 */
 	int r = readmem24b(io->src + (io->offs >> 3));
 
 	r <<= (io->offs % 8) + 8;
@@ -138,7 +168,7 @@ static int get_bits_final(struct io *io, int count)
 static int copy_data(struct io *io, int d1, int *data, UBYTE *dest_start, UBYTE *dest_end)
 {
 	UBYTE *copy_src;
-	int dest_offset, count, copy_len;
+	int r, dest_offset, count, copy_len;
 
 	if (get_bits(io, 1) == 0) {
 		copy_len = get_bits(io, 1) + 2;
@@ -152,8 +182,16 @@ static int copy_data(struct io *io, int d1, int *data, UBYTE *dest_start, UBYTE 
 		copy_len = get_bits(io, 5) + 16;
 	}
 
-	if (get_bits(io, 1) == 0) {
-		if (get_bits(io, 1) == 0) {
+	r = get_bits(io, 1);
+	if (copy_len < 0 || r < 0) {
+		return -1;
+	}
+	if (r == 0) {
+		r = get_bits(io, 1);
+		if (r < 0) {
+			return -1;
+		}
+		if (r == 0) {
 			count = 8;
 			dest_offset = 0;
 		} else {
@@ -179,7 +217,11 @@ static int copy_data(struct io *io, int d1, int *data, UBYTE *dest_start, UBYTE 
 
 	copy_len += 2;
 
-	copy_src = io->dest + dest_offset - get_bits(io, count) - 1;
+	r = get_bits(io, count);
+	if (r < 0) {
+		return -1;
+	}
+	copy_src = io->dest + dest_offset - r - 1;
 
 	/* Sanity check */
 	if (copy_src < dest_start || copy_src + copy_len >= dest_end) {
@@ -198,7 +240,7 @@ static int copy_data(struct io *io, int d1, int *data, UBYTE *dest_start, UBYTE 
 
 static int unsqsh_block(struct io *io, UBYTE *dest_start, UBYTE *dest_end)
 {
-	int d1, d2, data, unpack_len, count, old_count;
+	int r, d1, d2, data, unpack_len, count, old_count;
 
 	d1 = d2 = data = old_count = 0;
 	io->offs = 0;
@@ -207,18 +249,22 @@ static int unsqsh_block(struct io *io, UBYTE *dest_start, UBYTE *dest_end)
 	*(io->dest++) = data;
 
 	do {
+		r = get_bits(io, 1);
+		if (r < 0)
+			return -1;
+
 		if (d1 < 8) {
-			if (get_bits(io, 1)) {
+			if (r) {
 				d1 = copy_data(io, d1, &data, dest_start, dest_end);
 				if (d1 < 0)
 					return -1;
 				d2 -= d2 >> 3;
 				continue;
-			} 
+			}
 			unpack_len = 0;
 			count = 8;
 		} else {
-			if (get_bits(io, 1)) {
+			if (r) {
 				count = 8;
 				if (count == old_count) {
 					if (d2 >= 20) {
@@ -233,7 +279,11 @@ static int unsqsh_block(struct io *io, UBYTE *dest_start, UBYTE *dest_end)
 					d2 += 8;
 				}
 			} else {
-				if (get_bits(io, 1) == 0) {
+				r = get_bits(io, 1);
+				if (r < 0)
+					return -1;
+
+				if (r == 0) {
 					d1 = copy_data(io, d1, &data, dest_start, dest_end);
 					if (d1 < 0)
 						return -1;
@@ -241,12 +291,22 @@ static int unsqsh_block(struct io *io, UBYTE *dest_start, UBYTE *dest_end)
 					continue;
 				}
 
-				if (get_bits(io, 1) == 0) {
+				r = get_bits(io, 1);
+				if (r < 0)
+					return -1;
+
+				if (r == 0) {
 					count = 2;
 				} else {
-					if (get_bits(io, 1)) {
+					r = get_bits(io, 1);
+					if (r < 0)
+						return -1;
+
+					if (r) {
 						io->offs--;
 						count = get_bits(io, 3);
+						if (count < 0)
+							return -1;
 					} else {
 						count = 3;
 					}
@@ -265,6 +325,10 @@ static int unsqsh_block(struct io *io, UBYTE *dest_start, UBYTE *dest_end)
 					}
 				}
 			}
+		}
+
+		if (!has_bits(io, count * (unpack_len + 2))) {
+			return -1;
 		}
 
 		do {
@@ -312,7 +376,7 @@ static int unsqsh(UBYTE *src, SLONG srclen, UBYTE *dest, SLONG destlen)
 		type = *c++;
 		c++;			/* hchk */
 
-		sum = *(UWORD *)c;
+		sum = readmem16b(c);
 		c += 2;			/* checksum */
 
 		packed_size = readmem16b(c);	/* packed */
@@ -330,9 +394,10 @@ static int unsqsh(UBYTE *src, SLONG srclen, UBYTE *dest, SLONG destlen)
 		}
 
 		io.src = c + 2;
+		io.srclen = packed_size << 3;
 		memcpy(bc, c + packed_size, 3);
 		memset(c + packed_size, 0, 3);
-		lchk = xchecksum((ULONG *) (c), (packed_size + 3) >> 2);
+		lchk = xchecksum(c, (packed_size + 3) >> 2);
 		memcpy(c + packed_size, bc, 3);
 
 		if (lchk != sum) {
@@ -341,11 +406,14 @@ static int unsqsh(UBYTE *src, SLONG srclen, UBYTE *dest, SLONG destlen)
 
 		if (type == 0) {
 			/* verbatim block */
+			decrunched += packed_size;
+			if (decrunched > destlen) {
+				return -1;
+			}
 			memcpy(io.dest, c, packed_size);
 			io.dest += packed_size;
 			c += packed_size;
 			len -= packed_size;
-			decrunched += packed_size;
 			continue;
 		}
 
@@ -369,12 +437,11 @@ static int unsqsh(UBYTE *src, SLONG srclen, UBYTE *dest, SLONG destlen)
 		if (unsqsh_block(&io, dest_start, dest_end) < 0) {
 			return -1;
 		}
-		
+
 		io.dest = dest_end;
 	}
 
 	return decrunched;
-
 }
 
 BOOL XPK_Unpack(MREADER *reader, void **out, long *outlen)
@@ -399,7 +466,7 @@ BOOL XPK_Unpack(MREADER *reader, void **out, long *outlen)
 	if (destlen < 0 || destlen > 0x200000)
 		return 0;
 
-	if ((src = (UBYTE*) MikMod_malloc(srclen + 3)) == NULL)
+	if ((src = (UBYTE*) MikMod_calloc(1, srclen + 3)) == NULL)
 		return 0;
 	if ((dest = (UBYTE*) MikMod_malloc(destlen + 100)) == NULL) {
 		MikMod_free(src);
@@ -425,3 +492,4 @@ BOOL XPK_Unpack(MREADER *reader, void **out, long *outlen)
 	return 0;
 }
 
+#endif /* NO_DEPACKERS */

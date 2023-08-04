@@ -5,17 +5,21 @@ src = $(wildcard drivers/*.c) \
 	  $(wildcard playercode/*.c) \
 	  $(wildcard posix/*.c)
 obj = $(src:.c=.o)
-alib = libmikmod.a
+alib = ../unix/libmikmod.a
 
-CC = gcc
-CFLAGS = $(arch) -fno-pie -g -O3 -I. -Iinclude -DHAVE_CONFIG_H -DMIKMOD_STATIC `sdl-config --cflags`
+sys ?= $(shell uname -s | sed 's/MINGW.*/mingw/')
+ifeq ($(sys), mingw)
+	obj = $(src:.c=.w32.o)
+	alib = ../w32/libmikmod.a
+endif
 
-#ifeq ($(shell uname -m), x86_64)
-#	arch = -m32
-#endif
+CFLAGS = -fno-pie -O3 -I. -Iinclude -DHAVE_CONFIG_H -DMIKMOD_STATIC
 
 $(alib): $(obj)
 	$(AR) rcs $@ $(obj)
+
+%.w32.o: %.c
+	$(CC) -o $@ $(CFLAGS) -c $<
 
 .PHONY: clean
 clean:

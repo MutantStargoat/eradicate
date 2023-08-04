@@ -43,7 +43,7 @@ void POLYFILL(struct pvertex *varr, int vnum)
 		v = varr + i;
 		vn = VNEXT(v);
 
-		if(vn->y == v->y) continue;	// XXX ???
+		if(vn->y == v->y) continue;	/* XXX ??? */
 
 		if(vn->y >= v->y) {
 			/* inrementing Y: left side */

@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef INT_TYPES_H_
 #define INT_TYPES_H_
 
+#include "zlib.h"
 #if defined(__DOS__) || defined(__MSDOS__)
 typedef char int8_t;
 typedef short int16_t;
@@ -48,7 +49,11 @@ typedef __int32 intptr_t;
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199900
 #include <stdint.h>
 #else
+#ifdef __sgi
 #include <sys/types.h>
+#else
+#include <inttypes.h>
+#endif
 #endif
 
 #endif	/* end !msvc */
