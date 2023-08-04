@@ -70,9 +70,6 @@ void intro_draw(void)
 		return;
 	}
 
-#ifdef USE_MMX
-	fade_image(fb_pixels, logo, fade);
-#else
 	{
 		int i;
 		uint32_t *src = logo;
@@ -85,7 +82,6 @@ void intro_draw(void)
 			*dest++ = PACK_RGB16(r, g, b);
 		}
 	}
-#endif
 
 	blit_frame(fb_pixels, 0);
 }

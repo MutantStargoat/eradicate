@@ -21,6 +21,7 @@ int main(int argc, char **argv)
 {
 	int i;
 	int vmidx, status = 0;
+	char *env;
 
 	for(i=1; i<argc; i++) {
 		if(strcmp(argv[i], "-setup") == 0) {
@@ -32,7 +33,11 @@ int main(int argc, char **argv)
 	__djgpp_nearptr_enable();
 #endif
 
-	init_logger("game.log");
+	if((env = getenv("GAMELOG"))) {
+		init_logger(env);
+	} else {
+		init_logger("game.log");
+	}
 
 #ifdef __WATCOMC__
 	printf("watcom build\n");
