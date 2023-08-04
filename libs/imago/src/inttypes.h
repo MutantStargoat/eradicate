@@ -18,7 +18,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef INT_TYPES_H_
 #define INT_TYPES_H_
 
-#include "zlib.h"
 #if defined(__DOS__) || defined(__MSDOS__)
 typedef char int8_t;
 typedef short int16_t;
@@ -28,7 +27,8 @@ typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
 typedef unsigned long uint32_t;
 
-typedef unsigned long intptr_t;
+typedef long intptr_t;
+typedef unsigned long uintptr_t;
 #else
 
 #ifdef _MSC_VER
@@ -41,8 +41,10 @@ typedef unsigned __int32 uint32_t;
 
 #ifdef _WIN64
 typedef __int64 intptr_t;
+typedef unsigned __int64 uintptr_t;
 #else
 typedef __int32 intptr_t;
+typedef unsigned __int32 uintptr_t;
 #endif
 #else	/* not msvc */
 

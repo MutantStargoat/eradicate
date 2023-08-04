@@ -89,11 +89,11 @@ SOURCE=.\config.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\drivers\drv_ds.c
+SOURCE=.\drivers\drv_nos.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\drivers\drv_nos.c
+SOURCE=.\drivers\drv_win.c
 # End Source File
 # Begin Source File
 
