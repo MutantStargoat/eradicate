@@ -14,7 +14,7 @@ PUSHA_EAX_OFFS equ 28
 PUSHA_ECX_OFFS equ 20
 PUSHA_EDX_OFFS equ 16
 
-	section .text
+	section .text use32
 	bits 32
 
 ; int have_mouse(void)

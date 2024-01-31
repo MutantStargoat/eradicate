@@ -1,4 +1,4 @@
-	section .text
+	section .text use32
 	bits 32
 ; foo_ are watcom functions, _foo are djgpp functions
 
