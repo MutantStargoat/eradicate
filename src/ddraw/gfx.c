@@ -279,7 +279,7 @@ void wait_vsync(void)
 
 void blit_frame(void *pixels, int vsync)
 {
-	int i, j, res;
+	int i, j, res, dest_bpp;
 	DDSURFACEDESC sd = {0};
 	uint16_t *pptr;
 	uint32_t *dest32;
@@ -314,7 +314,9 @@ void blit_frame(void *pixels, int vsync)
 		return;
 	}
 
-	switch(cur_vmode->bpp) {
+	dest_bpp = sd.ddpfPixelFormat.dwRGBBitCount;
+
+	switch(dest_bpp) {
 	case 15:
 	case 16:
 		memcpy(sd.lpSurface, pixels, sd.dwHeight * sd.lPitch);
