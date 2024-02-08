@@ -247,7 +247,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\posix\strcasecmp.c"
+				RelativePath=".\posix\strcase.c"
 				>
 			</File>
 			<File
@@ -259,7 +259,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\playercode\virtch_common.c"
+				RelativePath=".\playercode\virtch_c.c"
 				>
 			</File>
 			<File
@@ -277,11 +277,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\include\mikmod_ctype.h"
+				RelativePath=".\include\mikctype.h"
 				>
 			</File>
 			<File
-				RelativePath=".\include\mikmod_internals.h"
+				RelativePath=".\include\mikint.h"
 				>
 			</File>
 		</Filter>

@@ -6,7 +6,7 @@
 #if defined(__WATCOMC__)
 #include <direct.h>
 #elif defined(_MSC_VER)
-#include "w32_dirent.h"
+#include "w32dent.h"
 #else
 #include <dirent.h>
 #endif

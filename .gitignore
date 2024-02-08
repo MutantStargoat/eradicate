@@ -54,3 +54,6 @@ push.bat
 shots
 libs/imago/imago.dsp
 libs/mikmod/mikmod.dsp
+releases/
+*.json
+bin/

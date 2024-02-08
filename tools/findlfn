@@ -1,0 +1,9 @@
+#!/bin/sh
+
+files()
+{
+	git ls-files | sed 's/\//\n/g' | sort | uniq
+}
+
+files | grep '\.....'
+files | grep '.........\.'

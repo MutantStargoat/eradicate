@@ -129,11 +129,11 @@ SOURCE=.\include\mikmod.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\include\mikmod_ctype.h
+SOURCE=.\include\mikctype.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\include\mikmod_internals.h
+SOURCE=.\include\mikint.h
 # End Source File
 # Begin Source File
 

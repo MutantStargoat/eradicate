@@ -41,7 +41,7 @@
 #include <string.h>
 
 #include "mikmod_internals.h"
-#include "mikmod_ctype.h"
+#include "mikctype.h"
 
 #ifdef SUNOS
 extern int fprintf(FILE *, const char *, ...);

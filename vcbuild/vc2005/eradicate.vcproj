@@ -390,11 +390,11 @@
 					>
 				</File>
 				<File
-					RelativePath=".\src\glut\w32_dirent.c"
+					RelativePath=".\src\glut\w32dent.c"
 					>
 				</File>
 				<File
-					RelativePath=".\src\glut\w32_dirent.h"
+					RelativePath=".\src\glut\w32dent.h"
 					>
 				</File>
 			</Filter>

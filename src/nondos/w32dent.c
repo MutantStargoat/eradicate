@@ -20,7 +20,7 @@
 #include <string.h>
 #include <io.h>
 #include <direct.h>
-#include "w32_dirent.h"
+#include "w32dent.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h> /* for GetFileAttributes */

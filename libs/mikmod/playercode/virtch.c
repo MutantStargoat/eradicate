@@ -1143,7 +1143,7 @@ static void AddChannel(SLONG* ptr,NATIVE todo)
 #endif
 
 #define _IN_VIRTCH_
-#include "virtch_common.c"
+#include "virtch_c.c"
 #undef _IN_VIRTCH_
 
 void VC1_WriteSamples(SBYTE* buf,ULONG todo)

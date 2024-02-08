@@ -1,0 +1,43 @@
+#!/bin/sh
+
+if [ ! -d .git -o ! -f COPYING ]; then
+	echo 'run from the project root'
+	exit 1
+fi
+
+ver=$1
+if [ x$ver = x ]; then
+	ver=foo
+	dosver=xx
+	tag=HEAD
+else
+	tag=v$ver
+	dosver=`echo $ver | sed 's/\.//'`
+fi
+
+rm -rf releases/eradicate-$ver
+rm -rf releases/erad$dosver
+
+git archive -o releases/newrel.tar --prefix=eradicate-$ver/ $tag
+cd releases
+tar xvf newrel.tar
+rm newrel.tar
+cd eradicate-$ver
+cp ../../bin/* .
+rm .gitignore
+cd ..
+rm -f eradicate-$ver.tar.gz eradicate-$ver.zip
+tar czvf eradicate-$ver.tar.gz eradicate-$ver
+zip -r eradicate-$ver.zip eradicate-$ver
+
+# convert to 8.3
+cp -r eradicate-$ver erad$dosver
+cd erad$dosver
+mv eradicate-gnulinux-x86_64 eradlnx
+mv eradicate-win32-modernpc.exe eradw32.exe
+mv eradicate-win32-retropc.exe eradw9x.exe
+mv GNUmakefile Makefile.gnu
+find . -name '*.vcproj' | xargs rm
+cd ..
+rm -f erad$dosver.zip
+zip -r erad$dosver.zip erad$dosver

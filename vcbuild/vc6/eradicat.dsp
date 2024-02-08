@@ -103,11 +103,11 @@ SOURCE=.\src\nondos\gfx.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\nondos\w32_dirent.c
+SOURCE=.\src\nondos\w32dent.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\src\nondos\w32_dirent.h
+SOURCE=.\src\nondos\w32dent.h
 # End Source File
 # End Group
 # Begin Group "3dgfx"
