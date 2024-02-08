@@ -18,12 +18,16 @@ fi
 rm -rf releases/eradicate-$ver
 rm -rf releases/erad$dosver
 
+zip -r data.zip data -x data/src/\* -x data/.svn/\*
+
 git archive -o releases/newrel.tar --prefix=eradicate-$ver/ $tag
 cd releases
 tar xvf newrel.tar
 rm newrel.tar
 cd eradicate-$ver
 cp ../../bin/* .
+unzip ../../data.zip
+rm -f ../../data.zip
 rm .gitignore
 cd ..
 rm -f eradicate-$ver.tar.gz eradicate-$ver.zip
