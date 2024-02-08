@@ -58,7 +58,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "mikmod_internals.h"
+#include "mikint.h"
 
 #ifdef SUNOS
 extern int fclose(FILE *);

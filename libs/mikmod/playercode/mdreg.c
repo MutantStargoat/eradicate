@@ -28,7 +28,7 @@
 #include "config.h"
 #endif
 
-#include "mikmod_internals.h"
+#include "mikint.h"
 
 static void _mm_registeralldrivers(void)
 {

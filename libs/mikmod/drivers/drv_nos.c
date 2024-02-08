@@ -40,7 +40,7 @@
 #include <unistd.h>
 #endif
 
-#include "mikmod_internals.h"
+#include "mikint.h"
 
 #define ZEROLEN 32768
 

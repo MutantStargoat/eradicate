@@ -46,7 +46,7 @@
 #include <config.h>
 #endif
 
-#include "mikmod_internals.h"
+#include "mikint.h"
 
 static const unsigned char ulaw_comp_table[16384] = {
 	0xff, 0xfe, 0xfe, 0xfd, 0xfd, 0xfc, 0xfc, 0xfb,

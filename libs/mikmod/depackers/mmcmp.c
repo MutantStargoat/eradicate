@@ -43,7 +43,7 @@
 #endif
 #include <string.h>
 
-#include "mikmod_internals.h"
+#include "mikint.h"
 
 #ifdef SUNOS
 extern int fprintf(FILE *, const char *, ...);

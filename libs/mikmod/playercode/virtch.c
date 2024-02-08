@@ -38,7 +38,7 @@
 #endif
 #include <string.h>
 
-#include "mikmod_internals.h"
+#include "mikint.h"
 
 /*
    Constant definitions

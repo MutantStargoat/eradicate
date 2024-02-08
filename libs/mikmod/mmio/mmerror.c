@@ -38,7 +38,7 @@
 #include "config.h"
 #endif
 
-#include "mikmod_internals.h"
+#include "mikint.h"
 
 #define _mmerr_invalid "Invalid error code"
 

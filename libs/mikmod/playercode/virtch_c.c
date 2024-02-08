@@ -28,7 +28,7 @@
 #if defined(HAVE_CONFIG_H) && !defined(_IN_VIRTCH_) /* config.h isn't guarded */
 #include "config.h"
 #endif
-#include "mikmod_internals.h"
+#include "mikint.h"
 
 #ifndef NO_HQMIXER
 extern ULONG VC1_SilenceBytes(SBYTE*,ULONG);

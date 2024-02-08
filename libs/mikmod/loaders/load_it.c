@@ -40,7 +40,7 @@
 #endif
 #include <string.h>
 
-#include "mikmod_internals.h"
+#include "mikint.h"
 #include "mikctype.h"
 
 #ifdef SUNOS

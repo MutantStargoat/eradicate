@@ -33,7 +33,7 @@
 #endif
 
 #include "string.h"
-#include "mikmod_internals.h"
+#include "mikint.h"
 
 #if defined(HAVE_SSE2) || defined(HAVE_ALTIVEC)
 #undef WIN32_ALIGNED_MALLOC

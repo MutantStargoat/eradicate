@@ -25,7 +25,7 @@
 #include "config.h"
 #endif
 
-#include "mikmod_internals.h"
+#include "mikint.h"
 
 #ifdef DRV_PULSEAUDIO
 

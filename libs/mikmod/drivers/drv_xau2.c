@@ -46,7 +46,7 @@
 #undef _WIN32_WINNT
 #define _WIN32_WINNT 0x0602
 #endif
-#include "mikmod_internals.h"
+#include "mikint.h"
 
 #define INITGUID
 #include <xaudio2.h>
@@ -436,7 +436,7 @@ MIKMODAPI MDRIVER drv_xaudio2 = {
 
 #else
 
-#include "mikmod_internals.h"
+#include "mikint.h"
 MISSING(drv_xaudio2);
 
 #endif

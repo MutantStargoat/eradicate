@@ -33,7 +33,7 @@
 #include <unistd.h>
 #endif
 
-#include "mikmod_internals.h"
+#include "mikint.h"
 
 static	int sl_rlength;
 static	SWORD sl_old;

@@ -34,7 +34,7 @@
 
 #include <string.h>
 
-#include "mikmod_internals.h"
+#include "mikint.h"
 
 #if (MIKMOD_UNIX)
 #include <pwd.h>

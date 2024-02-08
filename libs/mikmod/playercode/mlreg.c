@@ -30,7 +30,7 @@
 #include "config.h"
 #endif
 
-#include "mikmod_internals.h"
+#include "mikint.h"
 
 static void MikMod_RegisterAllLoaders_internal(void)
 {
