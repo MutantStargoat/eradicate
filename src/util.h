@@ -72,7 +72,8 @@ void memset16(void *dest, uint16_t val, int count);
 	"pop ax" \
 	"rep stosd" \
 	"memset16_done:" \
-	parm[edi][ax][ecx];
+	parm[edi][ax][ecx] \
+	modify[eax];
 
 #ifdef USE_MMX
 void memcpy64(void *dest, void *src, int count);

@@ -1,9 +1,9 @@
 !ifdef __UNIX__
-dosobj = src/dos/main.obj src/dos/gfx.obj src/dos/watdpmi.obj &
+dosobj = src/dos/main.obj src/dos/gfx.obj &
 	src/dos/vbe.obj src/dos/vga.obj src/dos/keyb.obj src/dos/mouse.obj &
 	src/dos/logger.obj src/dos/joygp.obj src/dos/audos.obj &
 	src/dos/cpuid.obj src/dos/cpuid_s.obj
-#timerobj = src/dos/timer.obj
+timerobj = src/dos/timer.obj
 scrobj = src/introscr.obj src/menuscr.obj src/racescr.obj &
 	src/optscr.obj
 gameobj = src/game.obj src/util.obj src/gfxutil.obj src/dynarr.obj &
@@ -18,11 +18,11 @@ libpath = libpath libs/imago libpath libs/midas
 
 !else
 
-dosobj = src\dos\main.obj src\dos\gfx.obj src\dos\watdpmi.obj &
+dosobj = src\dos\main.obj src\dos\gfx.obj &
 	src\dos\vbe.obj src\dos\vga.obj src\dos\keyb.obj src\dos\mouse.obj &
 	src\dos\logger.obj src\dos\joygp.obj src\dos\audos.obj &
 	src\dos\cpuid.obj src\dos\cpuid_s.obj
-#timerobj = src\dos\timer.obj
+timerobj = src\dos\timer.obj
 scrobj = src\introscr.obj src\menuscr.obj src\racescr.obj &
 	src\optscr.obj
 gameobj = src\game.obj src\util.obj src\gfxutil.obj src\dynarr.obj &
@@ -42,6 +42,7 @@ bin = game.exe
 opt = -otexan
 #opt = -od
 def = -dM_PI=3.141592653589793
+#-DNO_SOUND
 #-dUSE_MMX
 libs = imago.lib midas.lib
 

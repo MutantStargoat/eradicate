@@ -57,7 +57,7 @@ int main(int argc, char **argv)
 	}
 
 	init_timer(100);
-	kb_init(32);
+	kb_init();
 
 	if(init_video() == -1) {
 		return 1;

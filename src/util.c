@@ -6,6 +6,16 @@ uint32_t perf_start_count, perf_interval_count;
 
 
 #ifdef __WATCOMC__
+/*
+void memset16(void *dest, uint16_t val, int count)
+{
+	uint16_t *ptr = dest;
+	while(count-- > 0) {
+		*ptr++ = val;
+	}
+}
+*/
+
 int strcasecmp(const char *a, const char *b)
 {
 	int ca, cb;

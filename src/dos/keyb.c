@@ -60,27 +60,23 @@ static _go32_dpmi_seginfo intr, prev_intr;
 
 static void INTERRUPT kbintr();
 
-static int *buffer;
-static int buffer_size, buf_ridx, buf_widx;
+#define BUFSIZE		32
+static int buffer[BUFSIZE];
+static int buf_ridx, buf_widx;
 static int last_key;
 
 static unsigned int num_pressed;
 static unsigned char keystate[256];
 
-#define ADVANCE(x)	((x) = ((x) + 1) % buffer_size)
+#define ADVANCE(x)	((x) = ((x) + 1) % BUFSIZE)
 
-int kb_init(int bufsz)
+void kb_init(void)
 {
 	if(DONE_INIT) {
 		fprintf(stderr, "keyboard driver already initialized!\n");
-		return 0;
+		return;
 	}
 
-	buffer_size = bufsz;
-	if(buffer_size && !(buffer = malloc(buffer_size * sizeof *buffer))) {
-		fprintf(stderr, "failed to allocate input buffer, continuing without\n");
-		buffer_size = 0;
-	}
 	buf_ridx = buf_widx = 0;
 	last_key = -1;
 
@@ -102,7 +98,7 @@ int kb_init(int bufsz)
 #endif
 	_enable();
 
-	return 0;
+	return;
 }
 
 void kb_shutdown(void)
@@ -121,8 +117,6 @@ void kb_shutdown(void)
 	_go32_dpmi_free_iret_wrapper(&intr);
 #endif
 	_enable();
-
-	free(buffer);
 }
 
 int kb_isdown(int key)
@@ -173,39 +167,28 @@ int kb_getkey(void)
 {
 	int res;
 
-	if(buffer) {
-		if(buf_ridx == buf_widx) {
-			return -1;
-		}
-		res = buffer[buf_ridx];
-		ADVANCE(buf_ridx);
-	} else {
-		res = last_key;
-		last_key = -1;
+	if(buf_ridx == buf_widx) {
+		return -1;
 	}
+	res = buffer[buf_ridx];
+	ADVANCE(buf_ridx);
 	return res;
 }
 
 void kb_putback(int key)
 {
-	if(buffer) {
-		/* go back a place */
-		if(--buf_ridx < 0) {
-			buf_ridx += buffer_size;
-		}
+	/* go back a place */
+	buf_ridx = (buf_ridx + (BUFSIZE - 1)) & (BUFSIZE - 1);
 
-		/* if the write end hasn't caught up with us, go back one place
-		 * and put it there, otherwise just overwrite the oldest key which
-		 * is right where we were.
-		 */
-		if(buf_ridx == buf_widx) {
-			ADVANCE(buf_ridx);
-		}
-
-		buffer[buf_ridx] = key;
-	} else {
-		last_key = key;
+	/* if the write end hasn't caught up with us, go back one place
+	 * and put it there, otherwise just overwrite the oldest key which
+	 * is right where we were.
+	 */
+	if(buf_ridx == buf_widx) {
+		ADVANCE(buf_ridx);
 	}
+
+	buffer[buf_ridx] = key;
 }
 
 static void INTERRUPT kbintr()
@@ -246,15 +229,13 @@ static void INTERRUPT kbintr()
 	if(press) {
 		/* append to buffer */
 		last_key = c;
-		if(buffer_size > 0) {
-			buffer[buf_widx] = c;
-			ADVANCE(buf_widx);
-			/* if the write end overtook the read end, advance the read end
-			 * too, to discard the oldest keypress from the buffer
-			 */
-			if(buf_widx == buf_ridx) {
-				ADVANCE(buf_ridx);
-			}
+		buffer[buf_widx] = c;
+		ADVANCE(buf_widx);
+		/* if the write end overtook the read end, advance the read end
+		 * too, to discard the oldest keypress from the buffer
+		 */
+		if(buf_widx == buf_ridx) {
+			ADVANCE(buf_ridx);
 		}
 	}
 

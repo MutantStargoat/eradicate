@@ -29,7 +29,7 @@ along with the program. If not, see <http://www.gnu.org/licenses/>
 extern "C" {
 #endif
 
-int kb_init(int bufsz);	/* bufsz can be 0 for no buffered keys */
+void kb_init(void);
 void kb_shutdown(void); /* don't forget to call this at the end! */
 
 /* Boolean predicate for testing the current state of a particular key.
@@ -40,10 +40,7 @@ int kb_isdown(int key);
 /* waits for any keypress */
 void kb_wait(void);
 
-/* removes and returns a single key from the input buffer.
- * If buffering is disabled (initialized with kb_init(0)), then it always
- * returns the last key pressed.
- */
+/* removes and returns a single key from the input buffer. */
 int kb_getkey(void);
 
 void kb_putback(int key);
