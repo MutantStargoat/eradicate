@@ -3,7 +3,7 @@
 #include <string.h>
 #include "screens.h"
 #include "game.h"
-#include "gfx.h"
+#include "vidsys.h"
 #include "3dgfx/3dgfx.h"
 #include "3dgfx/mesh.h"
 #include "image.h"
@@ -47,7 +47,7 @@ static struct g3d_mesh sky_mesh;
 static struct image ship_tex, road_tex;
 static struct image sky_tex;
 
-static int menu_mode_idx = -1;
+static int menu_mode = -1;
 
 static struct curve *path;
 static struct track trk;
@@ -114,7 +114,7 @@ void race_cleanup(void)
 
 void race_start(void)
 {
-	int vmidx;
+	int vmode;
 
 	printf("race_start\n");
 
@@ -122,7 +122,7 @@ void race_start(void)
 	select_font(FONT_MENU_SHADED);
 	fnt_align(FONT_CENTER);
 	fnt_print(fb_pixels, 320, 220, "Loading track...");
-	blit_frame(fb_pixels, 0);
+	vid_blitfb(fb_pixels, fb_scan_size);
 
 	if(load_track(&trk, "data/track1.trk") == -1) {
 		fprintf(stderr, "failed to load track\n");
@@ -159,9 +159,9 @@ void race_start(void)
 	cam->dir.z += 5.0f;
 
 	/* save menu video mode, and switch to game video mode */
-	menu_mode_idx = get_video_mode(VMODE_CURRENT) - video_modes();
-	if((vmidx = match_video_mode(opt.xres, opt.yres, opt.bpp)) != -1) {
-		if(!(vmem = set_video_mode(vmidx, 1))) {
+	menu_mode = vid_curmode();
+	if((vmode = vid_findmode(opt.xres, opt.yres, opt.bpp)) != -1) {
+		if(!(vmem = vid_setmode(vmode))) {
 			destroy_track(&trk);
 			return;
 		}
@@ -204,9 +204,9 @@ void race_stop(void)
 	destroy_track(&trk);
 	free_curve(path);
 
-	if(menu_mode_idx >= 0) {
-		vmem = set_video_mode(menu_mode_idx, 1);
-		menu_mode_idx = -1;
+	if(menu_mode >= 0) {
+		vmem = vid_setmode(menu_mode);
+		menu_mode = -1;
 	}
 	destroy_image(&sky_tex);
 
@@ -447,7 +447,7 @@ void race_draw(void)
 	draw_ui();
 	if(mus) proc_playlist(mus);
 
-	blit_frame(fb_pixels, opt.vsync);
+	vid_blitfb(fb_pixels, fb_scan_size);
 }
 
 static void draw_skybox(void)

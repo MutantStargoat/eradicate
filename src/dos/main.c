@@ -4,7 +4,7 @@
 #include "game.h"
 #include "keyb.h"
 #include "timer.h"
-#include "gfx.h"
+#include "vidsys.h"
 #include "logger.h"
 #include "cdpmi.h"
 #include "joy.h"
@@ -59,14 +59,14 @@ int main(int argc, char **argv)
 	init_timer(100);
 	kb_init();
 
-	if(init_video() == -1) {
+	if(vid_init() == -1) {
 		return 1;
 	}
 
-	if((vmidx = match_video_mode(640, 480, 16)) == -1) {
+	if((vmidx = vid_findmode(640, 480, 16)) == -1) {
 		return 1;
 	}
-	if(!(vmem = set_video_mode(vmidx, 1))) {
+	if(!(vmem = vid_setmode(vmidx))) {
 		return 1;
 	}
 
@@ -93,8 +93,7 @@ int main(int argc, char **argv)
 
 break_evloop:
 	cleanup();
-	set_text_mode();
-	cleanup_video();
+	vid_cleanup();
 	kb_shutdown();
 	au_shutdown();
 	return status;
@@ -107,7 +106,7 @@ void game_quit(void)
 
 void demo_abort(void)
 {
-	set_text_mode();
+	vid_cleanup();
 	stop_logger();
 	print_tail("game.log");
 	exit(1);

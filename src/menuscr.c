@@ -3,7 +3,7 @@
 #include <math.h>
 #include "screens.h"
 #include "imago2.h"
-#include "gfx.h"
+#include "vidsys.h"
 #include "gfxutil.h"
 #include "game.h"
 #include "util.h"
@@ -146,7 +146,7 @@ void menu_draw(void)
 
 	if(mus) proc_playlist(mus);
 
-	blit_frame(fb_pixels, opt.vsync);
+	vid_blitfb(fb_pixels, fb_scan_size);
 }
 
 void menu_keyb(int key, int pressed)

@@ -3,7 +3,6 @@
 
 #include <stdio.h>
 #include "inttypes.h"
-#include "util.h"
 
 #pragma pack (push, 1)
 struct vbe_info {
@@ -11,7 +10,7 @@ struct vbe_info {
 	uint16_t ver;
 	char *oem_name;
 	uint32_t caps;
-	uint16_t *modes;
+	uint32_t modelist_addr;
 	uint16_t vmem_blk;	/* video memory size in 64k blocks */
 	uint16_t oem_ver;
 	char *vendor;
@@ -21,7 +20,7 @@ struct vbe_info {
 	uint16_t *accel_modes;
 	char reserved[216];
 	char oem_data[256];
-} PACKED;
+};
 
 struct vbe_mode_info {
 	uint16_t attr;
@@ -65,7 +64,7 @@ struct vbe_mode_info {
 	uint32_t max_pixel_clock;
 
 	char reserved2[190];
-} PACKED;
+};
 
 struct vbe_crtc_info {
 	uint16_t htotal, hsync_start, hsync_end;
@@ -74,7 +73,7 @@ struct vbe_crtc_info {
 	uint32_t pixel_clock;
 	uint16_t rate_centihz;	/* refresh rate in 1/100 hz (pck / (htotal * vtotal)) */
 	char reserved[40];
-} PACKED;
+};
 #pragma pack (pop)
 
 /* returned by vbe_scanline_info() */

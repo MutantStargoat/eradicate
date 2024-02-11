@@ -1,22 +1,8 @@
-#ifndef DPMI_H_
-#define DPMI_H_
+#ifndef CDPMI_H_
+#define CDPMI_H_
 
-#ifdef __DJGPP__
-#include <dpmi.h>
-#include <sys/nearptr.h>
-
-#define virt_to_phys(v)	((v) + __djgpp_base_address)
-#define phys_to_virt(p)	((p) - __djgpp_base_address)
-
-#else	/* not djgpp (basically watcom) */
-
-#define virt_to_phys(v)	(v)
-#define phys_to_virt(p)	(p)
-
-#endif	/* __DJGPP__ */
-
+#include <stdlib.h>
 #include "inttypes.h"
-#include "util.h"
 
 #pragma pack (push, 1)
 struct dpmi_regs {
@@ -26,7 +12,7 @@ struct dpmi_regs {
 	uint16_t flags;
 	uint16_t es, ds, fs, gs;
 	uint16_t ip, cs, sp, ss;
-} PACKED;
+};
 #pragma pack (pop)
 
 enum {
@@ -40,69 +26,14 @@ enum {
 	FLAGS_ID	= 0x200000,
 };
 
+int dpmi_init(void);
+void dpmi_cleanup(void);
+void *dpmi_lowbuf(void);
+
 uint16_t dpmi_alloc(unsigned int par, uint16_t *sel);
 void dpmi_free(uint16_t sel);
+int dpmi_rmint(int inum, struct dpmi_regs *regs);
 void *dpmi_mmap(uint32_t phys_addr, unsigned int size);
 void dpmi_munmap(void *addr);
 
-#ifdef __WATCOMC__
-#pragma aux dpmi_alloc = \
-		"mov ax, 0x100" \
-		"int 0x31" \
-		"mov [edi], dx" \
-		"jnc alloc_skip_err" \
-		"xor ax, ax" \
-		"alloc_skip_err:" \
-		value[ax] \
-		parm[ebx][edi] \
-		modify[dx];
-
-#pragma aux dpmi_free = \
-		"mov ax, 0x101" \
-		"int 0x31" \
-		parm[dx] \
-		modify[ax];
-
-void dpmi_int(int inum, struct dpmi_regs far *regs);
-#pragma aux dpmi_int = \
-		"push es" \
-		"mov es, edx" \
-		"mov ax, 0x300" \
-		"xor ecx, ecx" \
-		"int 0x31" \
-		"pop es" \
-		parm[ebx][dx edi] \
-		modify[ax ecx];
-
-#pragma aux dpmi_mmap = \
-		"mov ax, 0x800" \
-		"mov cx, bx" \
-		"shr ebx, 16" \
-		"mov di, si" \
-		"shr esi, 16" \
-		"int 0x31" \
-		"jnc mmap_skip_err" \
-		"xor bx, bx" \
-		"xor cx, cx" \
-	"mmap_skip_err:" \
-		"mov ax, bx" \
-		"shl eax, 16" \
-		"mov ax, cx" \
-		value[eax] \
-		parm[ebx][esi] \
-		modify[bx cx di esi];
-
-#pragma aux dpmi_munmap = \
-		"mov ax, 0x801" \
-		"mov cx, bx" \
-		"shr ebx, 16" \
-		"int 0x31" \
-		parm[ebx] \
-		modify[ax cx ebx];
-#endif	/* __WATCOMC__ */
-
-#ifdef __DJGPP__
-#define dpmi_int(inum, regs) __dpmi_int((inum), (__dpmi_regs*)(regs))
-#endif
-
-#endif	/* DPMI_H_ */
+#endif	/* CDPMI_H_ */

@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "game.h"
-#include "gfx.h"
+#include "vidsys.h"
 #include "screens.h"
 #include "fonts.h"
 #include "ui.h"
@@ -227,7 +227,7 @@ void options_draw(void)
 		ui_draw(widgets[i]);
 	}
 
-	blit_frame(fb_pixels, opt.vsync);
+	vid_blitfb(fb_pixels, fb_scan_size);
 }
 
 void options_keyb(int key, int pressed)
@@ -323,12 +323,12 @@ static int populate_mode_list(struct ui_list *widget)
 	static const int match_bpp_list[] = {16, 15, 0};
 #endif
 	struct mode_item *item;
-	struct video_mode *modes;
+	struct vid_modeinfo **modes;
 	int i, j, num_modes;
 	char resname[32];
 
-	modes = video_modes();
-	num_modes = num_video_modes();
+	modes = vid_modes();
+	num_modes = vid_num_modes();
 
 	if(!modes || !num_modes) return -1;
 
@@ -340,12 +340,12 @@ static int populate_mode_list(struct ui_list *widget)
 
 	for(i=0; match_bpp_list[i]; i++) {
 		for(j=0; j<num_modes; j++) {
-			if(modes[j].bpp == match_bpp_list[i]) {
+			if(modes[j]->bpp == match_bpp_list[i]) {
 				item = modelist + modelist_size++;
 				item->idx = j;
-				item->width = modes[j].xsz;
-				item->height = modes[j].ysz;
-				item->bpp = modes[j].bpp;
+				item->width = modes[j]->width;
+				item->height = modes[j]->height;
+				item->bpp = modes[j]->bpp;
 			}
 		}
 		if(modelist_size) break;

@@ -2,7 +2,7 @@
 #include <limits.h>
 #include "screens.h"
 #include "imago2.h"
-#include "gfx.h"
+#include "vidsys.h"
 #include "gfxutil.h"
 #include "game.h"
 #include "joy.h"
@@ -83,7 +83,7 @@ void intro_draw(void)
 		}
 	}
 
-	blit_frame(fb_pixels, 0);
+	vid_blitfb(fb_pixels, fb_scan_size);
 }
 
 void intro_keyb(int key, int pressed)
