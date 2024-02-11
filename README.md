@@ -59,15 +59,18 @@ See https://modarchive.org for a wide selection of compatible music files.
 Download
 --------
 
-Release v0.2 (jam bugfixes, includes source and binaries for DOS, GNU/Linux and Windows):
-  - http://nuclear.mutantstargoat.com/sw/games/eradicate/releases/eradicate-0.2.tar.gz
-  - http://nuclear.mutantstargoat.com/sw/games/eradicate/releases/eradicate-0.2.zip
-  - http://nuclear.mutantstargoat.com/sw/games/eradicate/releases/erad02.zip
+Release v0.2b:
+  - http://nuclear.mutantstargoat.com/sw/games/eradicate/releases/eradicate-0.2b.tar.gz
+  - http://nuclear.mutantstargoat.com/sw/games/eradicate/releases/eradicate-0.2b.zip
+  - http://nuclear.mutantstargoat.com/sw/games/eradicate/releases/erad02b.zip
 
 Release v0.1 (jam release, includes source and binaries for DOS, GNU/Linux and Windows):
   - http://nuclear.mutantstargoat.com/sw/games/eradicate/releases/eradicate-0.1.tar.gz
   - http://nuclear.mutantstargoat.com/sw/games/eradicate/releases/eradicate-0.1.zip
   - http://nuclear.mutantstargoat.com/sw/games/eradicate/releases/erad01.zip
+
+All archives include source code and pre-compiled binaries for DOS, GNU/Linux
+and Windows.
 
 The third link is a minimal archive with strictly 8.3 filenames for DOS versions
 without FAT32 long filename support.

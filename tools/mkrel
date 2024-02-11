@@ -26,6 +26,7 @@ tar xvf newrel.tar
 rm newrel.tar
 cd eradicate-$ver
 cp ../../bin/* .
+cp $WATCOM/binw/dos4gw.exe .
 unzip ../../data.zip
 rm -f ../../data.zip
 rm .gitignore
