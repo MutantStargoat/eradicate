@@ -354,7 +354,7 @@ int vbe_restore(void *stbuf, int sz, unsigned int flags)
 
 int vbe_setwin(int wid, int pos)
 {
-	struct dpmi_regs regs;
+	struct dpmi_regs regs = {0};
 
 	if(wid & ~1) return -1;
 
@@ -371,7 +371,7 @@ int vbe_setwin(int wid, int pos)
 
 int vbe_getwin(int wid)
 {
-	struct dpmi_regs regs;
+	struct dpmi_regs regs = {0};
 
 	if(wid & ~1) return -1;
 
@@ -388,7 +388,7 @@ int vbe_getwin(int wid)
 
 int vbe_setscanlen(int len_pix)
 {
-	struct dpmi_regs regs;
+	struct dpmi_regs regs = {0};
 
 	regs.eax = 0x4f06;
 	regs.ebx = 0;	/* set scanline length in pixels */
@@ -405,7 +405,7 @@ int vbe_setscanlen(int len_pix)
 
 int vbe_getscanlen(void)
 {
-	struct dpmi_regs regs;
+	struct dpmi_regs regs = {0};
 
 	regs.eax = 0x4f06;
 	regs.ebx = 1;	/* get scanline length */
@@ -419,7 +419,7 @@ int vbe_getscanlen(void)
 
 int vbe_getpitch(void)
 {
-	struct dpmi_regs regs;
+	struct dpmi_regs regs = {0};
 
 	regs.eax = 0x4f06;
 	regs.ebx = 1;	/* get scanline length */
@@ -433,7 +433,7 @@ int vbe_getpitch(void)
 
 int vbe_scanline_info(struct vbe_scanline_info *sinf)
 {
-	struct dpmi_regs regs;
+	struct dpmi_regs regs = {0};
 
 	regs.eax = 0x4f06;
 	regs.ebx = 1;	/* get scanline length */
@@ -464,7 +464,7 @@ enum {
 
 int vbe_setdisp(int x, int y, int when)
 {
-	struct dpmi_regs regs;
+	struct dpmi_regs regs = {0};
 
 	regs.eax = 0x4f07;
 	regs.ebx = (when == VBE_SWAP_VBLANK) ? SDISP_SET_VBLANK : SDISP_SET;
@@ -480,7 +480,7 @@ int vbe_setdisp(int x, int y, int when)
 
 int vbe_swap(uint32_t voffs, int when)
 {
-	struct dpmi_regs regs;
+	struct dpmi_regs regs = {0};
 	int op;
 
 	switch(when) {
@@ -512,7 +512,7 @@ int vbe_swap(uint32_t voffs, int when)
 
 int vbe_swap_pending(void)
 {
-	struct dpmi_regs regs;
+	struct dpmi_regs regs = {0};
 
 	regs.eax = 0x4f07;
 	regs.ebx = SDISP_GETSCHED;
