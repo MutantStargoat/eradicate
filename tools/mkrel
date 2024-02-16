@@ -30,6 +30,7 @@ cp $WATCOM/binw/dos4gw.exe .
 unzip ../../data.zip
 rm -f ../../data.zip
 rm .gitignore
+cp data/bin/midas.lib libs/midas
 cd ..
 rm -f eradicate-$ver.tar.gz eradicate-$ver.zip
 tar czvf eradicate-$ver.tar.gz eradicate-$ver

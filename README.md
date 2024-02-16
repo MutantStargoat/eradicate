@@ -59,6 +59,11 @@ See https://modarchive.org for a wide selection of compatible music files.
 Download
 --------
 
+Release v0.3:
+  - http://nuclear.mutantstargoat.com/sw/games/eradicate/releases/eradicate-0.3.tar.gz
+  - http://nuclear.mutantstargoat.com/sw/games/eradicate/releases/eradicate-0.3.zip
+  - http://nuclear.mutantstargoat.com/sw/games/eradicate/releases/erad03.zip
+
 Release v0.2b:
   - http://nuclear.mutantstargoat.com/sw/games/eradicate/releases/eradicate-0.2b.tar.gz
   - http://nuclear.mutantstargoat.com/sw/games/eradicate/releases/eradicate-0.2b.zip
@@ -86,7 +91,7 @@ the subversion data repository:
 
 License
 -------
-Copyright (C) 2020-2022 John Tsiombikas <nuclear@mutantstargoat.org>
+Copyright (C) 2020-2024 John Tsiombikas <nuclear@mutantstargoat.org>
 
 This program is free software. Feel free to use, modify and/or redistribute it,
 under the terms of the GNU General Public License version 3, or at your option
