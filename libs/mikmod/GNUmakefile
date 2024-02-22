@@ -1,8 +1,8 @@
 src = $(wildcard drivers/*.c) \
 	  $(wildcard loaders/*.c) \
 	  $(wildcard mmio/*.c) \
-	  $(wildcard depackers/*.c) \
-	  $(wildcard playercode/*.c) \
+	  $(wildcard depack/*.c) \
+	  $(wildcard player/*.c) \
 	  $(wildcard posix/*.c)
 obj = $(src:.c=.o)
 alib = ../unix/libmikmod.a

@@ -113,15 +113,15 @@ SOURCE=.\loaders\load_xm.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\playercode\mdreg.c
+SOURCE=.\player\mdreg.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\playercode\mdriver.c
+SOURCE=.\player\mdriver.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\playercode\mdulaw.c
+SOURCE=.\player\mdulaw.c
 # End Source File
 # Begin Source File
 
@@ -137,15 +137,15 @@ SOURCE=.\include\mikint.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\playercode\mloader.c
+SOURCE=.\player\mloader.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\playercode\mlreg.c
+SOURCE=.\player\mlreg.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\playercode\mlutil.c
+SOURCE=.\player\mlutil.c
 # End Source File
 # Begin Source File
 
@@ -153,7 +153,7 @@ SOURCE=.\mmio\mmalloc.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\depackers\mmcmp.c
+SOURCE=.\depack\mmcmp.c
 # End Source File
 # Begin Source File
 
@@ -165,51 +165,51 @@ SOURCE=.\mmio\mmio.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\playercode\mplayer.c
+SOURCE=.\player\mplayer.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\playercode\munitrk.c
+SOURCE=.\player\munitrk.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\playercode\mwav.c
+SOURCE=.\player\mwav.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\playercode\npertab.c
+SOURCE=.\player\npertab.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\depackers\pp20.c
+SOURCE=.\depack\pp20.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\depackers\s404.c
+SOURCE=.\depack\s404.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\playercode\sloader.c
+SOURCE=.\player\sloader.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\posix\strcasecmp.c
+SOURCE=.\posix\strcase.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\playercode\virtch.c
+SOURCE=.\player\virtch.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\playercode\virtch2.c
+SOURCE=.\player\virtch2.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\playercode\virtch_common.c
+SOURCE=.\player\virtch_c.c
 # End Source File
 # Begin Source File
 
-SOURCE=.\depackers\xpk.c
+SOURCE=.\depack\xpk.c
 # End Source File
 # End Group
 # End Target

@@ -179,27 +179,27 @@
 				>
 			</File>
 			<File
-				RelativePath=".\playercode\mdreg.c"
+				RelativePath=".\player\mdreg.c"
 				>
 			</File>
 			<File
-				RelativePath=".\playercode\mdriver.c"
+				RelativePath=".\player\mdriver.c"
 				>
 			</File>
 			<File
-				RelativePath=".\playercode\mdulaw.c"
+				RelativePath=".\player\mdulaw.c"
 				>
 			</File>
 			<File
-				RelativePath=".\playercode\mloader.c"
+				RelativePath=".\player\mloader.c"
 				>
 			</File>
 			<File
-				RelativePath=".\playercode\mlreg.c"
+				RelativePath=".\player\mlreg.c"
 				>
 			</File>
 			<File
-				RelativePath=".\playercode\mlutil.c"
+				RelativePath=".\player\mlutil.c"
 				>
 			</File>
 			<File
@@ -207,7 +207,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\depackers\mmcmp.c"
+				RelativePath=".\depack\mmcmp.c"
 				>
 			</File>
 			<File
@@ -219,31 +219,31 @@
 				>
 			</File>
 			<File
-				RelativePath=".\playercode\mplayer.c"
+				RelativePath=".\player\mplayer.c"
 				>
 			</File>
 			<File
-				RelativePath=".\playercode\munitrk.c"
+				RelativePath=".\player\munitrk.c"
 				>
 			</File>
 			<File
-				RelativePath=".\playercode\mwav.c"
+				RelativePath=".\player\mwav.c"
 				>
 			</File>
 			<File
-				RelativePath=".\playercode\npertab.c"
+				RelativePath=".\player\npertab.c"
 				>
 			</File>
 			<File
-				RelativePath=".\depackers\pp20.c"
+				RelativePath=".\depack\pp20.c"
 				>
 			</File>
 			<File
-				RelativePath=".\depackers\s404.c"
+				RelativePath=".\depack\s404.c"
 				>
 			</File>
 			<File
-				RelativePath=".\playercode\sloader.c"
+				RelativePath=".\player\sloader.c"
 				>
 			</File>
 			<File
@@ -251,19 +251,19 @@
 				>
 			</File>
 			<File
-				RelativePath=".\playercode\virtch.c"
+				RelativePath=".\player\virtch.c"
 				>
 			</File>
 			<File
-				RelativePath=".\playercode\virtch2.c"
+				RelativePath=".\player\virtch2.c"
 				>
 			</File>
 			<File
-				RelativePath=".\playercode\virtch_c.c"
+				RelativePath=".\player\virtch_c.c"
 				>
 			</File>
 			<File
-				RelativePath=".\depackers\xpk.c"
+				RelativePath=".\depack\xpk.c"
 				>
 			</File>
 		</Filter>

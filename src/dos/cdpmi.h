@@ -66,7 +66,7 @@ void dpmi_munmap(void *addr);
 void dpmi_int(int inum, struct dpmi_regs *regs);
 #pragma aux dpmi_int = \
 		"push es" \
-		"mov es, edx" \
+		"mov es, dx" \
 		"mov ax, 0x300" \
 		"xor ecx, ecx" \
 		"int 0x31" \
