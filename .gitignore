@@ -57,3 +57,5 @@ libs/mikmod/mikmod.dsp
 releases/
 *.json
 bin/
+*.ovl
+*.OVL
